@@ -2,8 +2,8 @@ package com.ecomarket.soporteservice.controller;
 
 import com.ecomarket.soporteservice.exception.NoExisteEnBdException;
 import com.ecomarket.soporteservice.exception.YaExisteEnBdException;
-import com.ecomarket.soporteservice.model.reference.CanalNotificacion;
-import com.ecomarket.soporteservice.service.CanalNotificacionService;
+import com.ecomarket.soporteservice.model.reference.EstadoTicket;
+import com.ecomarket.soporteservice.service.EstadoTicketService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -22,64 +22,64 @@ import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@WebMvcTest(CanalNotificacionController.class)
+@WebMvcTest(EstadoTicketController.class)
 @AutoConfigureMockMvc(addFilters = false)
 @ActiveProfiles("test")
-@DisplayName("CanalNotificacionController")
-class CanalNotificacionControllerTest {
+@DisplayName("EstadoTicketController")
+class EstadoTicketControllerTest {
 
     @Autowired MockMvc mvc;
     private final ObjectMapper mapper = new ObjectMapper();
-    @MockitoBean CanalNotificacionService service;
+    @MockitoBean EstadoTicketService service;
 
-    private CanalNotificacion canal(Long id, String nombre) {
-        return new CanalNotificacion(id, nombre);
+    private EstadoTicket estado(Long id, String nombre) {
+        return new EstadoTicket(id, nombre);
     }
 
     @Test
-    @DisplayName("GET /api/v1/canal-notificacion → 200 lista")
+    @DisplayName("GET /api/v1/estado-ticket → 200 lista")
     void getAll() throws Exception {
-        when(service.readAllCanalNotificacion()).thenReturn(List.of(canal(1L,"EMAIL"), canal(2L,"SMS")));
-        mvc.perform(get("/api/v1/canal-notificacion"))
+        when(service.readAllEstadoTicket()).thenReturn(List.of(estado(1L, "ABIERTO"), estado(2L, "EN_PROCESO")));
+        mvc.perform(get("/api/v1/estado-ticket"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(2));
     }
 
     @Test
-    @DisplayName("POST /api/v1/canal-notificacion → 201 creado")
-    void postCanal() throws Exception {
-        when(service.createCanalNotificacion(any())).thenReturn(canal(3L,"PUSH"));
-        mvc.perform(post("/api/v1/canal-notificacion")
+    @DisplayName("POST /api/v1/estado-ticket → 201 creado")
+    void postEstado() throws Exception {
+        when(service.createEstadoTicket(any())).thenReturn(estado(3L, "RESUELTO"));
+        mvc.perform(post("/api/v1/estado-ticket")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(mapper.writeValueAsString(canal(null,"PUSH"))))
+                        .content(mapper.writeValueAsString(estado(null, "RESUELTO"))))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.id").value(3));
     }
 
     @Test
     @DisplayName("POST nombre vacío → 400")
-    void postCanalInvalido() throws Exception {
-        mvc.perform(post("/api/v1/canal-notificacion")
+    void postEstadoInvalido() throws Exception {
+        mvc.perform(post("/api/v1/estado-ticket")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(mapper.writeValueAsString(canal(null,""))))
+                        .content(mapper.writeValueAsString(estado(null, ""))))
                 .andExpect(status().isBadRequest());
     }
 
     @Test
     @DisplayName("POST duplicado → 409 (YaExisteEnBdException)")
     void postDuplicado() throws Exception {
-        when(service.createCanalNotificacion(any())).thenThrow(new YaExisteEnBdException("EMAIL ya existe."));
-        mvc.perform(post("/api/v1/canal-notificacion")
+        when(service.createEstadoTicket(any())).thenThrow(new YaExisteEnBdException("ABIERTO ya existe."));
+        mvc.perform(post("/api/v1/estado-ticket")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(mapper.writeValueAsString(canal(null,"EMAIL"))))
+                        .content(mapper.writeValueAsString(estado(null, "ABIERTO"))))
                 .andExpect(status().isConflict());
     }
 
     @Test
-    @DisplayName("DELETE /api/v1/canal-notificacion/1 → 200")
+    @DisplayName("DELETE /api/v1/estado-ticket/1 → 200")
     void deleteExistente() throws Exception {
-        doNothing().when(service).deleteCanalNotificacionById(1L);
-        mvc.perform(delete("/api/v1/canal-notificacion/1"))
+        doNothing().when(service).deleteEstadoTicket(1L);
+        mvc.perform(delete("/api/v1/estado-ticket/1"))
                 .andExpect(status().isOk())
                 .andExpect(content().string(org.hamcrest.Matchers.containsString("1")));
     }
@@ -87,8 +87,8 @@ class CanalNotificacionControllerTest {
     @Test
     @DisplayName("DELETE inexistente → 404 (NoExisteEnBdException)")
     void deleteInexistente() throws Exception {
-        doThrow(new NoExisteEnBdException("99 no existe.")).when(service).deleteCanalNotificacionById(99L);
-        mvc.perform(delete("/api/v1/canal-notificacion/99"))
+        doThrow(new NoExisteEnBdException("99 no existe.")).when(service).deleteEstadoTicket(99L);
+        mvc.perform(delete("/api/v1/estado-ticket/99"))
                 .andExpect(status().isNotFound());
     }
 }
