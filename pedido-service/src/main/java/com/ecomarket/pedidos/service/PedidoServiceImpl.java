@@ -4,6 +4,9 @@ import com.ecomarket.pedidos.dto.CarritoDTO;
 import com.ecomarket.pedidos.model.*;
 import com.ecomarket.pedidos.repository.*;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+
+import org.slf4j.Logger;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
@@ -12,6 +15,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class PedidoServiceImpl implements PedidoService {
@@ -25,7 +29,7 @@ public class PedidoServiceImpl implements PedidoService {
     @Transactional
     public Pedido generarPedidoDesdeCarrito(Long clienteId, Long carritoId) {
         // 1. Obtener datos del carrito desde carritocompraservice
-        String cartUrl = "http://localhost:8082/api/carrito/" + clienteId;
+        String cartUrl = "http://localhost:8082/api/carrito/" + carritoId;
         CarritoDTO carrito = restTemplate.getForObject(cartUrl, CarritoDTO.class);
 
         if (carrito == null || carrito.getItems() == null || carrito.getItems().isEmpty()) {
@@ -33,7 +37,8 @@ public class PedidoServiceImpl implements PedidoService {
         }
 
         // 2. Crear el pedido
-        EstadoPedido estadoInicial = estadoPedidoRepository.findAll().get(0); // Simplificado: primer estado
+        EstadoPedido estadoInicial = estadoPedidoRepository.findByNombre("PENDIENTE")
+                .orElseThrow(() -> new RuntimeException("Estado PENDIENTE no encontrado"));
 
         Pedido pedido = Pedido.builder()
                 .clienteId(clienteId)
@@ -58,10 +63,16 @@ public class PedidoServiceImpl implements PedidoService {
         itemPedidoRepository.saveAll(items);
 
         // 4. Vaciar el carrito en carritocompraservice
-        String emptyCartUrl = "http://localhost:8082/api/carrito/" + clienteId + "/vaciar";
-        restTemplate.delete(emptyCartUrl);
+        try {
+            String emptyCartUrl = "http://localhost:8082/api/carrito/" + clienteId + "/vaciar";
+            restTemplate.delete(emptyCartUrl);
+        } catch (Exception e) {
+            log.warn("No se pudo vaciar el carrito {}", carritoId, e);
+        }
 
         registrarLog(clienteId, "PEDIDO_GENERADO", "Pedido generado exitosamente con ID: " + pedidoGuardado.getId() + ". Total: " + pedidoGuardado.getTotal());
+
+        log.info("Pedido {} generado para cliente {} desde carrito {}", pedidoGuardado.getId(), clienteId, carritoId);
 
         return pedidoGuardado;
     }
@@ -84,7 +95,7 @@ public class PedidoServiceImpl implements PedidoService {
     @Override
     public Pedido buscarPorId(Long pedidoId) {
         return pedidoRepository.findById(pedidoId)
-                .orElseThrow(() -> new RuntimeException("Pedido no encontrado"));
+                .orElseThrow(() -> new RuntimeException("Pedido no encontrado con ID: " + pedidoId));
     }
 
     private void registrarLog(Long usuarioId, String accion, String detalles) {
@@ -98,7 +109,7 @@ public class PedidoServiceImpl implements PedidoService {
         try {
             restTemplate.postForEntity("http://localhost:8084/api/analitica/logs", log, String.class);
         } catch (Exception e) {
-            // Log error but don't break business flow
+            ((Logger) log).warn("Error al enviar log a analítica", e);
         }
     }
 }

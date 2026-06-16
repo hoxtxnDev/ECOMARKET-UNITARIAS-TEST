@@ -7,9 +7,12 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 
 /**
  * Implementación de PagoService.
@@ -67,9 +70,10 @@ public class PagoServiceImpl implements PagoService {
             throw new RuntimeException("El cupón no es válido o está expirado");
         }
 
-        Double descuento = transaccion.getMontoSubtotal() * (cupon.getPorcentajeDescuento() / 100.0);
+        BigDecimal porcentaje = cupon.getPorcentajeDescuento().divide(BigDecimal.valueOf(100), 10, RoundingMode.HALF_UP);
+        Double descuento = transaccion.getMontoSubtotal() * porcentaje.doubleValue();
         if (cupon.getMontoMaximoDescuento() != null) {
-            descuento = Math.min(descuento, cupon.getMontoMaximoDescuento());
+            descuento = Math.min(descuento, cupon.getMontoMaximoDescuento().doubleValue());
         }
 
         transaccion.setMontoDescuento(descuento);
@@ -88,7 +92,8 @@ public class PagoServiceImpl implements PagoService {
                 .orElseThrow(() -> new RuntimeException("Estado APROBADO no encontrado"));
 
         transaccion.setTokenTransbank(token);
-        transaccion.setCodigoAutorizacion(LocalDateTime.now());
+        transaccion.setCodigoAutorizacion(UUID.randomUUID().toString().substring(0, 8).toUpperCase());
+        transaccion.setFechaAutorizacion(LocalDateTime.now());
         transaccion.setEstado(estadoAprobado);
 
         // 1. Generar pedido en pedidoservice
@@ -96,7 +101,7 @@ public class PagoServiceImpl implements PagoService {
         try {
             restTemplate.postForEntity(pedidoUrl, null, String.class);
         } catch (Exception e) {
-            log.error("Error al generar pedido: {}", e.getMessage());
+            log.error("Error al generar pedido", e);
         }
 
         // 2. Vaciar carrito en carritocompraservice
@@ -104,7 +109,7 @@ public class PagoServiceImpl implements PagoService {
         try {
             restTemplate.delete(emptyCartUrl);
         } catch (Exception e) {
-            log.error("Error al vaciar carrito: {}", e.getMessage());
+            log.error("Error al vaciar carrito", e);
         }
 
         registrarLog(transaccion.getClienteId(), "PAGO_APROBADO", "Pago aprobado exitosamente para la transacción " + transaccionId + ". Monto: " + transaccion.getMontoTotal());

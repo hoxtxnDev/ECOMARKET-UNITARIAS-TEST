@@ -3,15 +3,17 @@ package com.ecomarket.procesopagoservice.model;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
-import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
 import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
 import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "factura_electronica")
-@Data @NoArgsConstructor @AllArgsConstructor
+@Getter @Setter @NoArgsConstructor @AllArgsConstructor
 public class FacturaElectronica {
+    
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
@@ -24,15 +26,13 @@ public class FacturaElectronica {
     @NotNull
     private Long clienteId;
 
-    @NotNull
     @NotBlank
     private String rutReceptor;
 
-    @NotNull
     @NotBlank
     private String razonSocial;
 
-    @NotNull
+    @NotBlank
     private String xmlDocumento;
 
     @NotNull

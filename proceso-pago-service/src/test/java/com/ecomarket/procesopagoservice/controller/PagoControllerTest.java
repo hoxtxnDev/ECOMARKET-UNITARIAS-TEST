@@ -2,16 +2,16 @@ package com.ecomarket.procesopagoservice.controller;
 
 import com.ecomarket.procesopagoservice.model.*;
 import com.ecomarket.procesopagoservice.service.PagoService;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -43,7 +43,6 @@ class PagoControllerTest {
     @BeforeEach
     void setup() {
         mapper = new ObjectMapper();
-        mapper.findAndRegisterModules(); // Para manejar LocalDateTime
     }
 
     // ── Fixtures ──────────────────────────────────────────────────────────────
@@ -117,7 +116,7 @@ class PagoControllerTest {
         @Test
         @DisplayName("400 si el service lanza RuntimeException (estado PENDIENTE no existe)")
         void estadoNoExiste() throws Exception {
-            when(pagoService.iniciarPago(anyLong(), anyLong(), anyDouble(), any()))
+            when(pagoService.iniciarPago(anyLong(), anyLong(), any(Double.class), any()))
                     .thenThrow(new RuntimeException("Estado PENDIENTE no encontrado"));
 
             mvc.perform(post("/api/pagos/iniciar")
@@ -220,7 +219,8 @@ class PagoControllerTest {
             TransaccionPago aprobado = transaccion(1L);
             aprobado.setEstado(estado("APROBADO"));
             aprobado.setTokenTransbank("TOKEN-XYZ");
-            aprobado.setCodigoAutorizacion(LocalDateTime.now());
+            aprobado.setCodigoAutorizacion("AUTH-001");
+            aprobado.setFechaAutorizacion(LocalDateTime.now());
 
             when(pagoService.procesarConTransbank(1L, "TOKEN-XYZ")).thenReturn(aprobado);
 

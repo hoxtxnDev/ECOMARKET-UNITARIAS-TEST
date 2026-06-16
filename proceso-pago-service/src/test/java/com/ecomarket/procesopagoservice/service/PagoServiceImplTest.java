@@ -11,6 +11,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.web.client.RestTemplate;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.Optional;
 
@@ -70,8 +71,8 @@ class PagoServiceImplTest {
         CuponDescuento c = new CuponDescuento();
         c.setId(1L);
         c.setCodigo("DESC10");
-        c.setPorcentajeDescuento(porcentaje);
-        c.setMontoMaximoDescuento(maximo);
+        c.setPorcentajeDescuento(BigDecimal.valueOf(porcentaje));
+        c.setMontoMaximoDescuento(maximo != null ? BigDecimal.valueOf(maximo) : null);
         c.setFechaExpiracion(LocalDateTime.now().plusDays(10));
         c.setActivo(true);
         return c;
@@ -81,7 +82,7 @@ class PagoServiceImplTest {
         CuponDescuento c = new CuponDescuento();
         c.setId(2L);
         c.setCodigo("VIEJOCUPON");
-        c.setPorcentajeDescuento(10.0);
+        c.setPorcentajeDescuento(BigDecimal.valueOf(10.0));
         c.setFechaExpiracion(LocalDateTime.now().minusDays(1));
         c.setActivo(true);
         return c;
@@ -199,7 +200,13 @@ class PagoServiceImplTest {
         @DisplayName("lanza excepción si cupón está expirado")
         void cuponExpirado() {
             when(transaccionRepository.findById(1L)).thenReturn(Optional.of(transaccion(1L, 50000.0)));
-            when(cuponRepository.findById(2L)).thenReturn(Optional.of(cuponExpirado()));
+            CuponDescuento cuponExpirado = new CuponDescuento();
+            cuponExpirado.setId(2L);
+            cuponExpirado.setCodigo("VIEJOCUPON");
+            cuponExpirado.setPorcentajeDescuento(new BigDecimal("10.0"));
+            cuponExpirado.setFechaExpiracion(LocalDateTime.now().minusDays(1));
+            cuponExpirado.setActivo(true);
+            when(cuponRepository.findById(2L)).thenReturn(Optional.of(cuponExpirado));
 
             assertThatThrownBy(() -> service.anadirCuponDescuento(1L, 2L))
                     .isInstanceOf(RuntimeException.class)
@@ -241,7 +248,7 @@ class PagoServiceImplTest {
             TransaccionPago resultado = service.procesarConTransbank(1L, "TOKEN-ABC-123");
 
             assertThat(resultado.getTokenTransbank()).isEqualTo("TOKEN-ABC-123");
-            assertThat(resultado.getCodigoAutorizacion()).isNotNull();
+            assertThat(resultado.getCodigoAutorizacion()).isNotNull().isNotEmpty();
             assertThat(resultado.getEstado().getNombre()).isEqualTo("APROBADO");
             verify(transaccionRepository).save(any());
         }

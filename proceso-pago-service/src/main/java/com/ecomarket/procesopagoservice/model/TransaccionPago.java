@@ -42,5 +42,6 @@ public class TransaccionPago {
 
     private Long cuponUtilizadoId;
     private String tokenTransbank;
-    private LocalDateTime codigoAutorizacion;
+    private String codigoAutorizacion;
+    private LocalDateTime fechaAutorizacion;
 }

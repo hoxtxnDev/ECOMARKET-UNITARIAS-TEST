@@ -363,4 +363,71 @@ class GestionTiendaServiceImplTest {
             assertThat(resultado.getPermiteAplicarDescuentoManual()).isTrue();
         }
     }
+
+    // ═════════════════════════════════════════════════════════════════════════
+    // establecerReglamento
+    // ═════════════════════════════════════════════════════════════════════════
+
+    @Nested
+    @DisplayName("establecerReglamento")
+    class EstablecerReglamento {
+
+        @Test
+        @DisplayName("persiste el reglamento y retorna el objeto guardado")
+        void guardaReglamentoExitosamente() {
+            ReglamentoInterno reglamento = new ReglamentoInterno();
+            reglamento.setId(1L);
+            reglamento.setSucursalId(1L);
+            reglamento.setVersion(1);
+            reglamento.setTituloSeccion("Normas de convivencia");
+            reglamento.setContenidoLegal("Respetar horarios y uniforme");
+            reglamento.setFechaVigencia(LocalDateTime.now().plusDays(30));
+
+            when(reglamentoInternoRepository.save(reglamento)).thenReturn(reglamento);
+
+            ReglamentoInterno resultado = service.establecerReglamento(reglamento);
+
+            assertThat(resultado.getTituloSeccion()).isEqualTo("Normas de convivencia");
+            assertThat(resultado.getContenidoLegal()).contains("uniforme");
+            verify(reglamentoInternoRepository).save(reglamento);
+        }
+    }
+
+    // ═════════════════════════════════════════════════════════════════════════
+    // consultarHorariosTienda
+    // ═════════════════════════════════════════════════════════════════════════
+
+    @Nested
+    @DisplayName("consultarHorariosTienda")
+    class ConsultarHorariosTienda {
+
+        @Test
+        @DisplayName("retorna horarios de la sucursal")
+        void retornaHorarios() {
+            HorarioAtencion h = new HorarioAtencion();
+            h.setId(1L);
+            h.setSucursalId(1L);
+            h.setDiaSemana(1);
+            h.setHoraApertura("09:00");
+            h.setHoraCierre("20:00");
+
+            when(horarioAtencionRepository.findBySucursalId(1L)).thenReturn(List.of(h));
+
+            List<HorarioAtencion> resultado = service.consultarHorariosTienda(1L);
+
+            assertThat(resultado).hasSize(1);
+            assertThat(resultado.get(0).getDiaSemana()).isEqualTo(1);
+            verify(horarioAtencionRepository).findBySucursalId(1L);
+        }
+
+        @Test
+        @DisplayName("retorna lista vacia si no hay horarios")
+        void retornaVaciaSinHorarios() {
+            when(horarioAtencionRepository.findBySucursalId(99L)).thenReturn(List.of());
+
+            List<HorarioAtencion> resultado = service.consultarHorariosTienda(99L);
+
+            assertThat(resultado).isEmpty();
+        }
+    }
 }
