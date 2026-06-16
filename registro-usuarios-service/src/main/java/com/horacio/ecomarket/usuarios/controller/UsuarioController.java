@@ -57,7 +57,8 @@ public class UsuarioController {
     @GetMapping("/rol/{rolId}")
     public ResponseEntity<List<PerfilUsuario>> listarPorRol(@PathVariable Long rolId) {
         Rol rol = rolRepository.findById(rolId)
-                .orElseThrow(() -> new RuntimeException("Rol no encontrado con ID: " + rolId));
+                .orElseThrow(() -> new RuntimeException("Rol no encontrado con ID: " + rolId)); // ← este lambda nunca
+                                                                                                // se testea
         return ResponseEntity.ok(service.listarPorRol(rol));
     }
 
@@ -107,7 +108,8 @@ public class UsuarioController {
 
         if (dto.getEstadoPerfilId() != null) {
             EstadoPerfil estado = estadoPerfilRepository.findById(dto.getEstadoPerfilId())
-                    .orElseThrow(() -> new RuntimeException("EstadoPerfil no encontrado con ID: " + dto.getEstadoPerfilId()));
+                    .orElseThrow(() -> new RuntimeException(
+                            "EstadoPerfil no encontrado con ID: " + dto.getEstadoPerfilId()));
             builder.estadoPerfil(estado);
         }
 
@@ -128,7 +130,8 @@ public class UsuarioController {
 
         if (dto.getEstadoPerfilId() != null) {
             EstadoPerfil estado = estadoPerfilRepository.findById(dto.getEstadoPerfilId())
-                    .orElseThrow(() -> new RuntimeException("EstadoPerfil no encontrado con ID: " + dto.getEstadoPerfilId()));
+                    .orElseThrow(() -> new RuntimeException(
+                            "EstadoPerfil no encontrado con ID: " + dto.getEstadoPerfilId()));
             builder.estadoPerfil(estado);
         }
 

@@ -21,13 +21,19 @@ import static org.mockito.Mockito.*;
 @DisplayName("DatabaseSchemaFixer")
 class DatabaseSchemaFixerTest {
 
-    @Mock JdbcTemplate jdbc;
-    @Mock DataSource dataSource;
-    @Mock Connection connection;
-    @Mock DatabaseMetaData meta;
-    @Mock ResultSet rs;
+    @Mock
+    JdbcTemplate jdbc;
+    @Mock
+    DataSource dataSource;
+    @Mock
+    Connection connection;
+    @Mock
+    DatabaseMetaData meta;
+    @Mock
+    ResultSet rs;
 
-    @InjectMocks DatabaseSchemaFixer fixer;
+    @InjectMocks
+    DatabaseSchemaFixer fixer;
 
     private void setupMeta() throws Exception {
         when(jdbc.getDataSource()).thenReturn(dataSource);
@@ -48,6 +54,14 @@ class DatabaseSchemaFixerTest {
     }
 
     @Test
+    @DisplayName("run() absorbe excepción si getConnection() falla")
+    void excepcionAbsorbidaEnGetConnection() throws Exception {
+        when(jdbc.getDataSource()).thenReturn(dataSource);
+        when(dataSource.getConnection()).thenThrow(new java.sql.SQLException("Connection timeout"));
+        assertThatCode(() -> fixer.run()).doesNotThrowAnyException();
+    }
+
+    @Test
     @DisplayName("run() no lanza excepción cuando columna no existe")
     void columnaNoExiste() throws Exception {
         setupMeta();
@@ -64,4 +78,5 @@ class DatabaseSchemaFixerTest {
 
         assertThatCode(() -> fixer.run()).doesNotThrowAnyException();
     }
+    
 }

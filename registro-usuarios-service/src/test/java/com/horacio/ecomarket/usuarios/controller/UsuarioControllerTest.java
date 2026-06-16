@@ -12,9 +12,9 @@ import com.horacio.ecomarket.usuarios.repository.EstadoPerfilRepository;
 import com.horacio.ecomarket.usuarios.repository.PermisoRepository;
 import com.horacio.ecomarket.usuarios.repository.RolRepository;
 import com.horacio.ecomarket.usuarios.service.RegistroUsuarioService;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
@@ -23,6 +23,7 @@ import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
+
 import java.util.List;
 import java.util.Optional;
 
@@ -33,11 +34,6 @@ import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-/**
- * Pruebas de integración web para UsuarioController.
- * * Ejecutar:
- * mvn test -pl registro-usuarios-service -Dtest=UsuarioControllerTest
- */
 @WebMvcTest(UsuarioController.class)
 @AutoConfigureMockMvc(addFilters = false)
 @ActiveProfiles("test")
@@ -47,9 +43,8 @@ class UsuarioControllerTest {
     @Autowired
     private MockMvc mockMvc;
 
-    private ObjectMapper objectMapper = new ObjectMapper();
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
-    // ── Mocks de dependencias inyectadas en el controlador ───────────────
     @MockitoBean
     private RegistroUsuarioService service;
     @MockitoBean
@@ -59,7 +54,6 @@ class UsuarioControllerTest {
     @MockitoBean
     private EstadoPerfilRepository estadoPerfilRepository;
 
-    // ── Fixtures ────────────────────────────────────────────────────────
     private PerfilUsuario perfilBase;
     private Rol rolMock;
     private EstadoPerfil estadoMock;
@@ -96,7 +90,6 @@ class UsuarioControllerTest {
         @Test
         @DisplayName("201 CREATED al registrar con rol y estado válidos")
         void registrarExitoso() throws Exception {
-            // Simulamos el DTO de entrada (Asumiendo que tiene getters/setters/builder)
             RegistroUsuarioDTO dto = new RegistroUsuarioDTO();
             dto.setNombre("Horacio");
             dto.setCorreo("h@eco.cl");
@@ -104,11 +97,8 @@ class UsuarioControllerTest {
             dto.setRolId(1L);
             dto.setEstadoPerfilId(1L);
 
-            // Mockeamos las búsquedas de los helpers privados
             when(rolRepository.findById(1L)).thenReturn(Optional.of(rolMock));
             when(estadoPerfilRepository.findById(1L)).thenReturn(Optional.of(estadoMock));
-
-            // Mockeamos el servicio real
             when(service.registrarCuenta(any(PerfilUsuario.class), eq("pass123"))).thenReturn(perfilBase);
 
             mockMvc.perform(post("/api/usuarios/registro")
@@ -120,60 +110,37 @@ class UsuarioControllerTest {
         }
 
         @Test
-        @DisplayName("Falla si el RolId enviado no existe en BD (helper arroja RuntimeException)")
+        @DisplayName("201 CREATED al registrar sin rolId ni estadoPerfilId (ramas null)")
+        void registrarSinRolNiEstado() throws Exception {
+            RegistroUsuarioDTO dto = new RegistroUsuarioDTO();
+            dto.setNombre("Sin Rol");
+            dto.setCorreo("sinrol@eco.cl");
+            dto.setContrasenaInicial("pass1234");
+
+            when(service.registrarCuenta(any(PerfilUsuario.class), eq("pass1234"))).thenReturn(perfilBase);
+
+            mockMvc.perform(post("/api/usuarios/registro")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(json(dto)))
+                    .andExpect(status().isCreated());
+        }
+
+        @Test
+        @DisplayName("400 BAD REQUEST si el RolId no existe")
         void registrarRolNoExiste() throws Exception {
             RegistroUsuarioDTO dto = new RegistroUsuarioDTO();
             dto.setNombre("Test");
             dto.setCorreo("test@eco.cl");
             dto.setContrasenaInicial("pass1234");
-            dto.setRolId(99L); // ID inexistente
+            dto.setRolId(99L);
 
             when(rolRepository.findById(99L)).thenThrow(new RuntimeException("Rol no encontrado"));
 
             mockMvc.perform(post("/api/usuarios/registro")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(json(dto)))
-                    .andExpect(status().isBadRequest()); // O el status que tu GlobalExceptionHandler mapee para
-                                                         // RuntimeException
+                    .andExpect(status().isBadRequest());
         }
-    }
-
-    @Test
-    @DisplayName("201 CREATED al registrar sin rolId ni estadoPerfilId (ramas null)")
-    void registrarSinRolNiEstado() throws Exception {
-        RegistroUsuarioDTO dto = new RegistroUsuarioDTO();
-        dto.setNombre("Sin Rol");
-        dto.setCorreo("sinrol@eco.cl");
-        dto.setContrasenaInicial("pass1234");
-        // rolId y estadoPerfilId quedan null → no entran al if
-
-        when(service.registrarCuenta(any(PerfilUsuario.class), eq("pass1234"))).thenReturn(perfilBase);
-
-        mockMvc.perform(post("/api/usuarios/registro")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(json(dto)))
-                .andExpect(status().isCreated());
-    }
-
-    @Test
-    @DisplayName("201 CREATED al registrar con rolId Y estadoPerfilId (ambas ramas not-null)")
-    void registrarConRolYEstado() throws Exception {
-        RegistroUsuarioDTO dto = new RegistroUsuarioDTO();
-        dto.setNombre("Con Rol Y Estado");
-        dto.setCorreo("conrol@eco.cl");
-        dto.setContrasenaInicial("pass1234");
-        dto.setRolId(1L);
-        dto.setEstadoPerfilId(1L);
-
-        when(rolRepository.findById(1L)).thenReturn(Optional.of(rolMock));
-        when(estadoPerfilRepository.findById(1L)).thenReturn(Optional.of(estadoMock));
-        when(service.registrarCuenta(any(PerfilUsuario.class), eq("pass1234"))).thenReturn(perfilBase);
-
-        mockMvc.perform(post("/api/usuarios/registro")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(json(dto)))
-                .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.id").value(1));
     }
 
     // ═════════════════════════════════════════════════════════════════════════
@@ -184,7 +151,7 @@ class UsuarioControllerTest {
     class Modificar {
 
         @Test
-        @DisplayName("200 OK al modificar usuario con datos válidos")
+        @DisplayName("200 OK al modificar usuario con datos válidos (solo rol)")
         void modificarExitoso() throws Exception {
             ModificarUsuarioDTO dto = new ModificarUsuarioDTO();
             dto.setNombre("Horacio Modificado");
@@ -202,45 +169,44 @@ class UsuarioControllerTest {
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.nombre").value("Horacio Modificado"));
         }
-    }
 
-    @Test
-    @DisplayName("200 OK al modificar con estadoPerfilId (rama estadoPerfil not-null)")
-    void modificarConEstado() throws Exception {
-        ModificarUsuarioDTO dto = new ModificarUsuarioDTO();
-        dto.setNombre("Con Estado");
-        dto.setCorreo("conestado@eco.cl");
-        dto.setRolId(1L);
-        dto.setEstadoPerfilId(1L);
+        @Test
+        @DisplayName("200 OK al modificar con rolId Y estadoPerfilId (ambas ramas not-null)")
+        void modificarConRolYEstado() throws Exception {
+            ModificarUsuarioDTO dto = new ModificarUsuarioDTO();
+            dto.setNombre("Con Estado");
+            dto.setCorreo("conestado@eco.cl");
+            dto.setRolId(1L);
+            dto.setEstadoPerfilId(1L);
 
-        when(rolRepository.findById(1L)).thenReturn(Optional.of(rolMock));
-        when(estadoPerfilRepository.findById(1L)).thenReturn(Optional.of(estadoMock));
-        when(service.modificarDatosUsuario(eq(1L), any(PerfilUsuario.class))).thenReturn(perfilBase);
+            when(rolRepository.findById(1L)).thenReturn(Optional.of(rolMock));
+            when(estadoPerfilRepository.findById(1L)).thenReturn(Optional.of(estadoMock));
+            when(service.modificarDatosUsuario(eq(1L), any(PerfilUsuario.class))).thenReturn(perfilBase);
 
-        mockMvc.perform(put("/api/usuarios/1")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(json(dto)))
-                .andExpect(status().isOk());
-    }
+            mockMvc.perform(put("/api/usuarios/1")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(json(dto)))
+                    .andExpect(status().isOk());
+        }
 
-    @Test
-    @DisplayName("200 OK al modificar sin rolId ni estadoPerfilId (ambas ramas null)")
-    void modificarSinRolNiEstado() throws Exception {
-        ModificarUsuarioDTO dto = new ModificarUsuarioDTO();
-        dto.setNombre("Sin Rol");
-        dto.setCorreo("sinrol@eco.cl");
-        // rolId y estadoPerfilId null → no entran al if
+        @Test
+        @DisplayName("200 OK al modificar sin rolId ni estadoPerfilId (ambas ramas null)")
+        void modificarSinRolNiEstado() throws Exception {
+            ModificarUsuarioDTO dto = new ModificarUsuarioDTO();
+            dto.setNombre("Sin Rol");
+            dto.setCorreo("sinrol@eco.cl");
 
-        when(service.modificarDatosUsuario(eq(1L), any(PerfilUsuario.class))).thenReturn(perfilBase);
+            when(service.modificarDatosUsuario(eq(1L), any(PerfilUsuario.class))).thenReturn(perfilBase);
 
-        mockMvc.perform(put("/api/usuarios/1")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(json(dto)))
-                .andExpect(status().isOk());
+            mockMvc.perform(put("/api/usuarios/1")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(json(dto)))
+                    .andExpect(status().isOk());
+        }
     }
 
     // ═════════════════════════════════════════════════════════════════════════
-    // GET Endpoints (Listar y Buscar)
+    // GET Endpoints
     // ═════════════════════════════════════════════════════════════════════════
     @Nested
     @DisplayName("Consultas GET")
@@ -258,14 +224,12 @@ class UsuarioControllerTest {
         }
 
         @Test
-        @DisplayName("GET /api/usuarios/rol/{rolId} — 200 OK retorna lista filtrada")
-        void listarPorRol() throws Exception {
-            when(rolRepository.findById(1L)).thenReturn(Optional.of(rolMock));
-            when(service.listarPorRol(rolMock)).thenReturn(List.of(perfilBase));
+        @DisplayName("GET /api/usuarios/rol/{rolId} — 400 BAD REQUEST cuando el rol no existe")
+        void listarPorRolNoExiste() throws Exception {
+            when(rolRepository.findById(99L)).thenReturn(Optional.empty());
 
-            mockMvc.perform(get("/api/usuarios/rol/1"))
-                    .andExpect(status().isOk())
-                    .andExpect(jsonPath("$[0].correo").value("h@eco.cl"));
+            mockMvc.perform(get("/api/usuarios/rol/99"))
+                    .andExpect(status().isBadRequest());
         }
 
         @Test
@@ -317,7 +281,7 @@ class UsuarioControllerTest {
         }
 
         @Test
-        @DisplayName("Falla si un ID de permiso no existe")
+        @DisplayName("400 BAD REQUEST si un permiso no existe")
         void configurarPermisosFallaSiNoExiste() throws Exception {
             ConfigurarPermisosDTO dto = new ConfigurarPermisosDTO();
             dto.setPermisoIds(List.of(99L));
@@ -327,7 +291,7 @@ class UsuarioControllerTest {
             mockMvc.perform(put("/api/usuarios/1/permisos")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(json(dto)))
-                    .andExpect(status().isBadRequest()); // Asumiendo manejo global de RuntimeException
+                    .andExpect(status().isBadRequest());
         }
     }
 
