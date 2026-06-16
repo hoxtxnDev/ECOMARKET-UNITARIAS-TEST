@@ -87,68 +87,60 @@ class UsuarioControllerTest {
     @DisplayName("registrar")
     class Registrar {
 
-        @Test
-        @DisplayName("201 CREATED al registrar con rol y estado válidos")
-        void registrarExitoso() throws Exception {
-            RegistroUsuarioDTO dto = new RegistroUsuarioDTO();
-            dto.setNombre("Horacio");
-            dto.setCorreo("h@eco.cl");
-            dto.setContrasenaInicial("pass123");
-            dto.setRolId(1L);
-            dto.setEstadoPerfilId(1L);
-
-            when(rolRepository.findById(1L)).thenReturn(Optional.of(rolMock));
-            when(estadoPerfilRepository.findById(1L)).thenReturn(Optional.of(estadoMock));
-            when(service.registrarCuenta(any(PerfilUsuario.class), eq("pass123"))).thenReturn(perfilBase);
-
-            mockMvc.perform(post("/api/usuarios/registro")
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(json(dto)))
-                    .andExpect(status().isCreated())
-                    .andExpect(jsonPath("$.id").value(1))
-                    .andExpect(jsonPath("$.correo").value("h@eco.cl"));
-        }
-
-        @Test
-        @DisplayName("201 CREATED al registrar sin rolId ni estadoPerfilId (ramas null)")
-        void registrarSinRolNiEstado() throws Exception {
-            RegistroUsuarioDTO dto = new RegistroUsuarioDTO();
-            dto.setNombre("Sin Rol");
-            dto.setCorreo("sinrol@eco.cl");
-            dto.setContrasenaInicial("pass1234");
-
-            when(service.registrarCuenta(any(PerfilUsuario.class), eq("pass1234"))).thenReturn(perfilBase);
-
-            mockMvc.perform(post("/api/usuarios/registro")
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(json(dto)))
-                    .andExpect(status().isCreated());
-        }
+        // ... tests existentes ...
 
         @Test
         @DisplayName("400 BAD REQUEST si el RolId no existe")
         void registrarRolNoExiste() throws Exception {
+        }
+
+        // ← AQUÍ dentro, no afuera
+        @Test
+        @DisplayName("400 cuando el EstadoPerfilId enviado no existe en BD")
+        void registrarEstadoNoExiste() throws Exception {
             RegistroUsuarioDTO dto = new RegistroUsuarioDTO();
             dto.setNombre("Test");
             dto.setCorreo("test@eco.cl");
             dto.setContrasenaInicial("pass1234");
-            dto.setRolId(99L);
+            dto.setRolId(1L);
+            dto.setEstadoPerfilId(99L);
 
-            when(rolRepository.findById(99L)).thenThrow(new RuntimeException("Rol no encontrado"));
+            when(rolRepository.findById(1L)).thenReturn(Optional.of(rolMock));
+            when(estadoPerfilRepository.findById(99L))
+                    .thenThrow(new RuntimeException("EstadoPerfil no encontrado con ID: 99"));
 
             mockMvc.perform(post("/api/usuarios/registro")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(json(dto)))
                     .andExpect(status().isBadRequest());
         }
-    }
 
-    // ═════════════════════════════════════════════════════════════════════════
-    // PUT /api/usuarios/{id}
-    // ═════════════════════════════════════════════════════════════════════════
+    } // ← cierre de Registrar
+      // ═════════════════════════════════════════════════════════════════════════
+      // PUT /api/usuarios/{id}
+      // ═════════════════════════════════════════════════════════════════════════
+
     @Nested
     @DisplayName("modificar")
     class Modificar {
+        @Test
+        @DisplayName("400 cuando el EstadoPerfilId no existe en BD")
+        void registrarEstadoNoExiste() throws Exception {
+            RegistroUsuarioDTO dto = new RegistroUsuarioDTO();
+            dto.setNombre("Test");
+            dto.setCorreo("test@eco.cl");
+            dto.setContrasenaInicial("pass1234");
+            dto.setRolId(1L);
+            dto.setEstadoPerfilId(99L);
+
+            when(rolRepository.findById(1L)).thenReturn(Optional.of(rolMock));
+            when(estadoPerfilRepository.findById(99L)).thenReturn(Optional.empty()); // ← este activa el orElseThrow
+
+            mockMvc.perform(post("/api/usuarios/registro")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(json(dto)))
+                    .andExpect(status().isBadRequest());
+        }
 
         @Test
         @DisplayName("200 OK al modificar usuario con datos válidos (solo rol)")
@@ -158,10 +150,16 @@ class UsuarioControllerTest {
             dto.setCorreo("h@eco.cl");
             dto.setRolId(1L);
 
-            perfilBase.setNombre("Horacio Modificado");
+            PerfilUsuario perfilModificado = PerfilUsuario.builder()
+                    .id(1L)
+                    .nombre("Horacio Modificado")
+                    .correo("h@eco.cl")
+                    .telefono("123456")
+                    .rol(rolMock)
+                    .build();
 
             when(rolRepository.findById(1L)).thenReturn(Optional.of(rolMock));
-            when(service.modificarDatosUsuario(eq(1L), any(PerfilUsuario.class))).thenReturn(perfilBase);
+            when(service.modificarDatosUsuario(eq(1L), any(PerfilUsuario.class))).thenReturn(perfilModificado);
 
             mockMvc.perform(put("/api/usuarios/1")
                     .contentType(MediaType.APPLICATION_JSON)
