@@ -92,6 +92,55 @@ class UsuarioControllerTest {
         @Test
         @DisplayName("400 BAD REQUEST si el RolId no existe")
         void registrarRolNoExiste() throws Exception {
+            RegistroUsuarioDTO dto = new RegistroUsuarioDTO();
+            dto.setNombre("Test");
+            dto.setCorreo("test@eco.cl");
+            dto.setContrasenaInicial("pass1234");
+            dto.setRolId(99L);
+
+            when(rolRepository.findById(99L))
+                    .thenThrow(new RuntimeException("Rol no encontrado con ID: 99"));
+
+            mockMvc.perform(post("/api/usuarios/registro")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(json(dto)))
+                    .andExpect(status().isBadRequest());
+        }
+
+        // dentro de class Registrar
+        @Test
+        @DisplayName("201 CREATED al registrar usuario con datos válidos")
+        void registrarExitoso() throws Exception {
+            RegistroUsuarioDTO dto = new RegistroUsuarioDTO();
+            dto.setNombre("Horacio");
+            dto.setCorreo("h@eco.cl");
+            dto.setContrasenaInicial("pass1234");
+            dto.setRolId(1L);
+
+            when(rolRepository.findById(1L)).thenReturn(Optional.of(rolMock));
+            when(service.registrarCuenta(any(PerfilUsuario.class), eq("pass1234"))).thenReturn(perfilBase);
+
+            mockMvc.perform(post("/api/usuarios/registro")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(json(dto)))
+                    .andExpect(status().isCreated())
+                    .andExpect(jsonPath("$.correo").value("h@eco.cl"));
+        }
+
+        @Test
+        @DisplayName("201 CREATED al registrar sin rolId ni estadoPerfilId")
+        void registrarSinRolNiEstado() throws Exception {
+            RegistroUsuarioDTO dto = new RegistroUsuarioDTO();
+            dto.setNombre("Horacio");
+            dto.setCorreo("h@eco.cl");
+            dto.setContrasenaInicial("pass1234");
+
+            when(service.registrarCuenta(any(PerfilUsuario.class), eq("pass1234"))).thenReturn(perfilBase);
+
+            mockMvc.perform(post("/api/usuarios/registro")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(json(dto)))
+                    .andExpect(status().isCreated());
         }
 
         // ← AQUÍ dentro, no afuera
@@ -210,14 +259,14 @@ class UsuarioControllerTest {
     class ConsultasGet {
 
         @Test
-        @DisplayName("GET /api/usuarios — 200 OK retorna lista")
-        void listarTodos() throws Exception {
-            when(service.listarUsuarios()).thenReturn(List.of(perfilBase));
+        @DisplayName("GET /api/usuarios/{id} — 200 OK retorna usuario por id")
+        void buscarPorId() throws Exception {
+            when(service.buscarPorId(1L)).thenReturn(perfilBase);
 
-            mockMvc.perform(get("/api/usuarios"))
+            mockMvc.perform(get("/api/usuarios/1"))
                     .andExpect(status().isOk())
-                    .andExpect(jsonPath("$").isArray())
-                    .andExpect(jsonPath("$[0].id").value(1));
+                    .andExpect(jsonPath("$.id").value(1))
+                    .andExpect(jsonPath("$.correo").value("h@eco.cl"));
         }
 
         @Test
