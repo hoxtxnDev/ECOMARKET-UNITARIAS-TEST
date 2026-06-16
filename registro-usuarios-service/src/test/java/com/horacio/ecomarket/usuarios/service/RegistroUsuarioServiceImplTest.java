@@ -28,7 +28,7 @@ import static org.mockito.Mockito.*;
  * Sin Spring, sin BD, sin RestTemplate real — todo mockeado.
  *
  * Ejecutar:
- *   mvn test -pl registro-usuarios-service -Dtest=RegistroUsuarioServiceImplTest
+ * mvn test -pl registro-usuarios-service -Dtest=RegistroUsuarioServiceImplTest
  */
 @ExtendWith(MockitoExtension.class)
 @DisplayName("RegistroUsuarioServiceImpl")
@@ -261,6 +261,34 @@ class RegistroUsuarioServiceImplTest {
             PerfilUsuario resultado = service.modificarDatosUsuario(1L, datosNuevos);
 
             assertThat(resultado.getRol().getNombre()).isEqualTo("ADMIN");
+        }
+
+        @Test
+        @DisplayName("actualiza estadoPerfil cuando datosNuevos trae estado no nulo (cubre el último if)")
+        void actualizaEstadoPerfilSiSeProvee() {
+            // 1. ARRANGE
+            EstadoPerfil estadoViejo = new EstadoPerfil();
+            estadoViejo.setId(1L);
+            estadoViejo.setNombre("ACTIVO");
+
+            PerfilUsuario existente = PerfilUsuario.builder()
+                    .id(1L).nombre("H").correo("h@eco.cl").estadoPerfil(estadoViejo).build();
+
+            EstadoPerfil estadoNuevo = new EstadoPerfil();
+            estadoNuevo.setId(2L);
+            estadoNuevo.setNombre("BLOQUEADO");
+
+            PerfilUsuario datosNuevos = PerfilUsuario.builder()
+                    .nombre("H").correo("h@eco.cl").estadoPerfil(estadoNuevo).build();
+
+            when(repository.findById(1L)).thenReturn(Optional.of(existente));
+            when(repository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+            // 2. ACT
+            PerfilUsuario resultado = service.modificarDatosUsuario(1L, datosNuevos);
+
+            // 3. ASSERT
+            assertThat(resultado.getEstadoPerfil().getNombre()).isEqualTo("BLOQUEADO");
         }
     }
 
