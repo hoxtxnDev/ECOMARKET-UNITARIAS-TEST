@@ -125,18 +125,17 @@ class UsuarioControllerTest {
     class Modificar {
         @Test
         @DisplayName("400 cuando el EstadoPerfilId no existe en BD")
-        void registrarEstadoNoExiste() throws Exception {
-            RegistroUsuarioDTO dto = new RegistroUsuarioDTO();
+        void modificarEstadoNoExiste() throws Exception {
+            ModificarUsuarioDTO dto = new ModificarUsuarioDTO();
             dto.setNombre("Test");
             dto.setCorreo("test@eco.cl");
-            dto.setContrasenaInicial("pass1234");
             dto.setRolId(1L);
             dto.setEstadoPerfilId(99L);
 
             when(rolRepository.findById(1L)).thenReturn(Optional.of(rolMock));
-            when(estadoPerfilRepository.findById(99L)).thenReturn(Optional.empty()); // ← este activa el orElseThrow
+            when(estadoPerfilRepository.findById(99L)).thenReturn(Optional.empty());
 
-            mockMvc.perform(post("/api/usuarios/registro")
+            mockMvc.perform(put("/api/usuarios/1") // ← PUT, no POST
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(json(dto)))
                     .andExpect(status().isBadRequest());
@@ -231,13 +230,14 @@ class UsuarioControllerTest {
         }
 
         @Test
-        @DisplayName("GET /api/usuarios/{id} — 200 OK retorna usuario")
-        void buscarPorId() throws Exception {
-            when(service.buscarPorId(1L)).thenReturn(perfilBase);
+        @DisplayName("GET /api/usuarios/rol/{rolId} — 200 OK retorna lista filtrada")
+        void listarPorRol() throws Exception {
+            when(rolRepository.findById(1L)).thenReturn(Optional.of(rolMock));
+            when(service.listarPorRol(rolMock)).thenReturn(List.of(perfilBase));
 
-            mockMvc.perform(get("/api/usuarios/1"))
+            mockMvc.perform(get("/api/usuarios/rol/1"))
                     .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.id").value(1));
+                    .andExpect(jsonPath("$[0].correo").value("h@eco.cl"));
         }
 
         @Test
@@ -312,4 +312,5 @@ class UsuarioControllerTest {
             verify(service).eliminarUsuario(1L);
         }
     }
+
 }
