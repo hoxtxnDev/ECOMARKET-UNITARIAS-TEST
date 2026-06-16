@@ -199,6 +199,23 @@ class EnvioServiceTest {
         }
 
         @Test
+        @DisplayName("crea envio cuando el servicio de pedidos retorna null (pedido null, no incompatible)")
+        void pedidoNullNoLanzaIncompatibilidad() throws Exception {
+            when(metodoEnvioService.findById(1L)).thenReturn(metodoDomicilio);
+            when(direccionService.findById(1L)).thenReturn(null);
+            when(restTemplate.getForObject(anyString(), eq(ClienteDTO.class))).thenReturn(new ClienteDTO());
+            when(restTemplate.getForObject(anyString(), eq(PedidoDTO.class))).thenReturn(null);
+            when(estadoEnvioService.findById(1L)).thenReturn(estadoPendiente);
+            when(envioDomainService.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+            Envio resultado = envioService.crearEnvio(100L, 5L, 1L, 1L);
+
+            assertThat(resultado).isNotNull();
+            assertThat(resultado.getPedidoId()).isEqualTo(100L);
+            verify(historialEnvioService).save(any(HistorialEnvio.class));
+        }
+
+        @Test
         @DisplayName("usa costo 0 para metodo PuntoRetiro")
         void costoGratisParaPuntoRetiro() throws Exception {
             when(metodoEnvioService.findById(2L)).thenReturn(metodoRetiro);
@@ -288,6 +305,19 @@ class EnvioServiceTest {
             envioService.actualizarEstado(10L, 2L, null);
 
             assertThat(envioPendiente.getFechaEntregaReal()).isNull();
+        }
+
+        @Test
+        @DisplayName("establece fechaEntregaReal cuando el nuevo estado es CANCELADO (esEstadoFinal 5L)")
+        void estadoCanceladoAsignaFechaReal() {
+            when(envioDomainService.findById(10L)).thenReturn(envioPendiente);
+            when(estadoEnvioService.findById(5L)).thenReturn(estadoCancelado);
+            when(envioDomainService.save(envioCaptor.capture())).thenReturn(envioPendiente);
+            when(historialEnvioService.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+            envioService.actualizarEstado(10L, 5L, null);
+
+            assertThat(envioCaptor.getValue().getFechaEntregaReal()).isNotNull();
         }
     }
 

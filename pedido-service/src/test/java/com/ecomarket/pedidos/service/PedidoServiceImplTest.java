@@ -115,6 +115,17 @@ class PedidoServiceImplTest {
         }
 
         @Test
+        @DisplayName("lanza excepción si los items del carrito son nulos")
+        void carritoItemsNulos() {
+            CarritoDTO carrito = CarritoDTO.builder().items(null).build();
+            when(restTemplate.getForObject(anyString(), eq(CarritoDTO.class))).thenReturn(carrito);
+
+            assertThatThrownBy(() -> service.generarPedidoDesdeCarrito(5L, 1L))
+                    .isInstanceOf(RuntimeException.class)
+                    .hasMessageContaining("vacío");
+        }
+
+        @Test
         @DisplayName("lanza excepción si estado PENDIENTE no existe")
         void estadoPendienteNoExiste() {
             when(restTemplate.getForObject(anyString(), eq(CarritoDTO.class))).thenReturn(carritoDto());
@@ -137,6 +148,23 @@ class PedidoServiceImplTest {
                 return p;
             });
             doThrow(new RuntimeException("Connection refused")).when(restTemplate).delete(anyString());
+
+            assertThatNoException().isThrownBy(() -> service.generarPedidoDesdeCarrito(5L, 1L));
+        }
+
+        @Test
+        @DisplayName("tolera fallo al enviar log de analítica")
+        void toleraFalloAlEnviarLog() {
+            CarritoDTO carrito = carritoDto();
+            when(restTemplate.getForObject(anyString(), eq(CarritoDTO.class))).thenReturn(carrito);
+            when(estadoPedidoRepository.findByNombre("PENDIENTE")).thenReturn(Optional.of(estado("PENDIENTE")));
+            when(pedidoRepository.save(any())).thenAnswer(inv -> {
+                Pedido p = inv.getArgument(0);
+                p.setId(1L);
+                return p;
+            });
+            when(itemPedidoRepository.saveAll(any())).thenReturn(List.of());
+            doThrow(new RuntimeException("Log service down")).when(restTemplate).postForEntity(anyString(), any(), eq(String.class));
 
             assertThatNoException().isThrownBy(() -> service.generarPedidoDesdeCarrito(5L, 1L));
         }

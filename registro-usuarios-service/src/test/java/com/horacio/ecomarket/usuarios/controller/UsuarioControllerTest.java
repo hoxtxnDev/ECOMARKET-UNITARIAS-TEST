@@ -98,8 +98,7 @@ class UsuarioControllerTest {
             dto.setContrasenaInicial("pass1234");
             dto.setRolId(99L);
 
-            when(rolRepository.findById(99L))
-                    .thenThrow(new RuntimeException("Rol no encontrado con ID: 99"));
+            when(rolRepository.findById(99L)).thenReturn(Optional.empty());
 
             mockMvc.perform(post("/api/usuarios/registro")
                     .contentType(MediaType.APPLICATION_JSON)
@@ -145,6 +144,27 @@ class UsuarioControllerTest {
 
         // ← AQUÍ dentro, no afuera
         @Test
+        @DisplayName("201 CREATED al registrar con rolId y estadoPerfilId (ambas ramas not-null)")
+        void registrarConEstado() throws Exception {
+            RegistroUsuarioDTO dto = new RegistroUsuarioDTO();
+            dto.setNombre("Horacio");
+            dto.setCorreo("h@eco.cl");
+            dto.setContrasenaInicial("pass1234");
+            dto.setRolId(1L);
+            dto.setEstadoPerfilId(1L);
+
+            when(rolRepository.findById(1L)).thenReturn(Optional.of(rolMock));
+            when(estadoPerfilRepository.findById(1L)).thenReturn(Optional.of(estadoMock));
+            when(service.registrarCuenta(any(PerfilUsuario.class), eq("pass1234"))).thenReturn(perfilBase);
+
+            mockMvc.perform(post("/api/usuarios/registro")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(json(dto)))
+                    .andExpect(status().isCreated())
+                    .andExpect(jsonPath("$.correo").value("h@eco.cl"));
+        }
+
+        @Test
         @DisplayName("400 cuando el EstadoPerfilId enviado no existe en BD")
         void registrarEstadoNoExiste() throws Exception {
             RegistroUsuarioDTO dto = new RegistroUsuarioDTO();
@@ -155,8 +175,7 @@ class UsuarioControllerTest {
             dto.setEstadoPerfilId(99L);
 
             when(rolRepository.findById(1L)).thenReturn(Optional.of(rolMock));
-            when(estadoPerfilRepository.findById(99L))
-                    .thenThrow(new RuntimeException("EstadoPerfil no encontrado con ID: 99"));
+            when(estadoPerfilRepository.findById(99L)).thenReturn(Optional.empty());
 
             mockMvc.perform(post("/api/usuarios/registro")
                     .contentType(MediaType.APPLICATION_JSON)
@@ -172,6 +191,22 @@ class UsuarioControllerTest {
     @Nested
     @DisplayName("modificar")
     class Modificar {
+        @Test
+        @DisplayName("400 BAD REQUEST cuando el RolId no existe en modificar")
+        void modificarRolNoExiste() throws Exception {
+            ModificarUsuarioDTO dto = new ModificarUsuarioDTO();
+            dto.setNombre("Test");
+            dto.setCorreo("test@eco.cl");
+            dto.setRolId(99L);
+
+            when(rolRepository.findById(99L)).thenReturn(Optional.empty());
+
+            mockMvc.perform(put("/api/usuarios/1")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(json(dto)))
+                    .andExpect(status().isBadRequest());
+        }
+
         @Test
         @DisplayName("400 cuando el EstadoPerfilId no existe en BD")
         void modificarEstadoNoExiste() throws Exception {
@@ -257,6 +292,16 @@ class UsuarioControllerTest {
     @Nested
     @DisplayName("Consultas GET")
     class ConsultasGet {
+
+        @Test
+        @DisplayName("GET /api/usuarios — 200 OK retorna lista de todos los usuarios")
+        void listarTodos() throws Exception {
+            when(service.listarUsuarios()).thenReturn(List.of(perfilBase));
+
+            mockMvc.perform(get("/api/usuarios"))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$[0].correo").value("h@eco.cl"));
+        }
 
         @Test
         @DisplayName("GET /api/usuarios/{id} — 200 OK retorna usuario por id")

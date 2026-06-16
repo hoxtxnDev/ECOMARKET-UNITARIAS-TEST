@@ -99,17 +99,17 @@ public class PedidoServiceImpl implements PedidoService {
     }
 
     private void registrarLog(Long usuarioId, String accion, String detalles) {
-        java.util.Map<String, Object> log = new java.util.HashMap<>();
-        log.put("microservicio", "pedido-service");
-        log.put("accion", accion);
-        log.put("usuarioId", usuarioId);
-        log.put("detalles", detalles);
-        log.put("fecha", LocalDateTime.now());
+        java.util.Map<String, Object> logMap = new java.util.HashMap<>();
+        logMap.put("microservicio", "pedido-service");
+        logMap.put("accion", accion);
+        logMap.put("usuarioId", usuarioId);
+        logMap.put("detalles", detalles);
+        logMap.put("fecha", LocalDateTime.now());
 
         try {
-            restTemplate.postForEntity("http://localhost:8084/api/analitica/logs", log, String.class);
+            restTemplate.postForEntity("http://localhost:8084/api/analitica/logs", logMap, String.class);
         } catch (Exception e) {
-            ((Logger) log).warn("Error al enviar log a analítica", e);
+            log.warn("Error al enviar log a analítica", e);
         }
     }
 }

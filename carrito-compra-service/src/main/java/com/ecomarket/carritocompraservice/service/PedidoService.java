@@ -59,7 +59,6 @@ public class PedidoService {
                 .orElseThrow(() -> new RuntimeException("Pedido no encontrado: " + pedidoId));
         EstadoPedido nuevoEstado = estadoPedidoRepository.findById(nuevoEstadoId)
                 .orElseThrow(() -> new RuntimeException("Estado no encontrado: " + nuevoEstadoId));
-        pedido.setEstado(pedido.getEstado());
         pedido.setEstado(nuevoEstado);
         return pedidoRepository.save(pedido);
     }

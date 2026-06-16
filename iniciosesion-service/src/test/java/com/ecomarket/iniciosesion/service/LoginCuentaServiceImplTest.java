@@ -261,6 +261,28 @@ class LoginCuentaServiceImplTest {
 
             verify(credencialRepository).save(argThat(c -> c.getFechaUltimoLogin() != null));
         }
+
+        @Test
+        @DisplayName("no interrumpe el flujo si el log remoto lanza excepción (cubre catch en registrarLog)")
+        void logRemotoLanzaExcepcionNoInterrumpeFlujo() {
+            Credencial cred = credencialActiva(30L, "logfail@eco.cl", "pass123");
+            when(credencialRepository.findByCorreoAcceso("logfail@eco.cl")).thenReturn(Optional.of(cred));
+            when(credencialRepository.save(any())).thenAnswer(i -> i.getArgument(0));
+            when(jwtUtil.generarToken(any(), any(), any())).thenReturn("jwt-logfail");
+            when(jwtUtil.getExpirationMs()).thenReturn(3600000L);
+            when(restTemplate.postForEntity(anyString(), any(), eq(String.class)))
+                    .thenThrow(new RuntimeException("Simulated log failure"));
+
+            IniciarSesionRequest req = new IniciarSesionRequest();
+            req.setCorreo("logfail@eco.cl");
+            req.setContrasena("pass123");
+
+            IniciarSesionResponse res = service.iniciarSesion(req);
+
+            assertThat(res.getToken()).isEqualTo("jwt-logfail");
+            assertThat(res.getUsuarioId()).isEqualTo(30L);
+            verify(restTemplate).postForEntity(anyString(), any(), eq(String.class));
+        }
     }
 
     // ── ═══════════════════════════════════════════════════════════════════════
@@ -351,6 +373,31 @@ class LoginCuentaServiceImplTest {
             service.cerrarSesion(req);
 
             // Verificamos que se haya guardado con ROLE_USER por defecto
+            verify(sesionJWTRepository).save(argThat(s -> "ROLE_USER".equals(s.getRolAcceso())));
+        }
+
+        @Test
+        @DisplayName("asigna ROLE_USER si la lista de roles es null (cubre la rama roles==null de línea 114)")
+        void cerrarSesionRolesNullAsignaPorDefecto() {
+            String token = "token-roles-null";
+            when(jwtUtil.esTokenValido(token)).thenReturn(true);
+            when(sesionJWTRepository.existsByToken(token)).thenReturn(false);
+
+            Claims claims = mock(Claims.class);
+            when(claims.getIssuedAt()).thenReturn(new Date());
+            when(claims.getExpiration()).thenReturn(new Date(System.currentTimeMillis() + 3600000L));
+
+            when(jwtUtil.validarYObtenerClaims(token)).thenReturn(claims);
+            when(jwtUtil.obtenerUsuarioId(token)).thenReturn(1L);
+            when(jwtUtil.obtenerRoles(token)).thenReturn(null);
+
+            when(sesionJWTRepository.save(any())).thenAnswer(i -> i.getArgument(0));
+
+            CerrarSesionRequest req = new CerrarSesionRequest();
+            req.setToken(token);
+
+            service.cerrarSesion(req);
+
             verify(sesionJWTRepository).save(argThat(s -> "ROLE_USER".equals(s.getRolAcceso())));
         }
 

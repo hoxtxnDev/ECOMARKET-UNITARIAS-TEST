@@ -44,6 +44,27 @@ class MensajeChatServiceTest {
     }
 
     @Nested
+    @DisplayName("readAllMensajes")
+    class ReadAll {
+
+        @Test
+        @DisplayName("retorna lista completa de mensajes")
+        void retornaLista() {
+            when(repo.findAll()).thenReturn(List.of(
+                    mensaje(1L, 10L, "Hola", false),
+                    mensaje(2L, 10L, "Ok", true)));
+            assertThat(service.readAllMensajes()).hasSize(2);
+        }
+
+        @Test
+        @DisplayName("retorna lista vacía cuando no hay mensajes")
+        void retornaVacio() {
+            when(repo.findAll()).thenReturn(List.of());
+            assertThat(service.readAllMensajes()).isEmpty();
+        }
+    }
+
+    @Nested
     @DisplayName("enviarMensajeChat")
     class EnviarMensaje {
 

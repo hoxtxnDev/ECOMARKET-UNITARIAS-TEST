@@ -288,6 +288,20 @@ class PagoServiceImplTest {
             // No debe lanzar excepción pese al fallo externo
             assertThatNoException().isThrownBy(() -> service.procesarConTransbank(1L, "TOKEN"));
         }
+
+        @Test
+        @DisplayName("continúa aunque el microservicio de carrito falle al vaciar (tolerancia a fallos)")
+        void toleraFalloDeCarrito() {
+            TransaccionPago t = transaccion(1L, 50000.0);
+            when(transaccionRepository.findById(1L)).thenReturn(Optional.of(t));
+            when(estadoPagoRepository.findByNombre("APROBADO"))
+                    .thenReturn(Optional.of(estado("APROBADO")));
+            doThrow(new RuntimeException("Connection refused"))
+                    .when(restTemplate).delete(anyString());
+            when(transaccionRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+            assertThatNoException().isThrownBy(() -> service.procesarConTransbank(1L, "TOKEN"));
+        }
     }
 
     // ═════════════════════════════════════════════════════════════════════════

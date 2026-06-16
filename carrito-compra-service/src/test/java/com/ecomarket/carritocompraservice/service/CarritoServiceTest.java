@@ -1,12 +1,12 @@
-package com.ecomarket.service;
+package com.ecomarket.carritocompraservice.service;
 
-import com.ecomarket.carritocompraservice.client.CatalogoInventarioClient;
-import com.ecomarket.carritocompraservice.dto.ProductoClienteDTO;
-import com.ecomarket.carritocompraservice.model.Carrito;
-import com.ecomarket.carritocompraservice.model.ItemCarrito;
-import com.ecomarket.carritocompraservice.repository.CarritoRepository;
-import com.ecomarket.carritocompraservice.repository.ItemCarritoRepository;
-import com.ecomarket.carritocompraservice.service.CarritoService;
+import static org.assertj.core.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -16,37 +16,21 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
+import com.ecomarket.carritocompraservice.client.CatalogoInventarioClient;
+import com.ecomarket.carritocompraservice.dto.ProductoClienteDTO;
+import com.ecomarket.carritocompraservice.model.Carrito;
+import com.ecomarket.carritocompraservice.model.ItemCarrito;
+import com.ecomarket.carritocompraservice.repository.CarritoRepository;
+import com.ecomarket.carritocompraservice.repository.ItemCarritoRepository;
 
-import static org.assertj.core.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.*;
-
-/**
- * Pruebas unitarias para CarritoService.
- *
- * Ejecutar solo este servicio:
- *   mvn test -pl carrito-compra-service -Dtest=CarritoServiceTest
- *
- * CarritoService usa @Autowired en campos (field injection).
- * @InjectMocks se encarga de inyectar los mocks en esos campos.
- *
- * CatalogoInventarioClient se mockea completamente para aislar el comportamiento
- * del carrito sin depender de la red.
- */
 @ExtendWith(MockitoExtension.class)
 class CarritoServiceTest {
 
-    @Mock private CarritoRepository         carritoRepository;
-    @Mock private ItemCarritoRepository     itemCarritoRepository;
-    @Mock private CatalogoInventarioClient  catalogoClient;
+    @Mock private CarritoRepository carritoRepository;
+    @Mock private ItemCarritoRepository itemCarritoRepository;
+    @Mock private CatalogoInventarioClient catalogoClient;
 
-    @InjectMocks
-    private CarritoService service;
-
-    // ── Helpers ───────────────────────────────────────────────────────────────
+    @InjectMocks private CarritoService service;
 
     private Carrito carritoActivo(Long carritoId, Long clienteId) {
         Carrito c = new Carrito();
@@ -73,10 +57,6 @@ class CarritoServiceTest {
         item.setPrecioUnitarioAgregado(precio);
         return item;
     }
-
-    // ═════════════════════════════════════════════════════════════════════════
-    // obtenerCarritoActivo
-    // ═════════════════════════════════════════════════════════════════════════
 
     @Nested
     @DisplayName("obtenerCarritoActivo")
@@ -113,16 +93,12 @@ class CarritoServiceTest {
         }
     }
 
-    // ═════════════════════════════════════════════════════════════════════════
-    // anadirProducto
-    // ═════════════════════════════════════════════════════════════════════════
-
     @Nested
     @DisplayName("anadirProducto")
     class AnadirProducto {
 
         @Test
-        @DisplayName("agrega nuevo ítem con precio del catálogo cuando hay stock")
+        @DisplayName("agrega nuevo item con precio del catalogo cuando hay stock")
         void agregaItemNuevoConPrecioDelCatalogo() {
             Carrito carrito = carritoActivo(1L, 10L);
             ProductoClienteDTO prod = producto(100L, 4990.0);
@@ -159,13 +135,12 @@ class CarritoServiceTest {
 
             service.anadirProducto(10L, 100L, 3);
 
-            // Cantidad debe ser 1 + 3 = 4
             verify(itemCarritoRepository).save(argThat(it -> it.getCantidad() == 4));
         }
 
         @Test
-        @DisplayName("lanza RuntimeException si el producto no existe en el catálogo")
-        void productoInexistenteLanzaExcepcion() {
+        @DisplayName("lanza RuntimeException si el producto no existe en el catalogo")
+        void productoSinRetornoLanzaExcepcion() {
             when(catalogoClient.obtenerProducto(999L)).thenReturn(null);
 
             assertThatThrownBy(() -> service.anadirProducto(10L, 999L, 1))
@@ -186,16 +161,12 @@ class CarritoServiceTest {
         }
     }
 
-    // ═════════════════════════════════════════════════════════════════════════
-    // removerProducto
-    // ═════════════════════════════════════════════════════════════════════════
-
     @Nested
     @DisplayName("removerProducto")
     class RemoverProducto {
 
         @Test
-        @DisplayName("elimina el ítem por ID y actualiza la fecha del carrito")
+        @DisplayName("elimina el item por ID y actualiza la fecha del carrito")
         void removerItemExitosamente() {
             Carrito carrito = carritoActivo(1L, 10L);
             when(carritoRepository.findByClienteIdAndActivoTrue(10L)).thenReturn(Optional.of(carrito));
@@ -207,10 +178,6 @@ class CarritoServiceTest {
             assertThat(resultado.getFechaUltimaModificacion()).isNotNull();
         }
     }
-
-    // ═════════════════════════════════════════════════════════════════════════
-    // seleccionarMetodoPago
-    // ═════════════════════════════════════════════════════════════════════════
 
     @Nested
     @DisplayName("seleccionarMetodoPago")
@@ -229,10 +196,6 @@ class CarritoServiceTest {
         }
     }
 
-    // ═════════════════════════════════════════════════════════════════════════
-    // seleccionarTipoEnvio
-    // ═════════════════════════════════════════════════════════════════════════
-
     @Nested
     @DisplayName("seleccionarTipoEnvio")
     class SeleccionarTipoEnvio {
@@ -250,16 +213,12 @@ class CarritoServiceTest {
         }
     }
 
-    // ═════════════════════════════════════════════════════════════════════════
-    // vaciarCarrito
-    // ═════════════════════════════════════════════════════════════════════════
-
     @Nested
     @DisplayName("vaciarCarrito")
     class VaciarCarrito {
 
         @Test
-        @DisplayName("libera stock de cada ítem y limpia el carrito")
+        @DisplayName("libera stock de cada item y limpia el carrito")
         void vaciaCarritoYLiberaStock() {
             Carrito carrito = carritoActivo(1L, 10L);
             ItemCarrito item1 = item(1L, 1L, 100L, 2, 4990.0);
@@ -279,16 +238,12 @@ class CarritoServiceTest {
         }
     }
 
-    // ═════════════════════════════════════════════════════════════════════════
-    // iniciarProcesoCompra
-    // ═════════════════════════════════════════════════════════════════════════
-
     @Nested
     @DisplayName("iniciarProcesoCompra")
     class IniciarProcesoCompra {
 
         @Test
-        @DisplayName("reserva stock de todos los ítems y cierra el carrito (activo=false)")
+        @DisplayName("reserva stock de todos los items y cierra el carrito")
         void reservaStockYCierraCarrito() {
             Carrito carrito = carritoActivo(1L, 10L);
             ItemCarrito item = item(1L, 1L, 100L, 2, 4990.0);
@@ -306,7 +261,7 @@ class CarritoServiceTest {
         }
 
         @Test
-        @DisplayName("lanza RuntimeException si no se puede reservar stock de algún producto")
+        @DisplayName("lanza RuntimeException si no se puede reservar stock de algun producto")
         void falloEnReservaLanzaExcepcion() {
             Carrito carrito = carritoActivo(1L, 10L);
             ItemCarrito item = item(1L, 1L, 100L, 5, 4990.0);
@@ -320,10 +275,6 @@ class CarritoServiceTest {
                     .hasMessageContaining("100");
         }
     }
-
-    // ═════════════════════════════════════════════════════════════════════════
-    // listarTodos
-    // ═════════════════════════════════════════════════════════════════════════
 
     @Nested
     @DisplayName("listarTodos")

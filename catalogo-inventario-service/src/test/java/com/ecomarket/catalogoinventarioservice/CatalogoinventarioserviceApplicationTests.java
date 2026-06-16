@@ -10,4 +10,9 @@ class CatalogoinventarioserviceApplicationTests {
 	void contextLoads() {
 	}
 
+	@Test
+	void mainStartsApplication() {
+		CatalogoinventarioserviceApplication.main(new String[]{});
+	}
+
 }

@@ -110,8 +110,7 @@ class CatalogoControllerTest {
         @Test
         @DisplayName("PUT /api/usuarios/roles/{id} — 400 BAD REQUEST cuando el rol no existe")
         void actualizarRolNoExiste() throws Exception {
-            when(rolRepository.findById(999L))
-                    .thenThrow(new RuntimeException("Rol no encontrado con ID: 999"));
+            when(rolRepository.findById(999L)).thenReturn(Optional.empty());
 
             mockMvc.perform(put("/api/usuarios/roles/999")
                             .contentType(MediaType.APPLICATION_JSON)
@@ -188,8 +187,7 @@ class CatalogoControllerTest {
         @Test
         @DisplayName("PUT /api/usuarios/permisos/{id} — 400 BAD REQUEST cuando no existe")
         void actualizarPermisoNoExiste() throws Exception {
-            when(permisoRepository.findById(999L))
-                    .thenThrow(new RuntimeException("Permiso no encontrado con ID: 999"));
+            when(permisoRepository.findById(999L)).thenReturn(Optional.empty());
 
             mockMvc.perform(put("/api/usuarios/permisos/999")
                             .contentType(MediaType.APPLICATION_JSON)
@@ -280,8 +278,7 @@ class CatalogoControllerTest {
         @Test
         @DisplayName("PUT /api/usuarios/estados-perfil/{id} — 400 BAD REQUEST cuando no existe")
         void actualizarEstadoNoExiste() throws Exception {
-            when(estadoPerfilRepository.findById(999L))
-                    .thenThrow(new RuntimeException("EstadoPerfil no encontrado con ID: 999"));
+            when(estadoPerfilRepository.findById(999L)).thenReturn(Optional.empty());
 
             EstadoPerfil datos = new EstadoPerfil();
             datos.setNombre("X");

@@ -289,6 +289,26 @@ class TicketSoporteServiceTest {
         }
 
         @Test
+        @DisplayName("crea ticket cuando pedido es null (respuesta sin cuerpo)")
+        void creaTicketConPedidoNull() throws Exception {
+            when(estadoTicketService.findEstadoTicketById(1L)).thenReturn(estado(1L, "ABIERTO"));
+            when(categoriaTicketService.findCategoriaTicketById(1L)).thenReturn(categoria(1L, "ENTREGA"));
+            when(restTemplate.getForObject(contains("/api/usuarios/5"), eq(ClienteDTO.class)))
+                    .thenReturn(new ClienteDTO());
+            when(restTemplate.getForObject(contains("/api/pedido/10"), eq(PedidoDTO.class)))
+                    .thenReturn(null);
+            when(repo.save(any())).thenAnswer(inv -> {
+                TicketSoporte t = inv.getArgument(0);
+                t.setId(1L);
+                return t;
+            });
+
+            TicketSoporte resultado = service.ingresarTicket(5L, 1L, "Asunto", 10L);
+
+            assertThat(resultado.getId()).isEqualTo(1L);
+        }
+
+        @Test
         @DisplayName("lanza Exception genérica ante error HTTP inesperado en pedidos-service")
         void lanzaExcepcionHttpInesperada() {
             when(estadoTicketService.findEstadoTicketById(1L)).thenReturn(estado(1L, "ABIERTO"));
