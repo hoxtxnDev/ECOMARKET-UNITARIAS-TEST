@@ -19,18 +19,13 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
-import static org.mockito.ArgumentMatchers.*;
+import java.util.List;
+import java.util.Optional;
+
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
-
-/**
- * Pruebas de integración web para CatalogoController.
- * Cubre los 12 endpoints de Rol, Permiso y EstadoPerfil.
- *
- * Ejecutar:
- * mvn test -pl registro-usuarios-service -Dtest=CatalogoControllerTest
- */
 
 @WebMvcTest(CatalogoController.class)
 @AutoConfigureMockMvc(addFilters = false)
@@ -41,10 +36,9 @@ class CatalogoControllerTest {
     @Autowired
     private MockMvc mockMvc;
 
-    private ObjectMapper objectMapper = new ObjectMapper();
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
-    // Necesario para que el contexto levante sin error (UsuarioController lo
-    // requiere)
+    // RegistroUsuarioService necesario para que el contexto de UsuarioController no falle
     @MockitoBean
     private RegistroUsuarioService registroUsuarioService;
 
@@ -90,8 +84,8 @@ class CatalogoControllerTest {
             when(rolRepository.save(any())).thenReturn(guardado);
 
             mockMvc.perform(post("/api/usuarios/roles")
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(json(nuevo)))
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(json(nuevo)))
                     .andExpect(status().isCreated())
                     .andExpect(jsonPath("$.id").value(3))
                     .andExpect(jsonPath("$.nombre").value("VENDEDOR"));
@@ -107,8 +101,8 @@ class CatalogoControllerTest {
             when(rolRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
             mockMvc.perform(put("/api/usuarios/roles/1")
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(json(datos)))
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(json(datos)))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.nombre").value("SUPERADMIN"));
         }
@@ -120,8 +114,8 @@ class CatalogoControllerTest {
                     .thenThrow(new RuntimeException("Rol no encontrado con ID: 999"));
 
             mockMvc.perform(put("/api/usuarios/roles/999")
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(json(Rol.builder().nombre("X").build())))
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(json(Rol.builder().nombre("X").descripcion("X").build())))
                     .andExpect(status().isBadRequest())
                     .andExpect(jsonPath("$.message").value("Rol no encontrado con ID: 999"));
         }
@@ -168,8 +162,8 @@ class CatalogoControllerTest {
             when(permisoRepository.save(any())).thenReturn(guardado);
 
             mockMvc.perform(post("/api/usuarios/permisos")
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(json(nuevo)))
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(json(nuevo)))
                     .andExpect(status().isCreated())
                     .andExpect(jsonPath("$.id").value(5))
                     .andExpect(jsonPath("$.nombre").value("CREAR_PEDIDO"));
@@ -185,8 +179,8 @@ class CatalogoControllerTest {
             when(permisoRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
             mockMvc.perform(put("/api/usuarios/permisos/1")
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(json(datos)))
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(json(datos)))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.nombre").value("LEER_TODO"));
         }
@@ -198,8 +192,8 @@ class CatalogoControllerTest {
                     .thenThrow(new RuntimeException("Permiso no encontrado con ID: 999"));
 
             mockMvc.perform(put("/api/usuarios/permisos/999")
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(json(Permiso.builder().nombre("X").build())))
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(json(Permiso.builder().nombre("X").descripcion("X").build())))
                     .andExpect(status().isBadRequest())
                     .andExpect(jsonPath("$.message").value("Permiso no encontrado con ID: 999"));
         }
@@ -259,8 +253,8 @@ class CatalogoControllerTest {
             when(estadoPerfilRepository.save(any())).thenReturn(guardado);
 
             mockMvc.perform(post("/api/usuarios/estados-perfil")
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(json(nuevo)))
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(json(nuevo)))
                     .andExpect(status().isCreated())
                     .andExpect(jsonPath("$.id").value(3))
                     .andExpect(jsonPath("$.nombre").value("SUSPENDIDO"));
@@ -277,8 +271,8 @@ class CatalogoControllerTest {
             when(estadoPerfilRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
             mockMvc.perform(put("/api/usuarios/estados-perfil/1")
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(json(datos)))
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(json(datos)))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.nombre").value("BLOQUEADO"));
         }
@@ -293,8 +287,8 @@ class CatalogoControllerTest {
             datos.setNombre("X");
 
             mockMvc.perform(put("/api/usuarios/estados-perfil/999")
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(json(datos)))
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(json(datos)))
                     .andExpect(status().isBadRequest())
                     .andExpect(jsonPath("$.message").value("EstadoPerfil no encontrado con ID: 999"));
         }
