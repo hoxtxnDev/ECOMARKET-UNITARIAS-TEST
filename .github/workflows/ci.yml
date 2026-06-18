@@ -61,5 +61,3 @@ jobs:
       - name: Run tests (${{ matrix.service }})
         working-directory: ${{ matrix.service }}
         run: mvn test
-        env:
-          JWT_SECRET: ${{ secrets.JWT_SECRET }}
