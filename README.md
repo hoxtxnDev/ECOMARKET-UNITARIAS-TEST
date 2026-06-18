@@ -194,8 +194,7 @@ com.ecomarket.<servicio>/
 ├── controller/
 │   └── *Controller.java             # @RestController — endpoints REST
 ├── service/
-│   ├── *Service.java                # Interfaz (opcional)
-│   ├── *ServiceImpl.java            # @Service — lógica de negocio
+│   ├── *Service.java                # @Service — lógica de negocio
 │   └── *Util.java                   # Utilitarios (JwtUtil, etc.)
 ├── repository/
 │   └── *Repository.java             # Spring Data JPA
@@ -214,7 +213,7 @@ com.ecomarket.<servicio>/
     └── *Client.java                 # Clientes HTTP a otros servicios
 ```
 
-> `api-gateway` es la excepción: no tiene capa de persistencia ni modelo. Su estructura es `filter/JwtAuthenticationFilter.java` y `config/RouteConfiguration.java`.
+> Los servicios usan clases concretas con `@Service`, sin interfaz separada (estilo moderno Spring). Solo hay una clase por servicio de negocio. `api-gateway` es la excepción: no tiene capa de persistencia ni modelo; su estructura es `filter/JwtAuthenticationFilter.java` y `config/RouteConfiguration.java`.
 
 ---
 
@@ -332,30 +331,93 @@ class ControladorTest {
 
 ### Cobertura
 
-Todos los servicios alcanzan **100% de cobertura** en instrucciones, ramas, líneas, complejidad y métodos, verificado por JaCoCo. El reporte HTML se genera en `target/site/jacoco/index.html` tras ejecutar:
+Los tests utilizan un perfil `test` (`application-test.properties`) que configura H2 en memoria con `ddl-auto=create-drop`, eliminando cualquier dependencia de MySQL durante la ejecución de pruebas. El reporte JaCoCo se genera en `target/site/jacoco/index.html` tras ejecutar:
 
 ```bash
 mvn clean test
 ```
 
-Los tests utilizan un perfil `test` (`application-test.properties`) que configura H2 en memoria con `ddl-auto=create-drop`, eliminando cualquier dependencia de MySQL durante la ejecución de pruebas.
-
 **Resumen de pruebas por servicio:**
 
-| Servicio | Tests |
+| Servicio | Tests | JaCoCo |
 |---|---|---|
-| `api-gateway` | 11 |
-| `analica-service` | 112 |
-| `carrito-compra-service` | 75 |
-| `catalogo-inventario-service` | 106 |
-| `gestion-tienda-service` | 45 |
-| `iniciosesion-service` | 90 |
-| `pedido-service` | 28 |
-| `proceso-pago-service` | 44 |
-| `logistica-envios-service` | 133 |
-| `registro-usuarios-service` | 140 |
-| `soporte-service` | 192 |
-| **Total** | **976** |
+| `api-gateway` | 11 | ✅ 100 % |
+| `analica-service` | 112 | ✅ 100 % |
+| `carrito-compra-service` | 75 | ✅ 100 % |
+| `catalogo-inventario-service` | 106 | ✅ 100 % |
+| `gestion-tienda-service` | 45 | ✅ 100 % |
+| `iniciosesion-service` | 91 | ⚠️ Falta plugin en POM |
+| `pedido-service` | 29 | ✅ 100 % |
+| `proceso-pago-service` | 47 | ✅ 100 % |
+| `logistica-envios-service` | 133 | ✅ 100 % |
+| `registro-usuarios-service` | 140 | ✅ 100 % |
+| `soporte-service` | 195 | ✅ 100 % |
+| **Total** | **984** | — |
+
+> `iniciosesion-service` no tiene configurado el plugin JaCoCo en su `pom.xml`. Los 91 tests pasan correctamente, pero no se genera reporte de cobertura. Para añadirlo, agregar `jacoco-maven-plugin` en su sección `<build><plugins>`.
+
+---
+
+### Pruebas de Productos y Categorías
+
+Los productos se gestionan en `catalogo-inventario-service` (puerto `8087`). Se incluyen datos de prueba en `test-data/`:
+
+| Archivo | Contenido |
+|---------|-----------|
+| `test-data/categorias.json` | 10 categorías (Alimentos, Limpieza, Electrónica, etc.) |
+| `test-data/estados.json` | 4 estados de disponibilidad |
+| `test-data/productos.json` | 100 productos listos para importar |
+
+#### Importar productos con curl
+
+```bash
+# 1. Primero crear las categorías (si no existen en BD)
+curl -X POST http://localhost:8087/api/catalogo-admin/categorias \
+  -H "Content-Type: application/json" \
+  -d '{"nombre":"Alimentos y Bebidas"}'
+
+# 2. Importar productos individuales
+curl -X POST http://localhost:8087/api/catalogo \
+  -H "Content-Type: application/json" \
+  -d '{"sku":"ALI-001","nombre":"Arroz Blanco 1kg","descripcion":"Arroz de grano largo premium","precioBase":2800,"categoria":{"id":1},"estado":{"id":1}}'
+
+# 3. Verificar — listar todos los productos
+curl http://localhost:8087/api/catalogo
+```
+
+#### Probar endpoints de producto
+
+```bash
+# Listar todos los productos
+curl http://localhost:8087/api/catalogo
+
+# Filtrar por categoría (ej: Electrónica = categoría id 3)
+curl http://localhost:8087/api/catalogo/categoria/3
+
+# Buscar por nombre
+curl "http://localhost:8087/api/catalogo/buscar?nombre=arroz"
+
+# Obtener detalle de un producto
+curl http://localhost:8087/api/catalogo/1
+
+# Crear un nuevo producto
+curl -X POST http://localhost:8087/api/catalogo \
+  -H "Content-Type: application/json" \
+  -d '{"sku":"TEST-001","nombre":"Producto de Prueba","descripcion":"Para verificar funcionalidad","precioBase":10000,"categoria":{"id":1},"estado":{"id":1}}'
+
+# Editar un producto
+curl -X PUT http://localhost:8087/api/catalogo/1 \
+  -H "Content-Type: application/json" \
+  -d '{"sku":"ALI-001","nombre":"Arroz Blanco 1kg (Actualizado)","descripcion":"Descripción actualizada","precioBase":3000,"categoria":{"id":1},"estado":{"id":1}}'
+
+# Eliminar un producto
+curl -X DELETE http://localhost:8087/api/catalogo/101
+
+# Probar inventario
+curl http://localhost:8087/api/inventario/producto/1
+```
+
+> **Nota**: Los endpoints de `catalogo-inventario-service` están protegidos por JWT cuando se accede a través del `api-gateway`. Para pruebas directas sin autenticación, apunta al servicio directamente en `http://localhost:8087`.
 
 ---
 
@@ -403,6 +465,15 @@ Requiere `iniciosesion-service` corriendo en `localhost:8086` para la validació
 - **ByteBuddy en api-gateway**: Se configura `net.bytebuddy.experimental=true` como `systemPropertyVariables` en el plugin surefire (no como `argLine`) para que Mockito funcione con Java 21 sin interferir con el agente de JaCoCo.
 - **Lombok**: Declarado como `optional=true` y excluido del empaquetado del `spring-boot-maven-plugin`. El procesador de anotaciones se configura explícitamente en `maven-compiler-plugin`.
 - **OpenAPI/Swagger**: Solo disponible en `pedido-service` en la ruta `/doc/swagger-ui.html`.
-- **Jacoco 0.8.14**: Configurado en todos los servicios con las fases `prepare-agent` (antes de los tests) y `report` (después). Soporta Java 25.
-- **CORS unificado**: En `registro-usuarios-service` e `iniciosesion-service`, la configuración CORS se extrajo de la lambda inline en `SecurityFilterChain` a un `@Bean CorsConfigurationSource corsConfigurationSource()`, eliminando el `WebMvcConfigurer` redundante. Esto permite testear la configuración CORS unitariamente y evita configuraciones duplicadas.
-- **Logging en catch de analytics**: Se agregó `@Slf4j` y `log.warn("...", e)` en los bloques `catch (Exception e)` de los métodos `registrarLog` en `AuthServiceImpl`, `RegistroUsuarioServiceImpl` y `LoginCuentaServiceImpl`, reemplazando los catch vacíos que tragaban silenciosamente los errores de conexión con `analica-service`.
+- **JaCoCo 0.8.14**: Configurado en la mayoría de servicios con las fases `prepare-agent` (antes de tests) y `report` (después). Soporta Java 25. Pendiente en `iniciosesion-service`.
+- **Efecto espejo (mirror effect)**: Cada clase en `src/main` tiene su correspondiente `*Test.java` en `src/test` bajo el mismo package. Auditoría completada en los 11 servicios; corregidos paquetes incorrectos (mayúsculas/minúsculas) en `soporte-service` y nombres de archivo en `soporte-service` y `proceso-pago-service`.
+- **JWT secret externalizado**: La propiedad `jwt.secret` se lee de la variable de entorno `JWT_SECRET` (no hardcodeada). Ver `.env.example` en `registro-usuarios-service` e `iniciosesion-service` para la configuración local.
+- **api-gateway como repositorio propio**: El gateway se independizó de un submodule roto; ahora es un proyecto Maven estándar dentro del mismo repositorio.
+- **CI/CD**: GitHub Actions (`ci.yml`) ejecuta `mvn clean test` para `registro-usuarios-service` e `iniciosesion-service` con la variable `JWT_SECRET` inyectada como secret.
+- **CORS unificado**: En `registro-usuarios-service` e `iniciosesion-service`, la configuración CORS se extrajo de la lambda inline en `SecurityFilterChain` a un `@Bean CorsConfigurationSource`, eliminando el `WebMvcConfigurer` redundante y permitiendo pruebas unitarias de CORS.
+- **Logging en catch de analytics**: Se agregó `@Slf4j` y `log.warn` en los `catch (Exception e)` de `registrarLog()` en `AuthServiceImpl`, `RegistroUsuarioServiceImpl` y `LoginCuentaServiceImpl`, reemplazando catch vacíos.
+- **404 en lugar de 400**: Se creó `RecursoNoEncontradoException` y su handler en `GlobalExceptionHandler` retorna `404 NOT_FOUND`. Se reemplazaron 9 `RuntimeException("... no encontrado ...")` en `UsuarioController` y `CatalogoController`.
+- **Refactor `buildPerfil`**: Se fusionaron `buildPerfilDesdeRegistroDTO` y `buildPerfilDesdeModificarDTO` en un único método `buildPerfil(String, String, String, Long, Long)` en `registro-usuarios-service`.
+- **Datos de prueba**: 100 productos JSON, 10 categorías y 4 estados de disponibilidad en `test-data/` para pruebas black-box contra `catalogo-inventario-service`.
+- **Pruebas de config beans**: Se agregaron tests para todas las clases `@Configuration` que definen beans (`RestTemplate`, `RestClient`) en servicios donde faltaban.
+- **Sin interfaces de servicio**: Se eliminaron las 6 interfaces `*Service` que tenían una única implementación (`PedidoService`, `PagoService`, `AuthService`, `RegistroUsuarioService`, `LoginCuentaService`, `GestionTiendaService`). Ahora todos los servicios del proyecto son clases concretas con `@Service`, siguiendo el estilo moderno de Spring Boot.

@@ -1,4 +1,4 @@
-package com.ecomarket.soporteservice.Service;
+package com.ecomarket.soporteservice.service;
 
 import com.ecomarket.soporteservice.exception.NoExisteEnBdException;
 import com.ecomarket.soporteservice.model.entity.Resena;

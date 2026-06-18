@@ -7,15 +7,15 @@ import org.springframework.test.context.ActiveProfiles;
 
 @SpringBootTest
 @ActiveProfiles("test")
-class PedidoServiceApplicationTests {
+public class PedidoServiceApplicationTests {
 
     @Test
     @DisplayName("El contexto de Spring Boot carga correctamente")
-    void contextLoads() {}
+    public void contextLoads() {}
 
     @Test
     @DisplayName("El método main se ejecuta correctamente")
-    void mainTest() {
+    public void mainTest() {
         PedidoServiceApplication.main(new String[] {
             "--spring.main.web-application-type=none",
             "--spring.profiles.active=test"

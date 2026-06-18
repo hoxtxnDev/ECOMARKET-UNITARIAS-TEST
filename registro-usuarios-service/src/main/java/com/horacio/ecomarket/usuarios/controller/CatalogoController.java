@@ -1,5 +1,7 @@
 package com.horacio.ecomarket.usuarios.controller;
 
+import com.horacio.ecomarket.usuarios.exception.RecursoNoEncontradoException;
+import com.horacio.ecomarket.usuarios.exception.RecursoNoEncontradoException;
 import com.horacio.ecomarket.usuarios.model.EstadoPerfil;
 import com.horacio.ecomarket.usuarios.model.Permiso;
 import com.horacio.ecomarket.usuarios.model.Rol;
@@ -38,7 +40,7 @@ public class CatalogoController {
     @PutMapping("/roles/{id}")
     public ResponseEntity<Rol> actualizarRol(@PathVariable Long id, @Valid @RequestBody Rol datos) {
         Rol rol = rolRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Rol no encontrado con ID: " + id));
+                .orElseThrow(() -> new RecursoNoEncontradoException("Rol no encontrado con ID: " + id));
         rol.setNombre(datos.getNombre());
         rol.setDescripcion(datos.getDescripcion());
         return ResponseEntity.ok(rolRepository.save(rol));
@@ -65,7 +67,7 @@ public class CatalogoController {
     @PutMapping("/permisos/{id}")
     public ResponseEntity<Permiso> actualizarPermiso(@PathVariable Long id, @Valid @RequestBody Permiso datos) {
         Permiso permiso = permisoRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Permiso no encontrado con ID: " + id));
+                .orElseThrow(() -> new RecursoNoEncontradoException("Permiso no encontrado con ID: " + id));
         permiso.setNombre(datos.getNombre());
         permiso.setDescripcion(datos.getDescripcion());
         return ResponseEntity.ok(permisoRepository.save(permiso));
@@ -92,7 +94,7 @@ public class CatalogoController {
     @PutMapping("/estados-perfil/{id}")
     public ResponseEntity<EstadoPerfil> actualizarEstadoPerfil(@PathVariable Long id, @Valid @RequestBody EstadoPerfil datos) {
         EstadoPerfil estado = estadoPerfilRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("EstadoPerfil no encontrado con ID: " + id));
+                .orElseThrow(() -> new RecursoNoEncontradoException("EstadoPerfil no encontrado con ID: " + id));
         estado.setNombre(datos.getNombre());
         return ResponseEntity.ok(estadoPerfilRepository.save(estado));
     }

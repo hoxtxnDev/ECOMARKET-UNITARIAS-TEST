@@ -30,7 +30,7 @@ class PedidoServiceImplTest {
     @Mock EstadoPedidoRepository estadoPedidoRepository;
     @Mock RestTemplate restTemplate;
 
-    @InjectMocks PedidoServiceImpl service;
+    @InjectMocks PedidoService service;
 
     private EstadoPedido estado(String nombre) {
         EstadoPedido e = new EstadoPedido();

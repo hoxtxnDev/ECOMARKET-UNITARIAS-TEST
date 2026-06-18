@@ -20,14 +20,14 @@ import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 /**
- * Pruebas unitarias para PagoServiceImpl.
+ * Pruebas unitarias para PagoService.
  *
  * Ejecutar:
- *   mvn test -pl proceso-pago-service -Dtest=PagoServiceImplTest
+ *   mvn test -pl proceso-pago-service -Dtest=PagoServiceTest
  */
 @ExtendWith(MockitoExtension.class)
-@DisplayName("PagoServiceImpl")
-class PagoServiceImplTest {
+@DisplayName("PagoService")
+class PagoServiceTest {
 
     @Mock TransaccionRepository transaccionRepository;
     @Mock FacturaRepository     facturaRepository;
@@ -36,7 +36,7 @@ class PagoServiceImplTest {
     @Mock MetodoPagoRepository  metodoPagoRepository;
     @Mock RestTemplate          restTemplate;
 
-    @InjectMocks PagoServiceImpl service;
+    @InjectMocks PagoService service;
 
     // ── Fixtures ──────────────────────────────────────────────────────────────
 

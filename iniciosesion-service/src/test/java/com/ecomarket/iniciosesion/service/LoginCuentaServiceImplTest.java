@@ -31,13 +31,13 @@ import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 /**
- * Pruebas unitarias para LoginCuentaServiceImpl.
+ * Pruebas unitarias para LoginCuentaService.
  *
  * Ejecutar solo este servicio:
- * mvn test -pl iniciosesion-service -Dtest=LoginCuentaServiceImplTest
+ * mvn test -pl iniciosesion-service -Dtest=LoginCuentaServiceTest
  */
 @ExtendWith(MockitoExtension.class)
-class LoginCuentaServiceImplTest {
+class LoginCuentaServiceTest {
 
     // ── BCryptPasswordEncoder de referencia para verificar hashes en asserts ──
     private static final BCryptPasswordEncoder encoder = new BCryptPasswordEncoder();
@@ -55,11 +55,11 @@ class LoginCuentaServiceImplTest {
     private RestTemplate restTemplate;
 
     @InjectMocks
-    private LoginCuentaServiceImpl service;
+    private LoginCuentaService service;
 
     @BeforeEach
     void setup() {
-        service = new LoginCuentaServiceImpl(
+        service = new LoginCuentaService(
                 credencialRepository,
                 tokenRecuperacionRepository,
                 sesionJWTRepository,

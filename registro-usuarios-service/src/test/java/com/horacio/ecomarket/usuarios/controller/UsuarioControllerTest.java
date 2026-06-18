@@ -86,7 +86,7 @@ class UsuarioControllerTest {
     class Registrar {
 
         @Test
-        @DisplayName("400 BAD REQUEST si el RolId no existe")
+        @DisplayName("404 NOT FOUND cuando el RolId no existe")
         void registrarRolNoExiste() throws Exception {
             RegistroUsuarioDTO dto = new RegistroUsuarioDTO();
             dto.setNombre("Test");
@@ -99,7 +99,7 @@ class UsuarioControllerTest {
             mockMvc.perform(post("/api/usuarios/registro")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(json(dto)))
-                    .andExpect(status().isBadRequest());
+                    .andExpect(status().isNotFound());
         }
 
         @Test
@@ -159,7 +159,7 @@ class UsuarioControllerTest {
         }
 
         @Test
-        @DisplayName("400 cuando el EstadoPerfilId enviado no existe en BD")
+        @DisplayName("404 NOT FOUND cuando el EstadoPerfilId no existe en BD")
         void registrarEstadoNoExiste() throws Exception {
             RegistroUsuarioDTO dto = new RegistroUsuarioDTO();
             dto.setNombre("Test");
@@ -174,7 +174,7 @@ class UsuarioControllerTest {
             mockMvc.perform(post("/api/usuarios/registro")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(json(dto)))
-                    .andExpect(status().isBadRequest());
+                    .andExpect(status().isNotFound());
         }
     }
 
@@ -182,7 +182,7 @@ class UsuarioControllerTest {
     @DisplayName("modificar")
     class Modificar {
         @Test
-        @DisplayName("400 BAD REQUEST cuando el RolId no existe en modificar")
+        @DisplayName("404 NOT FOUND cuando el RolId no existe en modificar")
         void modificarRolNoExiste() throws Exception {
             ModificarUsuarioDTO dto = new ModificarUsuarioDTO();
             dto.setNombre("Test");
@@ -194,11 +194,11 @@ class UsuarioControllerTest {
             mockMvc.perform(put("/api/usuarios/1")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(json(dto)))
-                    .andExpect(status().isBadRequest());
+                    .andExpect(status().isNotFound());
         }
 
         @Test
-        @DisplayName("400 cuando el EstadoPerfilId no existe en BD")
+        @DisplayName("404 NOT FOUND cuando el EstadoPerfilId no existe en BD")
         void modificarEstadoNoExiste() throws Exception {
             ModificarUsuarioDTO dto = new ModificarUsuarioDTO();
             dto.setNombre("Test");
@@ -212,7 +212,7 @@ class UsuarioControllerTest {
             mockMvc.perform(put("/api/usuarios/1")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(json(dto)))
-                    .andExpect(status().isBadRequest());
+                    .andExpect(status().isNotFound());
         }
 
         @Test
@@ -302,12 +302,12 @@ class UsuarioControllerTest {
         }
 
         @Test
-        @DisplayName("GET /api/usuarios/rol/{rolId} — 400 BAD REQUEST cuando el rol no existe")
+        @DisplayName("GET /api/usuarios/rol/{rolId} — 404 NOT FOUND cuando el rol no existe")
         void listarPorRolNoExiste() throws Exception {
             when(rolRepository.findById(99L)).thenReturn(Optional.empty());
 
             mockMvc.perform(get("/api/usuarios/rol/99"))
-                    .andExpect(status().isBadRequest());
+                    .andExpect(status().isNotFound());
         }
 
         @Test
@@ -357,7 +357,7 @@ class UsuarioControllerTest {
         }
 
         @Test
-        @DisplayName("400 BAD REQUEST si un permiso no existe")
+        @DisplayName("404 NOT FOUND si un permiso no existe")
         void configurarPermisosFallaSiNoExiste() throws Exception {
             ConfigurarPermisosDTO dto = new ConfigurarPermisosDTO();
             dto.setPermisoIds(List.of(99L));
@@ -367,7 +367,7 @@ class UsuarioControllerTest {
             mockMvc.perform(put("/api/usuarios/1/permisos")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(json(dto)))
-                    .andExpect(status().isBadRequest());
+                    .andExpect(status().isNotFound());
         }
     }
 

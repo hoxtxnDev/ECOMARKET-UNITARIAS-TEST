@@ -108,14 +108,14 @@ class CatalogoControllerTest {
         }
 
         @Test
-        @DisplayName("PUT /api/usuarios/roles/{id} — 400 BAD REQUEST cuando el rol no existe")
+        @DisplayName("PUT /api/usuarios/roles/{id} — 404 NOT FOUND cuando el rol no existe")
         void actualizarRolNoExiste() throws Exception {
             when(rolRepository.findById(999L)).thenReturn(Optional.empty());
 
             mockMvc.perform(put("/api/usuarios/roles/999")
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(json(Rol.builder().nombre("X").descripcion("X").build())))
-                    .andExpect(status().isBadRequest())
+                    .andExpect(status().isNotFound())
                     .andExpect(jsonPath("$.message").value("Rol no encontrado con ID: 999"));
         }
 
@@ -185,14 +185,14 @@ class CatalogoControllerTest {
         }
 
         @Test
-        @DisplayName("PUT /api/usuarios/permisos/{id} — 400 BAD REQUEST cuando no existe")
+        @DisplayName("PUT /api/usuarios/permisos/{id} — 404 NOT FOUND cuando no existe")
         void actualizarPermisoNoExiste() throws Exception {
             when(permisoRepository.findById(999L)).thenReturn(Optional.empty());
 
             mockMvc.perform(put("/api/usuarios/permisos/999")
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(json(Permiso.builder().nombre("X").descripcion("X").build())))
-                    .andExpect(status().isBadRequest())
+                    .andExpect(status().isNotFound())
                     .andExpect(jsonPath("$.message").value("Permiso no encontrado con ID: 999"));
         }
 
@@ -276,7 +276,7 @@ class CatalogoControllerTest {
         }
 
         @Test
-        @DisplayName("PUT /api/usuarios/estados-perfil/{id} — 400 BAD REQUEST cuando no existe")
+        @DisplayName("PUT /api/usuarios/estados-perfil/{id} — 404 NOT FOUND cuando no existe")
         void actualizarEstadoNoExiste() throws Exception {
             when(estadoPerfilRepository.findById(999L)).thenReturn(Optional.empty());
 
@@ -286,7 +286,7 @@ class CatalogoControllerTest {
             mockMvc.perform(put("/api/usuarios/estados-perfil/999")
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(json(datos)))
-                    .andExpect(status().isBadRequest())
+                    .andExpect(status().isNotFound())
                     .andExpect(jsonPath("$.message").value("EstadoPerfil no encontrado con ID: 999"));
         }
 

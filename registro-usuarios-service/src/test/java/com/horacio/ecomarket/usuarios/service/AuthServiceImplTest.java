@@ -34,8 +34,8 @@ import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-@DisplayName("AuthServiceImpl")
-class AuthServiceImplTest {
+@DisplayName("AuthService")
+class AuthServiceTest {
 
     @Mock
     private CredencialRepository credencialRepository;
@@ -51,7 +51,7 @@ class AuthServiceImplTest {
     private PasswordEncoder passwordEncoder;
 
     @InjectMocks
-    private AuthServiceImpl authService;
+    private AuthService authService;
 
     @Captor
     private ArgumentCaptor<Credencial> credencialCaptor;

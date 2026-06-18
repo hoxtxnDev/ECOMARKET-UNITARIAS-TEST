@@ -5,6 +5,7 @@ import com.horacio.ecomarket.usuarios.model.EstadoPerfil;
 import com.horacio.ecomarket.usuarios.model.Permiso;
 import com.horacio.ecomarket.usuarios.model.PerfilUsuario;
 import com.horacio.ecomarket.usuarios.model.Rol;
+import com.horacio.ecomarket.usuarios.exception.RecursoNoEncontradoException;
 import com.horacio.ecomarket.usuarios.repository.EstadoPerfilRepository;
 import com.horacio.ecomarket.usuarios.repository.PermisoRepository;
 import com.horacio.ecomarket.usuarios.repository.RolRepository;
@@ -53,7 +54,7 @@ public class UsuarioController {
     @GetMapping("/rol/{rolId}")
     public ResponseEntity<List<PerfilUsuario>> listarPorRol(@PathVariable Long rolId) {
         Rol rol = rolRepository.findById(rolId)
-                .orElseThrow(() -> new RuntimeException("Rol no encontrado con ID: " + rolId));
+                .orElseThrow(() -> new RecursoNoEncontradoException("Rol no encontrado con ID: " + rolId));
         return ResponseEntity.ok(service.listarPorRol(rol));
     }
 
@@ -73,7 +74,7 @@ public class UsuarioController {
             @Valid @RequestBody ConfigurarPermisosDTO dto) {
         List<Permiso> permisos = dto.getPermisoIds().stream()
                 .map(pid -> permisoRepository.findById(pid)
-                        .orElseThrow(() -> new RuntimeException("Permiso no encontrado con ID: " + pid)))
+                        .orElseThrow(() -> new RecursoNoEncontradoException("Permiso no encontrado con ID: " + pid)))
                 .collect(Collectors.toList());
         return ResponseEntity.ok(service.configurarPermisos(id, permisos));
     }
@@ -132,43 +133,30 @@ public class UsuarioController {
     }
 
     private PerfilUsuario buildPerfilDesdeRegistroDTO(RegistroUsuarioDTO dto) {
-        PerfilUsuario.PerfilUsuarioBuilder builder = PerfilUsuario.builder()
-                .nombre(dto.getNombre())
-                .correo(dto.getCorreo())
-                .telefono(dto.getTelefono());
-
-        if (dto.getRolId() != null) {
-            Rol rol = rolRepository.findById(dto.getRolId())
-                    .orElseThrow(() -> new RuntimeException("Rol no encontrado con ID: " + dto.getRolId()));
-            builder.rol(rol);
-        }
-
-        if (dto.getEstadoPerfilId() != null) {
-            EstadoPerfil estado = estadoPerfilRepository.findById(dto.getEstadoPerfilId())
-                    .orElseThrow(() -> new RuntimeException(
-                            "EstadoPerfil no encontrado con ID: " + dto.getEstadoPerfilId()));
-            builder.estadoPerfil(estado);
-        }
-
-        return builder.build();
+        return buildPerfil(dto.getNombre(), dto.getCorreo(), dto.getTelefono(),
+                dto.getRolId(), dto.getEstadoPerfilId());
     }
 
     private PerfilUsuario buildPerfilDesdeModificarDTO(ModificarUsuarioDTO dto) {
-        PerfilUsuario.PerfilUsuarioBuilder builder = PerfilUsuario.builder()
-                .nombre(dto.getNombre())
-                .correo(dto.getCorreo())
-                .telefono(dto.getTelefono());
+        return buildPerfil(dto.getNombre(), dto.getCorreo(), dto.getTelefono(),
+                dto.getRolId(), dto.getEstadoPerfilId());
+    }
 
-        if (dto.getRolId() != null) {
-            Rol rol = rolRepository.findById(dto.getRolId())
-                    .orElseThrow(() -> new RuntimeException("Rol no encontrado con ID: " + dto.getRolId()));
+    private PerfilUsuario buildPerfil(String nombre, String correo, String telefono,
+                                      Long rolId, Long estadoPerfilId) {
+        PerfilUsuario.PerfilUsuarioBuilder builder = PerfilUsuario.builder()
+                .nombre(nombre).correo(correo).telefono(telefono);
+
+        if (rolId != null) {
+            Rol rol = rolRepository.findById(rolId)
+                    .orElseThrow(() -> new RecursoNoEncontradoException("Rol no encontrado con ID: " + rolId));
             builder.rol(rol);
         }
 
-        if (dto.getEstadoPerfilId() != null) {
-            EstadoPerfil estado = estadoPerfilRepository.findById(dto.getEstadoPerfilId())
-                    .orElseThrow(() -> new RuntimeException(
-                            "EstadoPerfil no encontrado con ID: " + dto.getEstadoPerfilId()));
+        if (estadoPerfilId != null) {
+            EstadoPerfil estado = estadoPerfilRepository.findById(estadoPerfilId)
+                    .orElseThrow(() -> new RecursoNoEncontradoException(
+                            "EstadoPerfil no encontrado con ID: " + estadoPerfilId));
             builder.estadoPerfil(estado);
         }
 

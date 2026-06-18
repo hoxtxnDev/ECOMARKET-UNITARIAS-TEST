@@ -20,21 +20,21 @@ import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 /**
- * Pruebas unitarias para GestionTiendaServiceImpl.
+ * Pruebas unitarias para GestionTiendaService.
  *
  * Ejecutar:
- * mvn test -pl gestion-tienda-service -Dtest=GestionTiendaServiceImplTest
+ * mvn test -pl gestion-tienda-service -Dtest=GestionTiendaServiceTest
  *
  * BUGS CORREGIDOS vs versión anterior:
  *
  * BUG 1 — Import redundante eliminado:
- * La versión anterior importaba GestionTiendaServiceImpl explícitamente
+ * La versión anterior importaba GestionTiendaService explícitamente
  * ADEMÁS del wildcard "import com.ecomarket.gestiontiendaservice.service.*".
  * Eso no falla en compilación pero genera un warning de "unused import" que
  * algunos entornos tratan como error. Se eliminó el import redundante.
  *
- * BUG 2 — @BeforeEach con new GestionTiendaServiceImpl() eliminado:
- * GestionTiendaServiceImpl usa @Autowired en campos (field injection), NO
+ * BUG 2 — @BeforeEach con new GestionTiendaService() eliminado:
+ * GestionTiendaService usa @Autowired en campos (field injection), NO
  * constructor injection. No tiene constructor con argumentos — Lombok genera
  * un constructor vacío por @RequiredArgsConstructor sobre campos @Autowired
  * que NO son `final`. Intentar construirlo manualmente con argumentos
@@ -51,10 +51,10 @@ import static org.mockito.Mockito.*;
  * evitar dependencia frágil del orden de campos.
  */
 @ExtendWith(MockitoExtension.class)
-class GestionTiendaServiceImplTest {
+class GestionTiendaServiceTest {
 
     // BUG 2 FIX: @InjectMocks solo, sin @BeforeEach que construya manualmente.
-    // GestionTiendaServiceImpl tiene @Autowired en campos, así que Mockito
+    // GestionTiendaService tiene @Autowired en campos, así que Mockito
     // inyecta los mocks directamente por field injection.
     @Mock
     private SucursalRepository sucursalRepository;
@@ -70,7 +70,7 @@ class GestionTiendaServiceImplTest {
     private EstadoTareaPersonalRepository estadoTareaPersonalRepository;
 
     @InjectMocks
-    private GestionTiendaServiceImpl service;
+    private GestionTiendaService service;
 
     // ── Helpers ───────────────────────────────────────────────────────────────
 

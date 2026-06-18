@@ -28,8 +28,8 @@ import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-@DisplayName("RegistroUsuarioServiceImpl")
-class RegistroUsuarioServiceImplTest {
+@DisplayName("RegistroUsuarioService")
+class RegistroUsuarioServiceTest {
 
     @Mock
     private PerfilUsuarioRepository repository;
@@ -44,7 +44,7 @@ class RegistroUsuarioServiceImplTest {
     private RestTemplate restTemplate;
 
     @InjectMocks
-    private RegistroUsuarioServiceImpl service;
+    private RegistroUsuarioService service;
 
     private Rol rolCliente;
     private EstadoPerfil estadoActivo;

@@ -1,0 +1,12 @@
+[
+  { "id": 1, "nombre": "Alimentos y Bebidas" },
+  { "id": 2, "nombre": "Limpieza y Hogar" },
+  { "id": 3, "nombre": "Electrónica y Cómputo" },
+  { "id": 4, "nombre": "Ropa y Accesorios" },
+  { "id": 5, "nombre": "Salud y Belleza" },
+  { "id": 6, "nombre": "Deportes y Aire Libre" },
+  { "id": 7, "nombre": "Mascotas" },
+  { "id": 8, "nombre": "Libros y Papelería" },
+  { "id": 9, "nombre": "Hogar y Muebles" },
+  { "id": 10, "nombre": "Bebés y Niños" }
+]

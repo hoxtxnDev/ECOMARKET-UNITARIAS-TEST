@@ -1,0 +1,31 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        service:
+          - registro-usuarios-service
+          - iniciosesion-service
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 25
+        uses: actions/setup-java@v4
+        with:
+          java-version: 25
+          distribution: temurin
+          cache: maven
+
+      - name: Run tests (${{ matrix.service }})
+        run: mvn test -pl ${{ matrix.service }}
+        env:
+          JWT_SECRET: 7b9b1d2e4f6a8c0e2d4f6a8b0c2e4f6a8b0c2e4f6a8b0c2e4f6a8b0c2e4f6a8b
