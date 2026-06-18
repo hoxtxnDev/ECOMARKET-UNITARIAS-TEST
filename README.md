@@ -346,7 +346,7 @@ mvn clean test
 | `carrito-compra-service` | 75 | ✅ 100 % |
 | `catalogo-inventario-service` | 106 | ✅ 100 % |
 | `gestion-tienda-service` | 45 | ✅ 100 % |
-| `iniciosesion-service` | 91 | ⚠️ Falta plugin en POM |
+| `iniciosesion-service` | 91 | ✅ 100 % |
 | `pedido-service` | 29 | ✅ 100 % |
 | `proceso-pago-service` | 47 | ✅ 100 % |
 | `logistica-envios-service` | 133 | ✅ 100 % |
@@ -354,7 +354,7 @@ mvn clean test
 | `soporte-service` | 195 | ✅ 100 % |
 | **Total** | **984** | — |
 
-> `iniciosesion-service` no tiene configurado el plugin JaCoCo en su `pom.xml`. Los 91 tests pasan correctamente, pero no se genera reporte de cobertura. Para añadirlo, agregar `jacoco-maven-plugin` en su sección `<build><plugins>`.
+> Todos los servicios tienen JaCoCo configurado y generan reporte de cobertura en `target/site/jacoco/index.html`.
 
 ---
 
@@ -465,7 +465,7 @@ Requiere `iniciosesion-service` corriendo en `localhost:8086` para la validació
 - **ByteBuddy en api-gateway**: Se configura `net.bytebuddy.experimental=true` como `systemPropertyVariables` en el plugin surefire (no como `argLine`) para que Mockito funcione con Java 21 sin interferir con el agente de JaCoCo.
 - **Lombok**: Declarado como `optional=true` y excluido del empaquetado del `spring-boot-maven-plugin`. El procesador de anotaciones se configura explícitamente en `maven-compiler-plugin`.
 - **OpenAPI/Swagger**: Solo disponible en `pedido-service` en la ruta `/doc/swagger-ui.html`.
-- **JaCoCo 0.8.14**: Configurado en la mayoría de servicios con las fases `prepare-agent` (antes de tests) y `report` (después). Soporta Java 25. Pendiente en `iniciosesion-service`.
+- **JaCoCo 0.8.14**: Configurado en todos los servicios con las fases `prepare-agent` (antes de tests) y `report` (después). Soporta Java 25.
 - **Efecto espejo (mirror effect)**: Cada clase en `src/main` tiene su correspondiente `*Test.java` en `src/test` bajo el mismo package. Auditoría completada en los 11 servicios; corregidos paquetes incorrectos (mayúsculas/minúsculas) en `soporte-service` y nombres de archivo en `soporte-service` y `proceso-pago-service`.
 - **JWT secret externalizado**: La propiedad `jwt.secret` se lee de la variable de entorno `JWT_SECRET` (no hardcodeada). Ver `.env.example` en `registro-usuarios-service` e `iniciosesion-service` para la configuración local.
 - **api-gateway como repositorio propio**: El gateway se independizó de un submodule roto; ahora es un proyecto Maven estándar dentro del mismo repositorio.
