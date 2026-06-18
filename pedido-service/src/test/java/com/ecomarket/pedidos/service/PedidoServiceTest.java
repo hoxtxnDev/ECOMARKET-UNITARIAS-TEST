@@ -22,8 +22,8 @@ import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-@DisplayName("PedidoServiceImpl")
-class PedidoServiceImplTest {
+@DisplayName("PedidoService")
+class PedidoServiceTest {
 
     @Mock PedidoRepository pedidoRepository;
     @Mock ItemPedidoRepository itemPedidoRepository;

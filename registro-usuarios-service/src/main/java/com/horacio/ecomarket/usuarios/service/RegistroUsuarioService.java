@@ -1,5 +1,7 @@
 package com.horacio.ecomarket.usuarios.service;
 
+import com.horacio.ecomarket.usuarios.exception.CorreoDuplicadoException;
+import com.horacio.ecomarket.usuarios.exception.RecursoNoEncontradoException;
 import com.horacio.ecomarket.usuarios.model.Credencial;
 import com.horacio.ecomarket.usuarios.model.Permiso;
 import com.horacio.ecomarket.usuarios.model.PerfilUsuario;
@@ -33,7 +35,7 @@ public class RegistroUsuarioService {
     public PerfilUsuario registrarCuenta(PerfilUsuario perfilUsuario, String contrasenaInicial) {
         repository.findByCorreo(perfilUsuario.getCorreo())
                 .ifPresent(u -> {
-                    throw new RuntimeException("El correo ya está registrado: " + perfilUsuario.getCorreo());
+                    throw new CorreoDuplicadoException("El correo ya está registrado: " + perfilUsuario.getCorreo());
                 });
 
         perfilUsuario.setFechaCreacion(LocalDateTime.now());
@@ -67,7 +69,7 @@ public class RegistroUsuarioService {
         if (!existente.getCorreo().equals(datosNuevos.getCorreo())) {
             repository.findByCorreo(datosNuevos.getCorreo())
                     .ifPresent(u -> {
-                        throw new RuntimeException("El correo ya está en uso: " + datosNuevos.getCorreo());
+                        throw new CorreoDuplicadoException("El correo ya está en uso: " + datosNuevos.getCorreo());
                     });
             existente.setCorreo(datosNuevos.getCorreo());
         }
@@ -99,14 +101,14 @@ public class RegistroUsuarioService {
     @Transactional(readOnly = true)
     public PerfilUsuario buscarPorId(Long usuarioId) {
         return repository.findById(usuarioId)
-                .orElseThrow(() -> new RuntimeException("Usuario no encontrado con ID: " + usuarioId));
+                .orElseThrow(() -> new RecursoNoEncontradoException("Usuario no encontrado con ID: " + usuarioId));
     }
 
 
     @Transactional(readOnly = true)
     public PerfilUsuario buscarPorCorreo(String correo) {
         return repository.findByCorreo(correo)
-                .orElseThrow(() -> new RuntimeException("Usuario no encontrado con correo: " + correo));
+                .orElseThrow(() -> new RecursoNoEncontradoException("Usuario no encontrado con correo: " + correo));
     }
 
 

@@ -12,20 +12,53 @@ jobs:
     strategy:
       matrix:
         service:
+          - api-gateway
           - registro-usuarios-service
           - iniciosesion-service
+          - carrito-compra-service
+          - catalogo-inventario-service
+          - gestion-tienda-service
+          - pedido-service
+          - proceso-pago-service
+          - analica-service
+          - soporte-service
+          - logistica-envios-service
+        include:
+          - service: api-gateway
+            java-version: 21
+          - service: registro-usuarios-service
+            java-version: 25
+          - service: iniciosesion-service
+            java-version: 25
+          - service: carrito-compra-service
+            java-version: 25
+          - service: catalogo-inventario-service
+            java-version: 25
+          - service: gestion-tienda-service
+            java-version: 25
+          - service: pedido-service
+            java-version: 25
+          - service: proceso-pago-service
+            java-version: 25
+          - service: analica-service
+            java-version: 25
+          - service: soporte-service
+            java-version: 25
+          - service: logistica-envios-service
+            java-version: 25
 
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up JDK 25
+      - name: Set up JDK ${{ matrix.java-version }}
         uses: actions/setup-java@v4
         with:
-          java-version: 25
+          java-version: ${{ matrix.java-version }}
           distribution: temurin
           cache: maven
 
       - name: Run tests (${{ matrix.service }})
-        run: mvn test -pl ${{ matrix.service }}
+        working-directory: ${{ matrix.service }}
+        run: mvn test
         env:
-          JWT_SECRET: 7b9b1d2e4f6a8c0e2d4f6a8b0c2e4f6a8b0c2e4f6a8b0c2e4f6a8b0c2e4f6a8b
+          JWT_SECRET: ${{ secrets.JWT_SECRET }}
