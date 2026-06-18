@@ -1,6 +1,7 @@
 package com.horacio.ecomarket.usuarios.service;
 
 import com.horacio.ecomarket.usuarios.dto.UsuarioDTO;
+import com.horacio.ecomarket.usuarios.exception.CorreoDuplicadoException;
 import com.horacio.ecomarket.usuarios.model.Usuario;
 import com.horacio.ecomarket.usuarios.repository.UsuarioRepository;
 import lombok.RequiredArgsConstructor;
@@ -18,7 +19,7 @@ public class UsuarioService {
 
         repository.findByCorreo(dto.getCorreo())
                 .ifPresent(u -> {
-                    throw new RuntimeException("El correo ya está registrado");
+                    throw new CorreoDuplicadoException("El correo ya está registrado");
                 });
 
         Usuario usuario = Usuario.builder()

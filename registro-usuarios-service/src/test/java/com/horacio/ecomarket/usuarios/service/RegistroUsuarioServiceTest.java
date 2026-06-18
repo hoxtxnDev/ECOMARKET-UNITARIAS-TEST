@@ -6,6 +6,8 @@ import com.horacio.ecomarket.usuarios.model.PerfilUsuario;
 import com.horacio.ecomarket.usuarios.model.Permiso;
 import com.horacio.ecomarket.usuarios.model.Rol;
 import com.horacio.ecomarket.usuarios.repository.CredencialRepository;
+import com.horacio.ecomarket.usuarios.exception.CorreoDuplicadoException;
+import com.horacio.ecomarket.usuarios.exception.RecursoNoEncontradoException;
 import com.horacio.ecomarket.usuarios.repository.PerfilUsuarioRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -137,12 +139,12 @@ class RegistroUsuarioServiceTest {
         }
 
         @Test
-        @DisplayName("lanza RuntimeException cuando el correo ya está registrado")
+        @DisplayName("lanza CorreoDuplicadoException cuando el correo ya está registrado")
         void lanzaExcepcionCorreoDuplicado() {
             when(repository.findByCorreo("hocx@eco.cl")).thenReturn(Optional.of(perfilBase));
 
             assertThatThrownBy(() -> service.registrarCuenta(perfilBase, "pass123"))
-                    .isInstanceOf(RuntimeException.class)
+                    .isInstanceOf(CorreoDuplicadoException.class)
                     .hasMessageContaining("hocx@eco.cl");
 
             verify(repository, never()).save(any());
@@ -218,7 +220,7 @@ class RegistroUsuarioServiceTest {
         }
 
         @Test
-        @DisplayName("lanza RuntimeException cuando el nuevo correo ya está en uso")
+        @DisplayName("lanza CorreoDuplicadoException cuando el nuevo correo ya está en uso")
         void lanzaExcepcionCorreoNuevoEnUso() {
             PerfilUsuario existente = PerfilUsuario.builder()
                     .id(1L).nombre("Horacio").correo("viejo@eco.cl").build();
@@ -231,19 +233,19 @@ class RegistroUsuarioServiceTest {
                     .thenReturn(Optional.of(PerfilUsuario.builder().id(99L).build()));
 
             assertThatThrownBy(() -> service.modificarDatosUsuario(1L, datosNuevos))
-                    .isInstanceOf(RuntimeException.class)
+                    .isInstanceOf(CorreoDuplicadoException.class)
                     .hasMessageContaining("ocupado@eco.cl");
 
             verify(repository, never()).save(any());
         }
 
         @Test
-        @DisplayName("lanza RuntimeException cuando el usuario no existe")
+        @DisplayName("lanza RecursoNoEncontradoException cuando el usuario no existe")
         void lanzaExcepcionUsuarioInexistente() {
             when(repository.findById(999L)).thenReturn(Optional.empty());
 
             assertThatThrownBy(() -> service.modificarDatosUsuario(999L, perfilBase))
-                    .isInstanceOf(RuntimeException.class)
+                    .isInstanceOf(RecursoNoEncontradoException.class)
                     .hasMessageContaining("999");
         }
 
@@ -361,12 +363,12 @@ class RegistroUsuarioServiceTest {
         }
 
         @Test
-        @DisplayName("lanza RuntimeException cuando el id no existe")
+        @DisplayName("lanza RecursoNoEncontradoException cuando el id no existe")
         void lanzaExcepcionCuandoNoExiste() {
             when(repository.findById(404L)).thenReturn(Optional.empty());
 
             assertThatThrownBy(() -> service.buscarPorId(404L))
-                    .isInstanceOf(RuntimeException.class)
+                    .isInstanceOf(RecursoNoEncontradoException.class)
                     .hasMessageContaining("404");
         }
     }
@@ -386,12 +388,12 @@ class RegistroUsuarioServiceTest {
         }
 
         @Test
-        @DisplayName("lanza RuntimeException cuando el correo no existe")
+        @DisplayName("lanza RecursoNoEncontradoException cuando el correo no existe")
         void lanzaExcepcionCorreoNoExiste() {
             when(repository.findByCorreo("x@eco.cl")).thenReturn(Optional.empty());
 
             assertThatThrownBy(() -> service.buscarPorCorreo("x@eco.cl"))
-                    .isInstanceOf(RuntimeException.class)
+                    .isInstanceOf(RecursoNoEncontradoException.class)
                     .hasMessageContaining("x@eco.cl");
         }
     }
@@ -441,12 +443,12 @@ class RegistroUsuarioServiceTest {
         }
 
         @Test
-        @DisplayName("lanza RuntimeException cuando el usuario no existe")
+        @DisplayName("lanza RecursoNoEncontradoException cuando el usuario no existe")
         void lanzaExcepcionUsuarioNoExiste() {
             when(repository.findById(999L)).thenReturn(Optional.empty());
 
             assertThatThrownBy(() -> service.configurarPermisos(999L, List.of()))
-                    .isInstanceOf(RuntimeException.class)
+                    .isInstanceOf(RecursoNoEncontradoException.class)
                     .hasMessageContaining("999");
         }
     }
@@ -471,12 +473,12 @@ class RegistroUsuarioServiceTest {
         }
 
         @Test
-        @DisplayName("lanza RuntimeException cuando el usuario a eliminar no existe")
+        @DisplayName("lanza RecursoNoEncontradoException cuando el usuario a eliminar no existe")
         void lanzaExcepcionAlEliminarInexistente() {
             when(repository.findById(999L)).thenReturn(Optional.empty());
 
             assertThatThrownBy(() -> service.eliminarUsuario(999L))
-                    .isInstanceOf(RuntimeException.class)
+                    .isInstanceOf(RecursoNoEncontradoException.class)
                     .hasMessageContaining("999");
 
             verify(repository, never()).delete(any());

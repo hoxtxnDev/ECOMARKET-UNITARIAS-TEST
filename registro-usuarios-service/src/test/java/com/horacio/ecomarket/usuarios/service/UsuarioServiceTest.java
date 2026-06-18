@@ -1,6 +1,7 @@
 package com.horacio.ecomarket.usuarios.service;
 
 import com.horacio.ecomarket.usuarios.dto.UsuarioDTO;
+import com.horacio.ecomarket.usuarios.exception.CorreoDuplicadoException;
 import com.horacio.ecomarket.usuarios.model.Usuario;
 import com.horacio.ecomarket.usuarios.repository.UsuarioRepository;
 import org.junit.jupiter.api.DisplayName;
@@ -97,7 +98,7 @@ class UsuarioServiceTest {
         }
 
         @Test
-        @DisplayName("lanza RuntimeException cuando el correo ya está registrado")
+        @DisplayName("lanza CorreoDuplicadoException cuando el correo ya está registrado")
         void lanzaExcepcionCorreoDuplicado() {
             Usuario yaExiste = Usuario.builder()
                     .id(99L).correo("hocx@eco.cl").nombre("Otro").build();
@@ -105,7 +106,7 @@ class UsuarioServiceTest {
             when(repository.findByCorreo("hocx@eco.cl")).thenReturn(Optional.of(yaExiste));
 
             assertThatThrownBy(() -> service.registrar(dtoValido()))
-                    .isInstanceOf(RuntimeException.class)
+                    .isInstanceOf(CorreoDuplicadoException.class)
                     .hasMessage("El correo ya está registrado");
 
             verify(repository, never()).save(any());
@@ -118,7 +119,7 @@ class UsuarioServiceTest {
                     .thenReturn(Optional.of(Usuario.builder().id(1L).build()));
 
             assertThatThrownBy(() -> service.registrar(dtoValido()))
-                    .isInstanceOf(RuntimeException.class);
+                    .isInstanceOf(CorreoDuplicadoException.class);
 
             verify(repository, never()).save(any());
         }
