@@ -1,18 +1,22 @@
 package com.horacio.ecomarket.usuarios.service;
 
+import com.horacio.ecomarket.usuarios.model.Credencial;
 import com.horacio.ecomarket.usuarios.model.EstadoPerfil;
 import com.horacio.ecomarket.usuarios.model.PerfilUsuario;
 import com.horacio.ecomarket.usuarios.model.Permiso;
 import com.horacio.ecomarket.usuarios.model.Rol;
+import com.horacio.ecomarket.usuarios.repository.CredencialRepository;
 import com.horacio.ecomarket.usuarios.repository.PerfilUsuarioRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.client.RestTemplate;
 
 import java.util.ArrayList;
@@ -23,13 +27,6 @@ import static org.assertj.core.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
-/**
- * Pruebas unitarias para RegistroUsuarioServiceImpl.
- * Sin Spring, sin BD, sin RestTemplate real — todo mockeado.
- *
- * Ejecutar:
- * mvn test -pl registro-usuarios-service -Dtest=RegistroUsuarioServiceImplTest
- */
 @ExtendWith(MockitoExtension.class)
 @DisplayName("RegistroUsuarioServiceImpl")
 class RegistroUsuarioServiceImplTest {
@@ -38,12 +35,16 @@ class RegistroUsuarioServiceImplTest {
     private PerfilUsuarioRepository repository;
 
     @Mock
+    private PasswordEncoder passwordEncoder;
+
+    @Mock
+    private CredencialRepository credencialRepository;
+
+    @Mock
     private RestTemplate restTemplate;
 
     @InjectMocks
     private RegistroUsuarioServiceImpl service;
-
-    // ── Fixtures reutilizables ────────────────────────────────────────────────
 
     private Rol rolCliente;
     private EstadoPerfil estadoActivo;
@@ -65,16 +66,12 @@ class RegistroUsuarioServiceImplTest {
                 .build();
     }
 
-    // ═════════════════════════════════════════════════════════════════════════
-    // registrarCuenta
-    // ═════════════════════════════════════════════════════════════════════════
-
     @Nested
     @DisplayName("registrarCuenta")
     class RegistrarCuenta {
 
         @Test
-        @DisplayName("registra usuario correctamente cuando el correo no existe")
+        @DisplayName("registra usuario y credencial correctamente cuando el correo no existe")
         void registraUsuarioExitosamente() {
             when(repository.findByCorreo("hocx@eco.cl")).thenReturn(Optional.empty());
             when(repository.save(any())).thenAnswer(inv -> {
@@ -89,9 +86,8 @@ class RegistroUsuarioServiceImplTest {
                         .build();
                 return p;
             });
-            // RestTemplate no lanza excepción → simulamos llamada exitosa
-            when(restTemplate.postForEntity(contains("8086"), any(), eq(String.class)))
-                    .thenReturn(null);
+            when(passwordEncoder.encode("pass123")).thenReturn("$2a$10$encoded");
+            when(credencialRepository.save(any(Credencial.class))).thenReturn(null);
 
             PerfilUsuario resultado = service.registrarCuenta(perfilBase, "pass123");
 
@@ -99,6 +95,7 @@ class RegistroUsuarioServiceImplTest {
             assertThat(resultado.getId()).isEqualTo(1L);
             assertThat(resultado.getCorreo()).isEqualTo("hocx@eco.cl");
             verify(repository).save(any(PerfilUsuario.class));
+            verify(credencialRepository).save(any(Credencial.class));
         }
 
         @Test
@@ -106,11 +103,37 @@ class RegistroUsuarioServiceImplTest {
         void asignaFechaCreacion() {
             when(repository.findByCorreo(anyString())).thenReturn(Optional.empty());
             when(repository.save(any())).thenAnswer(inv -> inv.getArgument(0));
-            when(restTemplate.postForEntity(anyString(), any(), any())).thenReturn(null);
+            when(passwordEncoder.encode(anyString())).thenReturn("encoded");
+            when(credencialRepository.save(any(Credencial.class))).thenReturn(null);
 
             PerfilUsuario resultado = service.registrarCuenta(perfilBase, "pass123");
 
             assertThat(resultado.getFechaCreacion()).isNotNull();
+        }
+
+        @Test
+        @DisplayName("usa rol ROLE_CLIENTE cuando el perfil tiene rol CLIENTE")
+        void usaRolDesdePerfil() {
+            PerfilUsuario conRol = PerfilUsuario.builder()
+                    .nombre("Con Rol")
+                    .correo("conrol@eco.cl")
+                    .rol(rolCliente)
+                    .build();
+
+            when(repository.findByCorreo("conrol@eco.cl")).thenReturn(Optional.empty());
+            when(repository.save(any())).thenAnswer(inv -> {
+                PerfilUsuario p = inv.getArgument(0);
+                p.setId(3L);
+                return p;
+            });
+            when(passwordEncoder.encode("pass123")).thenReturn("encoded");
+            when(credencialRepository.save(any(Credencial.class))).thenReturn(null);
+
+            service.registrarCuenta(conRol, "pass123");
+
+            ArgumentCaptor<Credencial> captor = ArgumentCaptor.forClass(Credencial.class);
+            verify(credencialRepository).save(captor.capture());
+            assertThat(captor.getValue().getRolAcceso()).isEqualTo("ROLE_CLIENTE");
         }
 
         @Test
@@ -123,23 +146,7 @@ class RegistroUsuarioServiceImplTest {
                     .hasMessageContaining("hocx@eco.cl");
 
             verify(repository, never()).save(any());
-        }
-
-        @Test
-        @DisplayName("lanza RuntimeException cuando iniciosesion-service falla")
-        void lanzaExcepcionSiIniciosesionFalla() {
-            when(repository.findByCorreo(anyString())).thenReturn(Optional.empty());
-            when(repository.save(any())).thenAnswer(inv -> {
-                PerfilUsuario p = inv.getArgument(0);
-                p.setId(99L);
-                return p;
-            });
-            when(restTemplate.postForEntity(contains("8086"), any(), eq(String.class)))
-                    .thenThrow(new RuntimeException("Connection refused"));
-
-            assertThatThrownBy(() -> service.registrarCuenta(perfilBase, "pass123"))
-                    .isInstanceOf(RuntimeException.class)
-                    .hasMessageContaining("Error al crear credenciales");
+            verify(credencialRepository, never()).save(any());
         }
 
         @Test
@@ -156,21 +163,16 @@ class RegistroUsuarioServiceImplTest {
                 p.setId(2L);
                 return p;
             });
-
-            // Capturamos el body enviado al restTemplate para verificar rol
-            when(restTemplate.postForEntity(contains("8086"), any(), eq(String.class)))
-                    .thenReturn(null);
+            when(passwordEncoder.encode("pass123")).thenReturn("encoded");
+            when(credencialRepository.save(any(Credencial.class))).thenReturn(null);
 
             service.registrarCuenta(sinRol, "pass123");
 
-            // El servicio no lanza excepción → flujo completado con ROLE_USER
-            verify(restTemplate).postForEntity(contains("8086"), any(), eq(String.class));
+            ArgumentCaptor<Credencial> captor = ArgumentCaptor.forClass(Credencial.class);
+            verify(credencialRepository).save(captor.capture());
+            assertThat(captor.getValue().getRolAcceso()).isEqualTo("ROLE_USER");
         }
     }
-
-    // ═════════════════════════════════════════════════════════════════════════
-    // modificarDatosUsuario
-    // ═════════════════════════════════════════════════════════════════════════
 
     @Nested
     @DisplayName("modificarDatosUsuario")
@@ -184,7 +186,7 @@ class RegistroUsuarioServiceImplTest {
 
             PerfilUsuario datosNuevos = PerfilUsuario.builder()
                     .nombre("Horacio Nuevo")
-                    .correo("hocx@eco.cl") // mismo correo → no cambia
+                    .correo("hocx@eco.cl")
                     .telefono("+56999999999")
                     .build();
 
@@ -264,9 +266,8 @@ class RegistroUsuarioServiceImplTest {
         }
 
         @Test
-        @DisplayName("actualiza estadoPerfil cuando datosNuevos trae estado no nulo (cubre el último if)")
+        @DisplayName("actualiza estadoPerfil cuando datosNuevos trae estado no nulo")
         void actualizaEstadoPerfilSiSeProvee() {
-            // 1. ARRANGE
             EstadoPerfil estadoViejo = new EstadoPerfil();
             estadoViejo.setId(1L);
             estadoViejo.setNombre("ACTIVO");
@@ -284,17 +285,11 @@ class RegistroUsuarioServiceImplTest {
             when(repository.findById(1L)).thenReturn(Optional.of(existente));
             when(repository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
-            // 2. ACT
             PerfilUsuario resultado = service.modificarDatosUsuario(1L, datosNuevos);
 
-            // 3. ASSERT
             assertThat(resultado.getEstadoPerfil().getNombre()).isEqualTo("BLOQUEADO");
         }
     }
-
-    // ═════════════════════════════════════════════════════════════════════════
-    // listarUsuarios
-    // ═════════════════════════════════════════════════════════════════════════
 
     @Nested
     @DisplayName("listarUsuarios")
@@ -323,10 +318,6 @@ class RegistroUsuarioServiceImplTest {
         }
     }
 
-    // ═════════════════════════════════════════════════════════════════════════
-    // listarPorRol
-    // ═════════════════════════════════════════════════════════════════════════
-
     @Nested
     @DisplayName("listarPorRol")
     class ListarPorRol {
@@ -352,10 +343,6 @@ class RegistroUsuarioServiceImplTest {
             assertThat(service.listarPorRol(rolRaro)).isEmpty();
         }
     }
-
-    // ═════════════════════════════════════════════════════════════════════════
-    // buscarPorId
-    // ═════════════════════════════════════════════════════════════════════════
 
     @Nested
     @DisplayName("buscarPorId")
@@ -384,10 +371,6 @@ class RegistroUsuarioServiceImplTest {
         }
     }
 
-    // ═════════════════════════════════════════════════════════════════════════
-    // buscarPorCorreo
-    // ═════════════════════════════════════════════════════════════════════════
-
     @Nested
     @DisplayName("buscarPorCorreo")
     class BuscarPorCorreo {
@@ -412,10 +395,6 @@ class RegistroUsuarioServiceImplTest {
                     .hasMessageContaining("x@eco.cl");
         }
     }
-
-    // ═════════════════════════════════════════════════════════════════════════
-    // configurarPermisos
-    // ═════════════════════════════════════════════════════════════════════════
 
     @Nested
     @DisplayName("configurarPermisos")
@@ -472,10 +451,6 @@ class RegistroUsuarioServiceImplTest {
         }
     }
 
-    // ═════════════════════════════════════════════════════════════════════════
-    // eliminarUsuario
-    // ═════════════════════════════════════════════════════════════════════════
-
     @Nested
     @DisplayName("eliminarUsuario")
     class EliminarUsuario {
@@ -486,7 +461,6 @@ class RegistroUsuarioServiceImplTest {
             perfilBase.setId(1L);
             when(repository.findById(1L)).thenReturn(Optional.of(perfilBase));
             doNothing().when(repository).delete(perfilBase);
-            // restTemplate para log puede fallar sin romper el flujo
             when(restTemplate.postForEntity(contains("8084"), any(), eq(String.class)))
                     .thenReturn(null);
 
@@ -517,13 +491,7 @@ class RegistroUsuarioServiceImplTest {
             when(restTemplate.postForEntity(contains("8084"), any(), eq(String.class)))
                     .thenThrow(new RuntimeException("Analitica caída"));
 
-            // No debe lanzar excepción — el catch interno silencia el error de log
             assertThatCode(() -> service.eliminarUsuario(5L)).doesNotThrowAnyException();
         }
     }
-
-    // ═════════════════════════════════════════════════════════════════════════
-    // UsuarioService (clase separada)
-    // ═════════════════════════════════════════════════════════════════════════
-
 }

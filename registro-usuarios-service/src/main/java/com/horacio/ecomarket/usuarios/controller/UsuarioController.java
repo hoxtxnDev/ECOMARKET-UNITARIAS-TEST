@@ -1,8 +1,6 @@
 package com.horacio.ecomarket.usuarios.controller;
 
-import com.horacio.ecomarket.usuarios.dto.ConfigurarPermisosDTO;
-import com.horacio.ecomarket.usuarios.dto.ModificarUsuarioDTO;
-import com.horacio.ecomarket.usuarios.dto.RegistroUsuarioDTO;
+import com.horacio.ecomarket.usuarios.dto.*;
 import com.horacio.ecomarket.usuarios.model.EstadoPerfil;
 import com.horacio.ecomarket.usuarios.model.Permiso;
 import com.horacio.ecomarket.usuarios.model.PerfilUsuario;
@@ -10,6 +8,7 @@ import com.horacio.ecomarket.usuarios.model.Rol;
 import com.horacio.ecomarket.usuarios.repository.EstadoPerfilRepository;
 import com.horacio.ecomarket.usuarios.repository.PermisoRepository;
 import com.horacio.ecomarket.usuarios.repository.RolRepository;
+import com.horacio.ecomarket.usuarios.service.AuthService;
 import com.horacio.ecomarket.usuarios.service.RegistroUsuarioService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -26,11 +25,11 @@ import java.util.stream.Collectors;
 public class UsuarioController {
 
     private final RegistroUsuarioService service;
+    private final AuthService authService;
     private final RolRepository rolRepository;
     private final PermisoRepository permisoRepository;
     private final EstadoPerfilRepository estadoPerfilRepository;
 
-    // POST /api/usuarios/registro
     @PostMapping("/registro")
     public ResponseEntity<PerfilUsuario> registrar(@Valid @RequestBody RegistroUsuarioDTO dto) {
         PerfilUsuario perfil = buildPerfilDesdeRegistroDTO(dto);
@@ -38,7 +37,6 @@ public class UsuarioController {
         return ResponseEntity.status(HttpStatus.CREATED).body(creado);
     }
 
-    // PUT /api/usuarios/{id}
     @PutMapping("/{id}")
     public ResponseEntity<PerfilUsuario> modificar(
             @PathVariable Long id,
@@ -47,34 +45,28 @@ public class UsuarioController {
         return ResponseEntity.ok(service.modificarDatosUsuario(id, datosNuevos));
     }
 
-    // GET /api/usuarios
     @GetMapping
     public ResponseEntity<List<PerfilUsuario>> listarTodos() {
         return ResponseEntity.ok(service.listarUsuarios());
     }
 
-    // GET /api/usuarios/rol/{rolId}
     @GetMapping("/rol/{rolId}")
     public ResponseEntity<List<PerfilUsuario>> listarPorRol(@PathVariable Long rolId) {
         Rol rol = rolRepository.findById(rolId)
-                .orElseThrow(() -> new RuntimeException("Rol no encontrado con ID: " + rolId)); // ← este lambda nunca
-                                                                                                // se testea
+                .orElseThrow(() -> new RuntimeException("Rol no encontrado con ID: " + rolId));
         return ResponseEntity.ok(service.listarPorRol(rol));
     }
 
-    // GET /api/usuarios/{id}
     @GetMapping("/{id}")
     public ResponseEntity<PerfilUsuario> buscarPorId(@PathVariable Long id) {
         return ResponseEntity.ok(service.buscarPorId(id));
     }
 
-    // GET /api/usuarios/correo/{correo}
     @GetMapping("/correo/{correo}")
     public ResponseEntity<PerfilUsuario> buscarPorCorreo(@PathVariable String correo) {
         return ResponseEntity.ok(service.buscarPorCorreo(correo));
     }
 
-    // PUT /api/usuarios/{id}/permisos
     @PutMapping("/{id}/permisos")
     public ResponseEntity<Boolean> configurarPermisos(
             @PathVariable Long id,
@@ -86,13 +78,58 @@ public class UsuarioController {
         return ResponseEntity.ok(service.configurarPermisos(id, permisos));
     }
 
-    // DELETE /api/usuarios/{id}
     @DeleteMapping("/{id}")
     public ResponseEntity<Boolean> eliminar(@PathVariable Long id) {
         return ResponseEntity.ok(service.eliminarUsuario(id));
     }
 
-    // ── helpers privados ──────────────────────────────────────────────────────
+    @PostMapping("/login")
+    public ResponseEntity<IniciarSesionResponse> iniciarSesion(
+            @Valid @RequestBody IniciarSesionRequest request) {
+        return ResponseEntity.ok(authService.iniciarSesion(request));
+    }
+
+    @PostMapping("/logout")
+    public ResponseEntity<MensajeResponse> cerrarSesion(
+            @Valid @RequestBody CerrarSesionRequest request) {
+        return ResponseEntity.ok(authService.cerrarSesion(request));
+    }
+
+    @PostMapping("/validar")
+    public ResponseEntity<AutenticarJWTResponse> autenticarJWT(
+            @Valid @RequestBody AutenticarJWTRequest request) {
+        return ResponseEntity.ok(authService.autenticarJWT(request));
+    }
+
+    @PutMapping("/correo")
+    public ResponseEntity<MensajeResponse> cambiarCorreo(
+            @Valid @RequestBody CambiarCorreoRequest request) {
+        return ResponseEntity.ok(authService.cambiarCorreo(request));
+    }
+
+    @PutMapping("/contrasena")
+    public ResponseEntity<MensajeResponse> cambiarContrasena(
+            @Valid @RequestBody CambiarContrasenaRequest request) {
+        return ResponseEntity.ok(authService.cambiarContrasena(request));
+    }
+
+    @PostMapping("/recuperar")
+    public ResponseEntity<MensajeResponse> recuperarCredenciales(
+            @Valid @RequestBody RecuperarCredencialesRequest request) {
+        return ResponseEntity.ok(authService.recuperarCredenciales(request));
+    }
+
+    @PostMapping("/restablecer")
+    public ResponseEntity<MensajeResponse> restablecerConToken(
+            @Valid @RequestBody RestablecerConTokenRequest request) {
+        return ResponseEntity.ok(authService.restablecerConToken(request));
+    }
+
+    @DeleteMapping("/inhabilitar")
+    public ResponseEntity<MensajeResponse> inhabilitarCredenciales(
+            @Valid @RequestBody InhabilitarCredencialesRequest request) {
+        return ResponseEntity.ok(authService.inhabilitarCredenciales(request));
+    }
 
     private PerfilUsuario buildPerfilDesdeRegistroDTO(RegistroUsuarioDTO dto) {
         PerfilUsuario.PerfilUsuarioBuilder builder = PerfilUsuario.builder()

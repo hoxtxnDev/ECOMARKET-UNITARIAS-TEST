@@ -1,10 +1,14 @@
 package com.horacio.ecomarket.usuarios.service;
 
+import com.horacio.ecomarket.usuarios.model.Credencial;
 import com.horacio.ecomarket.usuarios.model.Permiso;
 import com.horacio.ecomarket.usuarios.model.PerfilUsuario;
 import com.horacio.ecomarket.usuarios.model.Rol;
+import com.horacio.ecomarket.usuarios.repository.CredencialRepository;
 import com.horacio.ecomarket.usuarios.repository.PerfilUsuarioRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
@@ -16,10 +20,12 @@ import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class RegistroUsuarioServiceImpl implements RegistroUsuarioService {
 
     private final PerfilUsuarioRepository repository;
-    //private final PasswordEncoder passwordEncoder;
+    private final PasswordEncoder passwordEncoder;
+    private final CredencialRepository credencialRepository;
     private final RestTemplate restTemplate;
 
     @Override
@@ -33,20 +39,17 @@ public class RegistroUsuarioServiceImpl implements RegistroUsuarioService {
         perfilUsuario.setFechaCreacion(LocalDateTime.now());
         PerfilUsuario guardado = repository.save(perfilUsuario);
 
-        // Crear credenciales en iniciosesion-service
-        Map<String, Object> request = new HashMap<>();
-        request.put("usuarioId", guardado.getId());
-        request.put("correo", perfilUsuario.getCorreo());
-        request.put("contrasena", contrasenaInicial);
         String rolNombre = perfilUsuario.getRol() != null ? "ROLE_" + perfilUsuario.getRol().getNombre() : "ROLE_USER";
-        request.put("rol", rolNombre);
 
-        String url = "http://localhost:8086/api/sesion/credencial";
-        try {
-            restTemplate.postForEntity(url, request, String.class);
-        } catch (Exception e) {
-            throw new RuntimeException("Error al crear credenciales de acceso: " + e.getMessage());
-        }
+        Credencial credencial = Credencial.builder()
+                .usuarioId(guardado.getId())
+                .correoAcceso(perfilUsuario.getCorreo())
+                .contrasenaHash(passwordEncoder.encode(contrasenaInicial))
+                .cuentaBloqueada(false)
+                .rolAcceso(rolNombre)
+                .build();
+
+        credencialRepository.save(credencial);
 
         registrarLog(guardado.getId(), "REGISTRO_USUARIO", "Usuario registrado exitosamente con correo: " + perfilUsuario.getCorreo());
 
@@ -61,7 +64,6 @@ public class RegistroUsuarioServiceImpl implements RegistroUsuarioService {
         existente.setNombre(datosNuevos.getNombre());
         existente.setTelefono(datosNuevos.getTelefono());
 
-        // Actualizar correo sólo si cambió y no está tomado
         if (!existente.getCorreo().equals(datosNuevos.getCorreo())) {
             repository.findByCorreo(datosNuevos.getCorreo())
                     .ifPresent(u -> {
@@ -127,17 +129,17 @@ public class RegistroUsuarioServiceImpl implements RegistroUsuarioService {
     }
 
     private void registrarLog(Long usuarioId, String accion, String detalles) {
-        Map<String, Object> log = new HashMap<>();
-        log.put("microservicio", "registro-usuarios-service");
-        log.put("accion", accion);
-        log.put("usuarioId", usuarioId);
-        log.put("detalles", detalles);
-        log.put("fecha", LocalDateTime.now());
+        Map<String, Object> logEntry = new HashMap<>();
+        logEntry.put("microservicio", "registro-usuarios-service");
+        logEntry.put("accion", accion);
+        logEntry.put("usuarioId", usuarioId);
+        logEntry.put("detalles", detalles);
+        logEntry.put("fecha", LocalDateTime.now());
 
         try {
-            restTemplate.postForEntity("http://localhost:8084/api/analitica/logs", log, String.class);
+            restTemplate.postForEntity("http://localhost:8084/api/analitica/logs", logEntry, String.class);
         } catch (Exception e) {
-            // Log error but don't break business flow
+            log.warn("Error al enviar log a analitica", e);
         }
     }
 }

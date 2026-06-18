@@ -29,7 +29,7 @@ class GlobalExceptionHandlerTest {
     @BeforeEach
     void setUp() {
         globalExceptionHandler = new GlobalExceptionHandler();
-        
+
         request = new MockHttpServletRequest();
         request.setRequestURI("/api/usuarios/test");
     }
@@ -61,7 +61,7 @@ class GlobalExceptionHandlerTest {
         void testHandleValidationExceptions() {
             MethodArgumentNotValidException ex = mock(MethodArgumentNotValidException.class);
             BindingResult bindingResult = mock(BindingResult.class);
-            
+
             FieldError fieldError = new FieldError("usuarioDTO", "correo", "El correo no es válido");
             when(bindingResult.getAllErrors()).thenReturn(List.of(fieldError));
             when(ex.getBindingResult()).thenReturn(bindingResult);
@@ -72,10 +72,10 @@ class GlobalExceptionHandlerTest {
             assertThat(response.getBody()).isNotNull();
             assertThat(response.getBody().getStatus()).isEqualTo(400);
             assertThat(response.getBody().getMessage()).isEqualTo("La validación de los datos ha fallado. Revisa los detalles.");
-            
+
             assertThat(response.getBody().getDetails())
-                .isNotNull()
-                .containsEntry("correo", "El correo no es válido");
+                    .isNotNull()
+                    .containsEntry("correo", "El correo no es válido");
         }
     }
 
@@ -109,18 +109,16 @@ class GlobalExceptionHandlerTest {
             assertThat(response.getBody()).isNotNull();
             assertThat(response.getBody().getMessage()).isEqualTo("Error de integridad en la base de datos: Error de integridad sin detalles");
         }
+
         @Test
-        @DisplayName("Debería retornar 409 CONFLICT usando el mensaje general si getMostSpecificCause es forzado a null (cubre la línea roja)")
+        @DisplayName("Debería retornar 409 CONFLICT usando el mensaje general si getMostSpecificCause es null")
         void testHandleDatabaseExceptionsCausaEspecificaNull() {
-            // 1. ARRANGE: Mockeamos la excepción para obligar a que el método devuelva null
             DataIntegrityViolationException ex = mock(DataIntegrityViolationException.class);
-            when(ex.getMostSpecificCause()).thenReturn(null); // <-- Aquí forzamos la rama falsa
+            when(ex.getMostSpecificCause()).thenReturn(null);
             when(ex.getMessage()).thenReturn("Mensaje de error directamente de la excepción");
 
-            // 2. ACT
             ResponseEntity<ErrorResponseDTO> response = globalExceptionHandler.handleDatabaseExceptions(ex, request);
 
-            // 3. ASSERT
             assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
             assertThat(response.getBody()).isNotNull();
             assertThat(response.getBody().getMessage()).isEqualTo("Error de integridad en la base de datos: Mensaje de error directamente de la excepción");
@@ -132,7 +130,7 @@ class GlobalExceptionHandlerTest {
     class GeneralExceptionTest {
 
         @Test
-        @DisplayName("Debería retornar 500 INTERNAL SERVER ERROR y ocultar detalles del fallo")
+        @DisplayName("Debería retornar 500 INTERNAL SERVER ERROR")
         void testHandleGeneralException() {
             Exception ex = new Exception("Se cayó la base de datos de producción");
 
@@ -141,9 +139,94 @@ class GlobalExceptionHandlerTest {
             assertThat(response.getStatusCode()).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR);
             assertThat(response.getBody()).isNotNull();
             assertThat(response.getBody().getStatus()).isEqualTo(500);
-            
+
             assertThat(response.getBody().getMessage()).isEqualTo("Ocurrio un error inesperado en el servidor.");
             assertThat(response.getBody().getPath()).isEqualTo("/api/usuarios/test");
+        }
+    }
+
+    @Nested
+    @DisplayName("handleCredencialNotFound")
+    class CredencialNotFoundTest {
+
+        @Test
+        @DisplayName("Debería retornar 404 NOT FOUND")
+        void testHandleCredencialNotFound() {
+            CredencialNotFoundException ex = new CredencialNotFoundException("Credencial no encontrada");
+            ResponseEntity<ErrorResponseDTO> response = globalExceptionHandler.handleCredencialNotFound(ex, request);
+
+            assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+            assertThat(response.getBody()).isNotNull();
+            assertThat(response.getBody().getStatus()).isEqualTo(404);
+            assertThat(response.getBody().getMessage()).isEqualTo("Credencial no encontrada");
+        }
+    }
+
+    @Nested
+    @DisplayName("handleAutenticacion")
+    class AutenticacionTest {
+
+        @Test
+        @DisplayName("Debería retornar 401 UNAUTHORIZED")
+        void testHandleAutenticacion() {
+            AutenticacionException ex = new AutenticacionException("Credenciales inválidas");
+            ResponseEntity<ErrorResponseDTO> response = globalExceptionHandler.handleAutenticacion(ex, request);
+
+            assertThat(response.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
+            assertThat(response.getBody()).isNotNull();
+            assertThat(response.getBody().getStatus()).isEqualTo(401);
+            assertThat(response.getBody().getMessage()).isEqualTo("Credenciales inválidas");
+        }
+    }
+
+    @Nested
+    @DisplayName("handleCuentaBloqueada")
+    class CuentaBloqueadaTest {
+
+        @Test
+        @DisplayName("Debería retornar 403 FORBIDDEN")
+        void testHandleCuentaBloqueada() {
+            CuentaBloqueadaException ex = new CuentaBloqueadaException("Cuenta bloqueada");
+            ResponseEntity<ErrorResponseDTO> response = globalExceptionHandler.handleCuentaBloqueada(ex, request);
+
+            assertThat(response.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
+            assertThat(response.getBody()).isNotNull();
+            assertThat(response.getBody().getStatus()).isEqualTo(403);
+            assertThat(response.getBody().getMessage()).isEqualTo("Cuenta bloqueada");
+        }
+    }
+
+    @Nested
+    @DisplayName("handleTokenInvalido")
+    class TokenInvalidoTest {
+
+        @Test
+        @DisplayName("Debería retornar 401 UNAUTHORIZED")
+        void testHandleTokenInvalido() {
+            TokenInvalidoException ex = new TokenInvalidoException("Token inválido");
+            ResponseEntity<ErrorResponseDTO> response = globalExceptionHandler.handleTokenInvalido(ex, request);
+
+            assertThat(response.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
+            assertThat(response.getBody()).isNotNull();
+            assertThat(response.getBody().getStatus()).isEqualTo(401);
+            assertThat(response.getBody().getMessage()).isEqualTo("Token inválido");
+        }
+    }
+
+    @Nested
+    @DisplayName("handleCorreoDuplicado")
+    class CorreoDuplicadoTest {
+
+        @Test
+        @DisplayName("Debería retornar 409 CONFLICT")
+        void testHandleCorreoDuplicado() {
+            CorreoDuplicadoException ex = new CorreoDuplicadoException("Correo duplicado");
+            ResponseEntity<ErrorResponseDTO> response = globalExceptionHandler.handleCorreoDuplicado(ex, request);
+
+            assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
+            assertThat(response.getBody()).isNotNull();
+            assertThat(response.getBody().getStatus()).isEqualTo(409);
+            assertThat(response.getBody().getMessage()).isEqualTo("Correo duplicado");
         }
     }
 }

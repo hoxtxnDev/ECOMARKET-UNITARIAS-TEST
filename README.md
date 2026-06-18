@@ -36,7 +36,7 @@ El desarrollo se distribuyó entre dos integrantes:
 | Integrante | Servicios |
 |---|---|
 | **Hans** | `analica-service` · `logistica-envios-service` · `soporte-service` · `proceso-pago-service` · `pedido-service` |
-| **Horacio** | `iniciosesion-service` · `registro-usuarios-service` · `gestion-tienda-service` · `carrito-compra-service` |
+| **Horacio** | `registro-usuarios-service` (unificado con auth) · `gestion-tienda-service` · `carrito-compra-service` |
 | *(ambos)* | `api-gateway` · `catalogo-inventario-service` |
 
 ---
@@ -343,19 +343,19 @@ Los tests utilizan un perfil `test` (`application-test.properties`) que configur
 **Resumen de pruebas por servicio:**
 
 | Servicio | Tests |
-|---|---|
+|---|---|---|
 | `api-gateway` | 11 |
 | `analica-service` | 112 |
 | `carrito-compra-service` | 75 |
 | `catalogo-inventario-service` | 106 |
 | `gestion-tienda-service` | 45 |
-| `iniciosesion-service` | 81 |
+| `iniciosesion-service` | 90 |
 | `pedido-service` | 28 |
 | `proceso-pago-service` | 44 |
 | `logistica-envios-service` | 133 |
-| `registro-usuarios-service` | 75 |
+| `registro-usuarios-service` | 140 |
 | `soporte-service` | 192 |
-| **Total** | **902** |
+| **Total** | **976** |
 
 ---
 
@@ -404,3 +404,5 @@ Requiere `iniciosesion-service` corriendo en `localhost:8086` para la validació
 - **Lombok**: Declarado como `optional=true` y excluido del empaquetado del `spring-boot-maven-plugin`. El procesador de anotaciones se configura explícitamente en `maven-compiler-plugin`.
 - **OpenAPI/Swagger**: Solo disponible en `pedido-service` en la ruta `/doc/swagger-ui.html`.
 - **Jacoco 0.8.14**: Configurado en todos los servicios con las fases `prepare-agent` (antes de los tests) y `report` (después). Soporta Java 25.
+- **CORS unificado**: En `registro-usuarios-service` e `iniciosesion-service`, la configuración CORS se extrajo de la lambda inline en `SecurityFilterChain` a un `@Bean CorsConfigurationSource corsConfigurationSource()`, eliminando el `WebMvcConfigurer` redundante. Esto permite testear la configuración CORS unitariamente y evita configuraciones duplicadas.
+- **Logging en catch de analytics**: Se agregó `@Slf4j` y `log.warn("...", e)` en los bloques `catch (Exception e)` de los métodos `registrarLog` en `AuthServiceImpl`, `RegistroUsuarioServiceImpl` y `LoginCuentaServiceImpl`, reemplazando los catch vacíos que tragaban silenciosamente los errores de conexión con `analica-service`.

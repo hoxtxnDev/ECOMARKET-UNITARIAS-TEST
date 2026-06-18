@@ -1,19 +1,20 @@
-package com.ecomarket.iniciosesion.service;
+package com.horacio.ecomarket.usuarios.service;
 
-import com.ecomarket.iniciosesion.dto.*;
-import com.ecomarket.iniciosesion.exception.*;
-import com.ecomarket.iniciosesion.model.Credencial;
-import com.ecomarket.iniciosesion.model.SesionJWT;
-import com.ecomarket.iniciosesion.model.TokenRecuperacion;
-import com.ecomarket.iniciosesion.repository.CredencialRepository;
-import com.ecomarket.iniciosesion.repository.SesionJWTRepository;
-import com.ecomarket.iniciosesion.repository.TokenRecuperacionRepository;
+import com.horacio.ecomarket.usuarios.dto.*;
+import com.horacio.ecomarket.usuarios.exception.*;
+import com.horacio.ecomarket.usuarios.model.Credencial;
+import com.horacio.ecomarket.usuarios.model.SesionJWT;
+import com.horacio.ecomarket.usuarios.model.TokenRecuperacion;
+import com.horacio.ecomarket.usuarios.repository.CredencialRepository;
+import com.horacio.ecomarket.usuarios.repository.SesionJWTRepository;
+import com.horacio.ecomarket.usuarios.repository.TokenRecuperacionRepository;
 import io.jsonwebtoken.Claims;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.client.RestTemplate;
 
 import java.security.SecureRandom;
 import java.time.LocalDateTime;
@@ -22,22 +23,18 @@ import java.util.Base64;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import org.springframework.web.client.RestTemplate;
 
 @Service
 @RequiredArgsConstructor
 @Slf4j
-public class LoginCuentaServiceImpl implements LoginCuentaService {
+public class AuthServiceImpl implements AuthService {
 
     private final CredencialRepository credencialRepository;
     private final TokenRecuperacionRepository tokenRecuperacionRepository;
     private final SesionJWTRepository sesionJWTRepository;
     private final JwtUtil jwtUtil;
     private final RestTemplate restTemplate;
-
-    private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
-
-    // ── Crear credencial ──────────────────────────────────────────────────────
+    private final PasswordEncoder passwordEncoder;
 
     @Override
     @Transactional
@@ -60,8 +57,6 @@ public class LoginCuentaServiceImpl implements LoginCuentaService {
         credencialRepository.save(credencial);
         return MensajeResponse.de("Credencial creada exitosamente.");
     }
-
-    // ── Iniciar sesión ────────────────────────────────────────────────────────
 
     @Override
     @Transactional
@@ -96,8 +91,6 @@ public class LoginCuentaServiceImpl implements LoginCuentaService {
                 .build();
     }
 
-    // ── Cerrar sesión (blacklist) ─────────────────────────────────────────────
-
     @Override
     @Transactional
     public MensajeResponse cerrarSesion(CerrarSesionRequest request) {
@@ -129,8 +122,6 @@ public class LoginCuentaServiceImpl implements LoginCuentaService {
         return MensajeResponse.de("Sesión cerrada exitosamente.");
     }
 
-    // ── Autenticar JWT ────────────────────────────────────────────────────────
-
     @Override
     public AutenticarJWTResponse autenticarJWT(AutenticarJWTRequest request) {
         String token = request.getToken();
@@ -140,7 +131,6 @@ public class LoginCuentaServiceImpl implements LoginCuentaService {
         }
 
         if (sesionJWTRepository.existsByToken(token)) {
-            // Token en blacklist (logout previo)
             return AutenticarJWTResponse.builder().valido(false).build();
         }
 
@@ -151,8 +141,6 @@ public class LoginCuentaServiceImpl implements LoginCuentaService {
                 .roles(jwtUtil.obtenerRoles(token))
                 .build();
     }
-
-    // ── Cambiar correo ────────────────────────────────────────────────────────
 
     @Override
     @Transactional
@@ -176,8 +164,6 @@ public class LoginCuentaServiceImpl implements LoginCuentaService {
         return MensajeResponse.de("Correo actualizado exitosamente.");
     }
 
-    // ── Cambiar contraseña ────────────────────────────────────────────────────
-
     @Override
     @Transactional
     public MensajeResponse cambiarContrasena(CambiarContrasenaRequest request) {
@@ -194,8 +180,6 @@ public class LoginCuentaServiceImpl implements LoginCuentaService {
         credencialRepository.save(credencial);
         return MensajeResponse.de("Contraseña actualizada exitosamente.");
     }
-
-    // ── Recuperar credenciales (genera token) ─────────────────────────────────
 
     @Override
     @Transactional
@@ -216,12 +200,9 @@ public class LoginCuentaServiceImpl implements LoginCuentaService {
 
         tokenRecuperacionRepository.save(tokenRec);
 
-        // En producción se enviaría por email. Por ahora se devuelve en la respuesta.
         return MensajeResponse.de("Código de recuperación generado: " + codigo
                 + " (válido por 2 horas). En producción, se enviaría al correo registrado.");
     }
-
-    // ── Restablecer con token ─────────────────────────────────────────────────
 
     @Override
     @Transactional
@@ -242,8 +223,6 @@ public class LoginCuentaServiceImpl implements LoginCuentaService {
         return MensajeResponse.de("Contraseña restablecida exitosamente.");
     }
 
-    // ── Inhabilitar credenciales ──────────────────────────────────────────────
-
     @Override
     @Transactional
     public MensajeResponse inhabilitarCredenciales(InhabilitarCredencialesRequest request) {
@@ -257,8 +236,6 @@ public class LoginCuentaServiceImpl implements LoginCuentaService {
         return MensajeResponse.de("Credenciales inhabilitadas. La cuenta ha sido bloqueada.");
     }
 
-    // ── Utilitario interno ────────────────────────────────────────────────────
-
     private String generarCodigoAlfanumerico() {
         byte[] bytes = new byte[24];
         new SecureRandom().nextBytes(bytes);
@@ -267,7 +244,7 @@ public class LoginCuentaServiceImpl implements LoginCuentaService {
 
     private void registrarLog(Long usuarioId, String accion, String detalles) {
         Map<String, Object> logEntry = new HashMap<>();
-        logEntry.put("microservicio", "iniciosesion-service");
+        logEntry.put("microservicio", "registro-usuarios-service");
         logEntry.put("accion", accion);
         logEntry.put("usuarioId", usuarioId);
         logEntry.put("detalles", detalles);

@@ -263,25 +263,25 @@ class LoginCuentaServiceImplTest {
         }
 
         @Test
-        @DisplayName("no interrumpe el flujo si el log remoto lanza excepción (cubre catch en registrarLog)")
-        void logRemotoLanzaExcepcionNoInterrumpeFlujo() {
-            Credencial cred = credencialActiva(30L, "logfail@eco.cl", "pass123");
-            when(credencialRepository.findByCorreoAcceso("logfail@eco.cl")).thenReturn(Optional.of(cred));
+        @DisplayName("no rompe el flujo si el servicio de analítica falla")
+        void iniciarSesionAnalyticsCaido() {
+            Credencial cred = credencialActiva(10L, "user@eco.cl", "pass123");
+
+            when(credencialRepository.findByCorreoAcceso("user@eco.cl")).thenReturn(Optional.of(cred));
             when(credencialRepository.save(any())).thenAnswer(i -> i.getArgument(0));
-            when(jwtUtil.generarToken(any(), any(), any())).thenReturn("jwt-logfail");
+            when(jwtUtil.generarToken(any(), any(), any())).thenReturn("tok");
             when(jwtUtil.getExpirationMs()).thenReturn(3600000L);
             when(restTemplate.postForEntity(anyString(), any(), eq(String.class)))
-                    .thenThrow(new RuntimeException("Simulated log failure"));
+                    .thenThrow(new RuntimeException("Analítica caída"));
 
             IniciarSesionRequest req = new IniciarSesionRequest();
-            req.setCorreo("logfail@eco.cl");
+            req.setCorreo("user@eco.cl");
             req.setContrasena("pass123");
 
             IniciarSesionResponse res = service.iniciarSesion(req);
 
-            assertThat(res.getToken()).isEqualTo("jwt-logfail");
-            assertThat(res.getUsuarioId()).isEqualTo(30L);
-            verify(restTemplate).postForEntity(anyString(), any(), eq(String.class));
+            assertThat(res.getToken()).isEqualTo("tok");
+            assertThat(res.getRol()).isEqualTo("ROLE_USER");
         }
     }
 
@@ -362,7 +362,6 @@ class LoginCuentaServiceImplTest {
             when(jwtUtil.validarYObtenerClaims(token)).thenReturn(claims);
             when(jwtUtil.obtenerUsuarioId(token)).thenReturn(1L);
 
-            // ¡AQUÍ ESTÁ LA MAGIA! Pasamos una lista vacía en lugar de null
             when(jwtUtil.obtenerRoles(token)).thenReturn(List.of());
 
             when(sesionJWTRepository.save(any())).thenAnswer(i -> i.getArgument(0));
@@ -372,12 +371,11 @@ class LoginCuentaServiceImplTest {
 
             service.cerrarSesion(req);
 
-            // Verificamos que se haya guardado con ROLE_USER por defecto
             verify(sesionJWTRepository).save(argThat(s -> "ROLE_USER".equals(s.getRolAcceso())));
         }
 
         @Test
-        @DisplayName("asigna ROLE_USER si la lista de roles es null (cubre la rama roles==null de línea 114)")
+        @DisplayName("asigna ROLE_USER cuando obtenerRoles retorna null")
         void cerrarSesionRolesNullAsignaPorDefecto() {
             String token = "token-roles-null";
             when(jwtUtil.esTokenValido(token)).thenReturn(true);
