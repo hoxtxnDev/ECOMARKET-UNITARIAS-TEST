@@ -43,5 +43,15 @@ public class TransaccionPago {
     private Long cuponUtilizadoId;
     private String tokenTransbank;
     private String codigoAutorizacion;
-    private LocalDateTime fechaAutorizacion;
+    
+    @Column(unique = true)
+    private String idempotencyKey;
+    
+    // Trazabilidad de Auditoría
+
+    private LocalDateTime fechaInicio;
+    private LocalDateTime fechaFin;
+    private LocalDateTime fechaUltimaActualizacion;
+    private String mensajeError;
 }
+

@@ -1,7 +1,6 @@
 package com.ecomarket.procesopagoservice.controller;
 
 import com.ecomarket.procesopagoservice.model.FacturaElectronica;
-import com.ecomarket.procesopagoservice.model.MetodoPagoTransaccion;
 import com.ecomarket.procesopagoservice.model.TransaccionPago;
 import com.ecomarket.procesopagoservice.service.PagoService;
 import lombok.RequiredArgsConstructor;
@@ -18,10 +17,9 @@ public class PagoController {
     @PostMapping("/iniciar")
     public ResponseEntity<TransaccionPago> iniciarPago(
             @RequestParam Long pedidoId,
-            @RequestParam Long clienteId,
-            @RequestParam Double monto,
-            @RequestBody MetodoPagoTransaccion metodo) {
-        return ResponseEntity.ok(pagoService.iniciarPago(pedidoId, clienteId, monto, metodo));
+            @RequestParam Long metodoPagoId,
+            @RequestParam(required = false) String idempotencyKey) {
+        return ResponseEntity.ok(pagoService.iniciarPago(pedidoId, metodoPagoId, idempotencyKey));
     }
 
     @GetMapping("/{transaccionId}")

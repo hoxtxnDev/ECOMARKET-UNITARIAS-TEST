@@ -42,6 +42,26 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
     }
 
+    @ExceptionHandler(RecursoNoEncontradoException.class)
+    public ResponseEntity<ErrorResponseDTO> handleRecursoNoEncontrado(RecursoNoEncontradoException ex, HttpServletRequest request) {
+        return buildResponse(ex.getStatus(), ex.getMessage(), request);
+    }
+
+    @ExceptionHandler(ProcesamientoPagoException.class)
+    public ResponseEntity<ErrorResponseDTO> handleProcesamientoPago(ProcesamientoPagoException ex, HttpServletRequest request) {
+        return buildResponse(ex.getStatus(), ex.getMessage(), request);
+    }
+
+    @ExceptionHandler(EstadoTransaccionInvalidoException.class)
+    public ResponseEntity<ErrorResponseDTO> handleEstadoTransaccionInvalido(EstadoTransaccionInvalidoException ex, HttpServletRequest request) {
+        return buildResponse(ex.getStatus(), ex.getMessage(), request);
+    }
+
+    @ExceptionHandler(CuponInvalidoException.class)
+    public ResponseEntity<ErrorResponseDTO> handleCuponInvalido(CuponInvalidoException ex, HttpServletRequest request) {
+        return buildResponse(ex.getStatus(), ex.getMessage(), request);
+    }
+
     @ExceptionHandler(DataIntegrityViolationException.class)
     public ResponseEntity<ErrorResponseDTO> handleDatabaseExceptions(DataIntegrityViolationException ex, HttpServletRequest request) {
         return buildResponse(HttpStatus.CONFLICT, "Error de integridad en la base de datos.", request);

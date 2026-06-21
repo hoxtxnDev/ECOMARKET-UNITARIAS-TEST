@@ -1,5 +1,6 @@
 package com.ecomarket.procesopagoservice.service;
 
+import com.ecomarket.procesopagoservice.exception.*;
 import com.ecomarket.procesopagoservice.model.*;
 import com.ecomarket.procesopagoservice.repository.*;
 import org.junit.jupiter.api.DisplayName;
@@ -9,22 +10,16 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
 
-import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.Optional;
+import java.util.*;
 
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
-/**
- * Pruebas unitarias para PagoService.
- *
- * Ejecutar:
- *   mvn test -pl proceso-pago-service -Dtest=PagoServiceTest
- */
 @ExtendWith(MockitoExtension.class)
 @DisplayName("PagoService")
 class PagoServiceTest {
@@ -37,8 +32,6 @@ class PagoServiceTest {
     @Mock RestTemplate          restTemplate;
 
     @InjectMocks PagoService service;
-
-    // ── Fixtures ──────────────────────────────────────────────────────────────
 
     private EstadoPago estado(String nombre) {
         EstadoPago e = new EstadoPago();
@@ -67,74 +60,264 @@ class PagoServiceTest {
         return t;
     }
 
+    private TransaccionPago transaccionCompleta(Long id) {
+        TransaccionPago t = transaccion(id, 50000.0);
+        t.setIdempotencyKey("idem-123");
+        t.setFechaInicio(LocalDateTime.now());
+        t.setFechaUltimaActualizacion(LocalDateTime.now());
+        t.setTokenTransbank("TB-ABCD1234");
+        return t;
+    }
+
     private CuponDescuento cuponValido(Double porcentaje, Double maximo) {
         CuponDescuento c = new CuponDescuento();
         c.setId(1L);
         c.setCodigo("DESC10");
-        c.setPorcentajeDescuento(BigDecimal.valueOf(porcentaje));
-        c.setMontoMaximoDescuento(maximo != null ? BigDecimal.valueOf(maximo) : null);
+        c.setPorcentajeDescuento(porcentaje);
+        c.setMontoMaximoDescuento(maximo);
         c.setFechaExpiracion(LocalDateTime.now().plusDays(10));
         c.setActivo(true);
         return c;
     }
 
-    private CuponDescuento cuponExpirado() {
+    private CuponDescuento crearCuponExpirado() {
         CuponDescuento c = new CuponDescuento();
         c.setId(2L);
         c.setCodigo("VIEJOCUPON");
-        c.setPorcentajeDescuento(BigDecimal.valueOf(10.0));
+        c.setPorcentajeDescuento(10.0);
         c.setFechaExpiracion(LocalDateTime.now().minusDays(1));
         c.setActivo(true);
         return c;
     }
 
-    // ═════════════════════════════════════════════════════════════════════════
-    // iniciarPago
-    // ═════════════════════════════════════════════════════════════════════════
+    private Map<String, Object> pedidoData() {
+        Map<String, Object> data = new HashMap<>();
+        data.put("clienteId", 5);
+        data.put("total", 50000.0);
+        Map<String, Object> estado = new HashMap<>();
+        estado.put("nombre", "PENDIENTE");
+        data.put("estado", estado);
+        return data;
+    }
 
     @Nested
     @DisplayName("iniciarPago")
     class IniciarPago {
 
-        @Test
-        @DisplayName("crea transacción PENDIENTE con monto correcto")
-        void creaTransaccionExitosa() {
-            when(estadoPagoRepository.findByNombre("PENDIENTE"))
-                    .thenReturn(Optional.of(estado("PENDIENTE")));
-            when(transaccionRepository.save(any(TransaccionPago.class)))
-                    .thenAnswer(inv -> {
-                        TransaccionPago t = inv.getArgument(0);
-                        t.setId(1L);
-                        return t;
-                    });
+        private void setupHappyPathMocks() {
+            when(metodoPagoRepository.findById(1L)).thenReturn(Optional.of(metodo()));
+            when(restTemplate.getForObject(anyString(), eq(Map.class))).thenReturn(pedidoData());
+            when(estadoPagoRepository.findByNombre("APROBADO")).thenReturn(Optional.of(estado("APROBADO")));
+            when(estadoPagoRepository.findByNombre("RECHAZADO")).thenReturn(Optional.of(estado("RECHAZADO")));
+            when(estadoPagoRepository.findByNombre("REEMBOLSADO")).thenReturn(Optional.of(estado("REEMBOLSADO")));
+            when(estadoPagoRepository.findByNombre("PENDIENTE")).thenReturn(Optional.of(estado("PENDIENTE")));
+            when(transaccionRepository.save(any(TransaccionPago.class))).thenAnswer(inv -> {
+                TransaccionPago t = inv.getArgument(0);
+                t.setId(1L);
+                return t;
+            });
+        }
 
-            TransaccionPago resultado = service.iniciarPago(10L, 5L, 50000.0, metodo());
+        @Test
+        @DisplayName("crea transacción y retorna con estado PENDIENTE")
+        void creaTransaccionExitosa() {
+            setupHappyPathMocks();
+
+            TransaccionPago resultado = service.iniciarPago(10L, 1L, "idem-456");
 
             assertThat(resultado.getId()).isEqualTo(1L);
-            assertThat(resultado.getMontoTotal()).isEqualTo(50000.0);
-            assertThat(resultado.getMontoDescuento()).isEqualTo(0.0);
-            assertThat(resultado.getEstado().getNombre()).isEqualTo("PENDIENTE");
             assertThat(resultado.getPedidoId()).isEqualTo(10L);
             assertThat(resultado.getClienteId()).isEqualTo(5L);
-            verify(transaccionRepository).save(any(TransaccionPago.class));
+            assertThat(resultado.getMontoTotal()).isEqualTo(50000.0);
+            assertThat(resultado.getMetodoPago().getId()).isEqualTo(1L);
+            assertThat(resultado.getEstado().getNombre()).isEqualTo("PENDIENTE");
+            assertThat(resultado.getIdempotencyKey()).isEqualTo("idem-456");
+            verify(transaccionRepository).save(any());
         }
 
         @Test
-        @DisplayName("lanza excepción si estado PENDIENTE no existe en BD")
-        void estadoPendienteNoExiste() {
-            when(estadoPagoRepository.findByNombre("PENDIENTE")).thenReturn(Optional.empty());
+        @DisplayName("idempotencyKey vacío → no busca duplicado y genera UUID")
+        void idempotencyKeyVacio() {
+            when(metodoPagoRepository.findById(1L)).thenReturn(Optional.of(metodo()));
+            when(restTemplate.getForObject(anyString(), eq(Map.class))).thenReturn(pedidoData());
+            when(estadoPagoRepository.findByNombre("APROBADO")).thenReturn(Optional.of(estado("APROBADO")));
+            when(estadoPagoRepository.findByNombre("RECHAZADO")).thenReturn(Optional.of(estado("RECHAZADO")));
+            when(estadoPagoRepository.findByNombre("REEMBOLSADO")).thenReturn(Optional.of(estado("REEMBOLSADO")));
+            when(estadoPagoRepository.findByNombre("PENDIENTE")).thenReturn(Optional.of(estado("PENDIENTE")));
+            when(transaccionRepository.save(any())).thenAnswer(inv -> {
+                TransaccionPago t = inv.getArgument(0);
+                t.setId(1L);
+                return t;
+            });
 
-            assertThatThrownBy(() -> service.iniciarPago(10L, 5L, 50000.0, metodo()))
-                    .isInstanceOf(RuntimeException.class)
-                    .hasMessageContaining("PENDIENTE");
+            TransaccionPago resultado = service.iniciarPago(10L, 1L, "");
 
+            assertThat(resultado.getId()).isEqualTo(1L);
+            assertThat(resultado.getIdempotencyKey()).isNotNull();
+            verify(transaccionRepository, never()).findByIdempotencyKey(any());
+        }
+
+        @Test
+        @DisplayName("retorna transacción existente si idempotencyKey coincide")
+        void retornaExistentePorIdempotencyKey() {
+            TransaccionPago existente = transaccionCompleta(1L);
+            when(transaccionRepository.findByIdempotencyKey("idem-dup")).thenReturn(Optional.of(existente));
+
+            TransaccionPago resultado = service.iniciarPago(10L, 1L, "idem-dup");
+
+            assertThat(resultado.getId()).isEqualTo(1L);
             verify(transaccionRepository, never()).save(any());
         }
-    }
 
-    // ═════════════════════════════════════════════════════════════════════════
-    // anadirCuponDescuento
-    // ═════════════════════════════════════════════════════════════════════════
+        @Test
+        @DisplayName("idempotencyKey nulo no busca duplicado y genera UUID")
+        void idempotencyKeyNulo() {
+            when(metodoPagoRepository.findById(1L)).thenReturn(Optional.of(metodo()));
+            when(restTemplate.getForObject(anyString(), eq(Map.class))).thenReturn(pedidoData());
+            when(estadoPagoRepository.findByNombre("APROBADO")).thenReturn(Optional.of(estado("APROBADO")));
+            when(estadoPagoRepository.findByNombre("RECHAZADO")).thenReturn(Optional.of(estado("RECHAZADO")));
+            when(estadoPagoRepository.findByNombre("REEMBOLSADO")).thenReturn(Optional.of(estado("REEMBOLSADO")));
+            when(estadoPagoRepository.findByNombre("PENDIENTE")).thenReturn(Optional.of(estado("PENDIENTE")));
+            when(transaccionRepository.save(any())).thenAnswer(inv -> {
+                TransaccionPago t = inv.getArgument(0);
+                t.setId(1L);
+                return t;
+            });
+
+            TransaccionPago resultado = service.iniciarPago(10L, 1L, null);
+
+            assertThat(resultado.getId()).isEqualTo(1L);
+            assertThat(resultado.getIdempotencyKey()).isNotNull();
+            verify(transaccionRepository, never()).findByIdempotencyKey(any());
+        }
+
+        @Test
+        @DisplayName("lanza excepción si método de pago no existe")
+        void metodoPagoNoExiste() {
+            when(metodoPagoRepository.findById(99L)).thenReturn(Optional.empty());
+
+            assertThatThrownBy(() -> service.iniciarPago(10L, 99L, "idem"))
+                    .isInstanceOf(RecursoNoEncontradoException.class)
+                    .hasMessageContaining("99");
+        }
+
+        @Test
+        @DisplayName("lanza excepción si pedido no se encuentra (restTemplate retorna null)")
+        void pedidoDataNulo() {
+            when(metodoPagoRepository.findById(1L)).thenReturn(Optional.of(metodo()));
+            when(restTemplate.getForObject(anyString(), eq(Map.class))).thenReturn(null);
+
+            assertThatThrownBy(() -> service.iniciarPago(10L, 1L, "idem"))
+                    .isInstanceOf(RecursoNoEncontradoException.class)
+                    .hasMessageContaining("Pedido no encontrado");
+        }
+
+        @Test
+        @DisplayName("lanza excepción si pedido ya está confirmado (estado CONFIRMADO)")
+        void pedidoYaConfirmado() {
+            when(metodoPagoRepository.findById(1L)).thenReturn(Optional.of(metodo()));
+            Map<String, Object> data = pedidoData();
+            Map<String, Object> estado = new HashMap<>();
+            estado.put("nombre", "CONFIRMADO");
+            data.put("estado", estado);
+            when(restTemplate.getForObject(anyString(), eq(Map.class))).thenReturn(data);
+
+            assertThatThrownBy(() -> service.iniciarPago(10L, 1L, "idem"))
+                    .isInstanceOf(EstadoTransaccionInvalidoException.class)
+                    .hasMessageContaining("procesado o enviado");
+        }
+
+        @Test
+        @DisplayName("lanza excepción si pedido ya está enviado (estado ENVIADO)")
+        void pedidoYaEnviado() {
+            when(metodoPagoRepository.findById(1L)).thenReturn(Optional.of(metodo()));
+            when(restTemplate.getForObject(anyString(), eq(Map.class))).thenReturn(Map.of(
+                    "clienteId", 5, "total", 50000.0, "estado", "ENVIADO"
+            ));
+
+            assertThatThrownBy(() -> service.iniciarPago(10L, 1L, "idem"))
+                    .isInstanceOf(EstadoTransaccionInvalidoException.class)
+                    .hasMessageContaining("procesado o enviado");
+        }
+
+        @Test
+        @DisplayName("lanza Http 404 al consultar pedido (NotFound)")
+        void pedidoHttp404() {
+            when(metodoPagoRepository.findById(1L)).thenReturn(Optional.of(metodo()));
+            when(restTemplate.getForObject(anyString(), eq(Map.class)))
+                    .thenThrow(mock(HttpClientErrorException.NotFound.class));
+
+            assertThatThrownBy(() -> service.iniciarPago(10L, 1L, "idem"))
+                    .isInstanceOf(RecursoNoEncontradoException.class)
+                    .hasMessageContaining("no existe en el servicio de pedidos");
+        }
+
+        @Test
+        @DisplayName("lanza RecursoNoEncontradoException si falla la comunicación con pedidos")
+        void pedidoComunicacionFallida() {
+            when(metodoPagoRepository.findById(1L)).thenReturn(Optional.of(metodo()));
+            when(restTemplate.getForObject(anyString(), eq(Map.class)))
+                    .thenThrow(new RuntimeException("Connection refused"));
+
+            assertThatThrownBy(() -> service.iniciarPago(10L, 1L, "idem"))
+                    .isInstanceOf(RecursoNoEncontradoException.class)
+                    .hasMessageContaining("Error interno");
+        }
+
+        @Test
+        @DisplayName("retorna transacción activa existente si hay una en estado no terminal")
+        void retornaTransaccionActivaExistente() {
+            TransaccionPago activa = transaccion(2L, 50000.0);
+            when(metodoPagoRepository.findById(1L)).thenReturn(Optional.of(metodo()));
+            when(restTemplate.getForObject(anyString(), eq(Map.class))).thenReturn(pedidoData());
+            when(estadoPagoRepository.findByNombre("APROBADO")).thenReturn(Optional.of(estado("APROBADO")));
+            when(estadoPagoRepository.findByNombre("RECHAZADO")).thenReturn(Optional.of(estado("RECHAZADO")));
+            when(estadoPagoRepository.findByNombre("REEMBOLSADO")).thenReturn(Optional.of(estado("REEMBOLSADO")));
+            when(transaccionRepository.findFirstByPedidoIdAndEstadoNotIn(eq(10L), anyList())).thenReturn(Optional.of(activa));
+
+            TransaccionPago resultado = service.iniciarPago(10L, 1L, "idem");
+
+            assertThat(resultado.getId()).isEqualTo(2L);
+            verify(transaccionRepository, never()).save(any());
+        }
+
+        @Test
+        @DisplayName("estado como tipo desconocido → continúa como DESCONOCIDO")
+        void pedidoEstadoTipoDesconocido() {
+            when(metodoPagoRepository.findById(1L)).thenReturn(Optional.of(metodo()));
+            when(restTemplate.getForObject(anyString(), eq(Map.class))).thenReturn(Map.of(
+                    "clienteId", 5, "total", 50000.0, "estado", 999
+            ));
+            when(estadoPagoRepository.findByNombre("APROBADO")).thenReturn(Optional.of(estado("APROBADO")));
+            when(estadoPagoRepository.findByNombre("RECHAZADO")).thenReturn(Optional.of(estado("RECHAZADO")));
+            when(estadoPagoRepository.findByNombre("REEMBOLSADO")).thenReturn(Optional.of(estado("REEMBOLSADO")));
+            when(estadoPagoRepository.findByNombre("PENDIENTE")).thenReturn(Optional.of(estado("PENDIENTE")));
+            when(transaccionRepository.save(any())).thenAnswer(inv -> {
+                TransaccionPago t = inv.getArgument(0);
+                t.setId(1L);
+                return t;
+            });
+
+            TransaccionPago resultado = service.iniciarPago(10L, 1L, "idem");
+
+            assertThat(resultado.getId()).isEqualTo(1L);
+        }
+
+        @Test
+        @DisplayName("lanza excepción si no hay estado inicial disponible")
+        void estadoInicialNoDisponible() {
+            when(metodoPagoRepository.findById(1L)).thenReturn(Optional.of(metodo()));
+            when(restTemplate.getForObject(anyString(), eq(Map.class))).thenReturn(pedidoData());
+            when(estadoPagoRepository.findByNombre("APROBADO")).thenReturn(Optional.of(estado("APROBADO")));
+            when(estadoPagoRepository.findByNombre("RECHAZADO")).thenReturn(Optional.of(estado("RECHAZADO")));
+            when(estadoPagoRepository.findByNombre("REEMBOLSADO")).thenReturn(Optional.of(estado("REEMBOLSADO")));
+            when(estadoPagoRepository.findByNombre("PENDIENTE")).thenReturn(Optional.empty());
+
+            assertThatThrownBy(() -> service.iniciarPago(10L, 1L, "idem"))
+                    .isInstanceOf(RecursoNoEncontradoException.class)
+                    .hasMessageContaining("estado inicial");
+        }
+    }
 
     @Nested
     @DisplayName("anadirCuponDescuento")
@@ -161,7 +344,7 @@ class PagoServiceTest {
         @DisplayName("respeta el techo de montoMaximoDescuento")
         void respetaTechoDescuento() {
             TransaccionPago t = transaccion(1L, 200000.0);
-            CuponDescuento c = cuponValido(20.0, 15000.0); // 20% = 40000, techo 15000
+            CuponDescuento c = cuponValido(20.0, 15000.0);
 
             when(transaccionRepository.findById(1L)).thenReturn(Optional.of(t));
             when(cuponRepository.findById(1L)).thenReturn(Optional.of(c));
@@ -174,12 +357,28 @@ class PagoServiceTest {
         }
 
         @Test
+        @DisplayName("no sobrepasa el techo si el descuento no excede el máximo")
+        void descuentoNoExcedeTecho() {
+            TransaccionPago t = transaccion(1L, 50000.0);
+            CuponDescuento c = cuponValido(5.0, 10000.0);
+
+            when(transaccionRepository.findById(1L)).thenReturn(Optional.of(t));
+            when(cuponRepository.findById(1L)).thenReturn(Optional.of(c));
+            when(transaccionRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+            TransaccionPago resultado = service.anadirCuponDescuento(1L, 1L);
+
+            assertThat(resultado.getMontoDescuento()).isEqualTo(2500.0);
+            assertThat(resultado.getMontoTotal()).isEqualTo(47500.0);
+        }
+
+        @Test
         @DisplayName("lanza excepción si transacción no existe")
         void transaccionNoExiste() {
             when(transaccionRepository.findById(99L)).thenReturn(Optional.empty());
 
             assertThatThrownBy(() -> service.anadirCuponDescuento(99L, 1L))
-                    .isInstanceOf(RuntimeException.class)
+                    .isInstanceOf(RecursoNoEncontradoException.class)
                     .hasMessageContaining("99");
 
             verify(cuponRepository, never()).findById(any());
@@ -192,7 +391,7 @@ class PagoServiceTest {
             when(cuponRepository.findById(99L)).thenReturn(Optional.empty());
 
             assertThatThrownBy(() -> service.anadirCuponDescuento(1L, 99L))
-                    .isInstanceOf(RuntimeException.class)
+                    .isInstanceOf(RecursoNoEncontradoException.class)
                     .hasMessageContaining("99");
         }
 
@@ -200,16 +399,10 @@ class PagoServiceTest {
         @DisplayName("lanza excepción si cupón está expirado")
         void cuponExpirado() {
             when(transaccionRepository.findById(1L)).thenReturn(Optional.of(transaccion(1L, 50000.0)));
-            CuponDescuento cuponExpirado = new CuponDescuento();
-            cuponExpirado.setId(2L);
-            cuponExpirado.setCodigo("VIEJOCUPON");
-            cuponExpirado.setPorcentajeDescuento(new BigDecimal("10.0"));
-            cuponExpirado.setFechaExpiracion(LocalDateTime.now().minusDays(1));
-            cuponExpirado.setActivo(true);
-            when(cuponRepository.findById(2L)).thenReturn(Optional.of(cuponExpirado));
+            when(cuponRepository.findById(2L)).thenReturn(Optional.of(crearCuponExpirado()));
 
             assertThatThrownBy(() -> service.anadirCuponDescuento(1L, 2L))
-                    .isInstanceOf(RuntimeException.class)
+                    .isInstanceOf(CuponInvalidoException.class)
                     .hasMessageContaining("no es válido");
         }
 
@@ -223,34 +416,33 @@ class PagoServiceTest {
             when(cuponRepository.findById(1L)).thenReturn(Optional.of(inactivo));
 
             assertThatThrownBy(() -> service.anadirCuponDescuento(1L, 1L))
-                    .isInstanceOf(RuntimeException.class)
+                    .isInstanceOf(CuponInvalidoException.class)
                     .hasMessageContaining("no es válido");
         }
     }
-
-    // ═════════════════════════════════════════════════════════════════════════
-    // procesarConTransbank
-    // ═════════════════════════════════════════════════════════════════════════
 
     @Nested
     @DisplayName("procesarConTransbank")
     class ProcesarTransbank {
 
+        private void setupMockParaProcesar() {
+            when(estadoPagoRepository.findByNombre("PENDIENTE")).thenReturn(Optional.of(estado("PENDIENTE")));
+            when(estadoPagoRepository.findByNombre("APROBADO")).thenReturn(Optional.of(estado("APROBADO")));
+            when(transaccionRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        }
+
         @Test
-        @DisplayName("aprueba el pago y guarda token + fecha autorización")
+        @DisplayName("aprueba el pago y guarda código de autorización")
         void apruebaPago() {
             TransaccionPago t = transaccion(1L, 50000.0);
             when(transaccionRepository.findById(1L)).thenReturn(Optional.of(t));
-            when(estadoPagoRepository.findByNombre("APROBADO"))
-                    .thenReturn(Optional.of(estado("APROBADO")));
-            when(transaccionRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+            setupMockParaProcesar();
 
             TransaccionPago resultado = service.procesarConTransbank(1L, "TOKEN-ABC-123");
 
-            assertThat(resultado.getTokenTransbank()).isEqualTo("TOKEN-ABC-123");
             assertThat(resultado.getCodigoAutorizacion()).isNotNull().isNotEmpty();
             assertThat(resultado.getEstado().getNombre()).isEqualTo("APROBADO");
-            verify(transaccionRepository).save(any());
+            verify(transaccionRepository, atLeastOnce()).save(any());
         }
 
         @Test
@@ -259,54 +451,163 @@ class PagoServiceTest {
             when(transaccionRepository.findById(99L)).thenReturn(Optional.empty());
 
             assertThatThrownBy(() -> service.procesarConTransbank(99L, "TOKEN"))
-                    .isInstanceOf(RuntimeException.class)
+                    .isInstanceOf(RecursoNoEncontradoException.class)
                     .hasMessageContaining("99");
         }
 
         @Test
-        @DisplayName("lanza excepción si estado APROBADO no existe en BD")
-        void estadoAprobadoNoExiste() {
-            when(transaccionRepository.findById(1L)).thenReturn(Optional.of(transaccion(1L, 50000.0)));
-            when(estadoPagoRepository.findByNombre("APROBADO")).thenReturn(Optional.empty());
+        @DisplayName("token nulo → estado RECHAZADO")
+        void tokenNulo() {
+            TransaccionPago t = transaccion(1L, 50000.0);
+            when(transaccionRepository.findById(1L)).thenReturn(Optional.of(t));
+            when(estadoPagoRepository.findByNombre("PENDIENTE")).thenReturn(Optional.of(estado("PENDIENTE")));
+            when(estadoPagoRepository.findByNombre("RECHAZADO")).thenReturn(Optional.of(estado("RECHAZADO")));
+            when(transaccionRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
-            assertThatThrownBy(() -> service.procesarConTransbank(1L, "TOKEN"))
-                    .isInstanceOf(RuntimeException.class)
-                    .hasMessageContaining("APROBADO");
+            TransaccionPago resultado = service.procesarConTransbank(1L, null);
+
+            assertThat(resultado.getEstado().getNombre()).isEqualTo("RECHAZADO");
+            assertThat(resultado.getMensajeError()).contains("Token de pago inválido");
         }
 
         @Test
-        @DisplayName("continúa aunque el microservicio de pedidos falle (tolerancia a fallos)")
-        void toleraFalloDePedidos() {
+        @DisplayName("token vacío → estado RECHAZADO")
+        void tokenVacio() {
             TransaccionPago t = transaccion(1L, 50000.0);
             when(transaccionRepository.findById(1L)).thenReturn(Optional.of(t));
-            when(estadoPagoRepository.findByNombre("APROBADO"))
-                    .thenReturn(Optional.of(estado("APROBADO")));
-            when(restTemplate.postForEntity(anyString(), any(), eq(String.class)))
-                    .thenThrow(new RuntimeException("Connection refused"));
+            when(estadoPagoRepository.findByNombre("PENDIENTE")).thenReturn(Optional.of(estado("PENDIENTE")));
+            when(estadoPagoRepository.findByNombre("RECHAZADO")).thenReturn(Optional.of(estado("RECHAZADO")));
             when(transaccionRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
-            // No debe lanzar excepción pese al fallo externo
+            TransaccionPago resultado = service.procesarConTransbank(1L, "");
+
+            assertThat(resultado.getEstado().getNombre()).isEqualTo("RECHAZADO");
+            assertThat(resultado.getMensajeError()).contains("Token de pago inválido");
+        }
+
+        @Test
+        @DisplayName("token 'error' → estado RECHAZADO")
+        void tokenError() {
+            TransaccionPago t = transaccion(1L, 50000.0);
+            when(transaccionRepository.findById(1L)).thenReturn(Optional.of(t));
+            when(estadoPagoRepository.findByNombre("PENDIENTE")).thenReturn(Optional.of(estado("PENDIENTE")));
+            when(estadoPagoRepository.findByNombre("RECHAZADO")).thenReturn(Optional.of(estado("RECHAZADO")));
+            when(transaccionRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+            TransaccionPago resultado = service.procesarConTransbank(1L, "error");
+
+            assertThat(resultado.getEstado().getNombre()).isEqualTo("RECHAZADO");
+        }
+
+        @Test
+        @DisplayName("PENDIENTE no encontrado → lanza excepción")
+        void pendienteNoDisponibleEnProcesar() {
+            when(transaccionRepository.findById(1L)).thenReturn(Optional.of(transaccion(1L, 50000.0)));
+            when(estadoPagoRepository.findByNombre("PENDIENTE")).thenReturn(Optional.empty());
+
+            assertThatThrownBy(() -> service.procesarConTransbank(1L, "TOKEN"))
+                    .isInstanceOf(RecursoNoEncontradoException.class)
+                    .hasMessageContaining("estado de proceso");
+        }
+
+        @Test
+        @DisplayName("token inválido + RECHAZADO no encontrado → lanza excepción")
+        void tokenErrorConRechazadoNoDisponible() {
+            TransaccionPago t = transaccion(1L, 50000.0);
+            when(transaccionRepository.findById(1L)).thenReturn(Optional.of(t));
+            when(estadoPagoRepository.findByNombre("PENDIENTE")).thenReturn(Optional.of(estado("PENDIENTE")));
+            when(estadoPagoRepository.findByNombre("RECHAZADO")).thenReturn(Optional.empty());
+
+            assertThatThrownBy(() -> service.procesarConTransbank(1L, "error"))
+                    .isInstanceOf(RecursoNoEncontradoException.class)
+                    .hasMessageContaining("RECHAZADO");
+        }
+
+        @Test
+        @DisplayName("error genérico + RECHAZADO no encontrado → lanza excepción")
+        void errorGenericoConRechazadoNoDisponible() {
+            TransaccionPago t = transaccion(1L, 50000.0);
+            when(transaccionRepository.findById(1L)).thenReturn(Optional.of(t));
+            when(estadoPagoRepository.findByNombre("PENDIENTE")).thenReturn(Optional.of(estado("PENDIENTE")));
+            when(estadoPagoRepository.findByNombre("APROBADO")).thenThrow(new RuntimeException("BD caída"));
+            when(estadoPagoRepository.findByNombre("RECHAZADO")).thenReturn(Optional.empty());
+
+            assertThatThrownBy(() -> service.procesarConTransbank(1L, "TOKEN"))
+                    .isInstanceOf(RecursoNoEncontradoException.class)
+                    .hasMessageContaining("RECHAZADO");
+        }
+
+        @Test
+        @DisplayName("error genérico en procesamiento → estado RECHAZADO")
+        void errorGenerico() {
+            TransaccionPago t = transaccion(1L, 50000.0);
+            when(transaccionRepository.findById(1L)).thenReturn(Optional.of(t));
+            when(estadoPagoRepository.findByNombre("PENDIENTE")).thenReturn(Optional.of(estado("PENDIENTE")));
+            when(estadoPagoRepository.findByNombre("RECHAZADO")).thenReturn(Optional.of(estado("RECHAZADO")));
+            when(estadoPagoRepository.findByNombre("APROBADO")).thenThrow(new RuntimeException("BD caída"));
+            when(transaccionRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+            TransaccionPago resultado = service.procesarConTransbank(1L, "TOKEN");
+
+            assertThat(resultado.getEstado().getNombre()).isEqualTo("RECHAZADO");
+            assertThat(resultado.getMensajeError()).contains("Error interno");
+        }
+
+        @Test
+        @DisplayName("tolera fallo al actualizar pedido vía PUT")
+        void toleraFalloAlActualizarPedido() {
+            TransaccionPago t = transaccion(1L, 50000.0);
+            when(transaccionRepository.findById(1L)).thenReturn(Optional.of(t));
+            when(estadoPagoRepository.findByNombre("PENDIENTE")).thenReturn(Optional.of(estado("PENDIENTE")));
+            when(estadoPagoRepository.findByNombre("APROBADO")).thenReturn(Optional.of(estado("APROBADO")));
+            doThrow(new RuntimeException("Pedidos service down")).when(restTemplate).put(anyString(), any());
+            when(transaccionRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
             assertThatNoException().isThrownBy(() -> service.procesarConTransbank(1L, "TOKEN"));
         }
 
         @Test
-        @DisplayName("continúa aunque el microservicio de carrito falle al vaciar (tolerancia a fallos)")
+        @DisplayName("tolera fallo al vaciar carrito")
         void toleraFalloDeCarrito() {
             TransaccionPago t = transaccion(1L, 50000.0);
             when(transaccionRepository.findById(1L)).thenReturn(Optional.of(t));
-            when(estadoPagoRepository.findByNombre("APROBADO"))
-                    .thenReturn(Optional.of(estado("APROBADO")));
-            doThrow(new RuntimeException("Connection refused"))
-                    .when(restTemplate).delete(anyString());
+            when(estadoPagoRepository.findByNombre("PENDIENTE")).thenReturn(Optional.of(estado("PENDIENTE")));
+            when(estadoPagoRepository.findByNombre("APROBADO")).thenReturn(Optional.of(estado("APROBADO")));
+            doThrow(new RuntimeException("Carrito down")).when(restTemplate).delete(anyString());
             when(transaccionRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
             assertThatNoException().isThrownBy(() -> service.procesarConTransbank(1L, "TOKEN"));
         }
-    }
 
-    // ═════════════════════════════════════════════════════════════════════════
-    // procesarReembolso
-    // ═════════════════════════════════════════════════════════════════════════
+        @Test
+        @DisplayName("tolera fallo al enviar log de analítica")
+        void toleraFalloAlEnviarLog() {
+            TransaccionPago t = transaccion(1L, 50000.0);
+            when(transaccionRepository.findById(1L)).thenReturn(Optional.of(t));
+            when(estadoPagoRepository.findByNombre("PENDIENTE")).thenReturn(Optional.of(estado("PENDIENTE")));
+            when(estadoPagoRepository.findByNombre("APROBADO")).thenReturn(Optional.of(estado("APROBADO")));
+            when(restTemplate.postForEntity(anyString(), any(), eq(String.class)))
+                    .thenThrow(new RuntimeException("Analítica caída"));
+            when(transaccionRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+            assertThatNoException().isThrownBy(() -> service.procesarConTransbank(1L, "TOKEN"));
+        }
+
+        @Test
+        @DisplayName("APROBADO no encontrado → cae a RECHAZADO")
+        void estadoAprobadoNoEncontrado() {
+            TransaccionPago t = transaccion(1L, 50000.0);
+            when(transaccionRepository.findById(1L)).thenReturn(Optional.of(t));
+            when(estadoPagoRepository.findByNombre("PENDIENTE")).thenReturn(Optional.of(estado("PENDIENTE")));
+            when(estadoPagoRepository.findByNombre("RECHAZADO")).thenReturn(Optional.of(estado("RECHAZADO")));
+            when(estadoPagoRepository.findByNombre("APROBADO")).thenReturn(Optional.empty());
+            when(transaccionRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+            TransaccionPago resultado = service.procesarConTransbank(1L, "TOKEN");
+
+            assertThat(resultado.getEstado().getNombre()).isEqualTo("RECHAZADO");
+        }
+    }
 
     @Nested
     @DisplayName("procesarReembolso")
@@ -336,25 +637,35 @@ class PagoServiceTest {
             when(transaccionRepository.findById(99L)).thenReturn(Optional.empty());
 
             assertThatThrownBy(() -> service.procesarReembolso(99L, "Motivo"))
-                    .isInstanceOf(RuntimeException.class)
+                    .isInstanceOf(RecursoNoEncontradoException.class)
                     .hasMessageContaining("99");
+        }
+
+        @Test
+        @DisplayName("lanza excepción si transacción no está APROBADA")
+        void transaccionNoAprobada() {
+            TransaccionPago t = transaccion(1L, 50000.0);
+            t.setEstado(estado("PENDIENTE"));
+            when(transaccionRepository.findById(1L)).thenReturn(Optional.of(t));
+
+            assertThatThrownBy(() -> service.procesarReembolso(1L, "Motivo"))
+                    .isInstanceOf(EstadoTransaccionInvalidoException.class)
+                    .hasMessageContaining("Solo se pueden reembolsar");
         }
 
         @Test
         @DisplayName("lanza excepción si estado REEMBOLSADO no existe en BD")
         void estadoReembolsadoNoExiste() {
-            when(transaccionRepository.findById(1L)).thenReturn(Optional.of(transaccion(1L, 50000.0)));
+            TransaccionPago t = transaccion(1L, 50000.0);
+            t.setEstado(estado("APROBADO"));
+            when(transaccionRepository.findById(1L)).thenReturn(Optional.of(t));
             when(estadoPagoRepository.findByNombre("REEMBOLSADO")).thenReturn(Optional.empty());
 
             assertThatThrownBy(() -> service.procesarReembolso(1L, "Motivo"))
-                    .isInstanceOf(RuntimeException.class)
+                    .isInstanceOf(RecursoNoEncontradoException.class)
                     .hasMessageContaining("REEMBOLSADO");
         }
     }
-
-    // ═════════════════════════════════════════════════════════════════════════
-    // generarFactura
-    // ═════════════════════════════════════════════════════════════════════════
 
     @Nested
     @DisplayName("generarFactura")
@@ -381,7 +692,7 @@ class PagoServiceTest {
             assertThat(factura.getRazonSocial()).isEqualTo("Comercio Electrónico");
             assertThat(factura.getFechaEmision()).isNotNull();
             assertThat(factura.getFolioFiscal()).isPositive();
-            assertThat(factura.getXmlDocumento()).contains("1").contains("80000.0");
+            assertThat(factura.getXmlDocumento()).contains("<factura><transaccion>1</transaccion></factura>");
             verify(facturaRepository).save(any(FacturaElectronica.class));
         }
 
@@ -391,16 +702,12 @@ class PagoServiceTest {
             when(transaccionRepository.findById(99L)).thenReturn(Optional.empty());
 
             assertThatThrownBy(() -> service.generarFactura(99L, 12345678L, "Giro"))
-                    .isInstanceOf(RuntimeException.class)
+                    .isInstanceOf(RecursoNoEncontradoException.class)
                     .hasMessageContaining("99");
 
             verify(facturaRepository, never()).save(any());
         }
     }
-
-    // ═════════════════════════════════════════════════════════════════════════
-    // enviarBoletaEmail
-    // ═════════════════════════════════════════════════════════════════════════
 
     @Nested
     @DisplayName("enviarBoletaEmail")
@@ -417,7 +724,7 @@ class PagoServiceTest {
         }
 
         @Test
-        @DisplayName("retorna true incluso con correo vacío (flujo actual)")
+        @DisplayName("retorna true incluso con correo vacío")
         void envioConCorreoVacio() {
             when(transaccionRepository.findById(1L)).thenReturn(Optional.of(transaccion(1L, 50000.0)));
 
@@ -432,14 +739,10 @@ class PagoServiceTest {
             when(transaccionRepository.findById(99L)).thenReturn(Optional.empty());
 
             assertThatThrownBy(() -> service.enviarBoletaEmail(99L, "correo@test.cl"))
-                    .isInstanceOf(RuntimeException.class)
+                    .isInstanceOf(RecursoNoEncontradoException.class)
                     .hasMessageContaining("99");
         }
     }
-
-    // ═════════════════════════════════════════════════════════════════════════
-    // obtenerTransaccion
-    // ═════════════════════════════════════════════════════════════════════════
 
     @Nested
     @DisplayName("obtenerTransaccion")
@@ -463,7 +766,7 @@ class PagoServiceTest {
             when(transaccionRepository.findById(99L)).thenReturn(Optional.empty());
 
             assertThatThrownBy(() -> service.obtenerTransaccion(99L))
-                    .isInstanceOf(RuntimeException.class)
+                    .isInstanceOf(RecursoNoEncontradoException.class)
                     .hasMessageContaining("99");
         }
     }

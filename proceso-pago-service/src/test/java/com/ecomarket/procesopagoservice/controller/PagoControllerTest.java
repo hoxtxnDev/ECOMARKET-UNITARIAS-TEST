@@ -2,16 +2,13 @@ package com.ecomarket.procesopagoservice.controller;
 
 import com.ecomarket.procesopagoservice.model.*;
 import com.ecomarket.procesopagoservice.service.PagoService;
-import tools.jackson.databind.ObjectMapper;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
-import org.springframework.http.MediaType;
-import org.springframework.test.context.ActiveProfiles;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -22,12 +19,6 @@ import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-/**
- * Pruebas unitarias para PagoController.
- *
- * Ejecutar:
- *   mvn test -pl proceso-pago-service -Dtest=PagoControllerTest
- */
 @WebMvcTest(PagoController.class)
 @AutoConfigureMockMvc(addFilters = false)
 @ActiveProfiles("test")
@@ -37,15 +28,6 @@ class PagoControllerTest {
     @Autowired MockMvc mvc;
 
     @MockitoBean PagoService pagoService;
-
-    private ObjectMapper mapper;
-
-    @BeforeEach
-    void setup() {
-        mapper = new ObjectMapper();
-    }
-
-    // ── Fixtures ──────────────────────────────────────────────────────────────
 
     private EstadoPago estado(String nombre) {
         EstadoPago e = new EstadoPago();
@@ -87,10 +69,6 @@ class PagoControllerTest {
         return f;
     }
 
-    // ═════════════════════════════════════════════════════════════════════════
-    // POST /api/pagos/iniciar
-    // ═════════════════════════════════════════════════════════════════════════
-
     @Nested
     @DisplayName("POST /iniciar")
     class IniciarPago {
@@ -98,15 +76,13 @@ class PagoControllerTest {
         @Test
         @DisplayName("200 OK al iniciar pago con parámetros válidos")
         void exitoso() throws Exception {
-            when(pagoService.iniciarPago(eq(10L), eq(5L), eq(50000.0), any(MetodoPagoTransaccion.class)))
+            when(pagoService.iniciarPago(eq(10L), eq(1L), eq("idem-123")))
                     .thenReturn(transaccion(1L));
 
             mvc.perform(post("/api/pagos/iniciar")
                             .param("pedidoId", "10")
-                            .param("clienteId", "5")
-                            .param("monto", "50000.0")
-                            .contentType(MediaType.APPLICATION_JSON)
-                            .content(mapper.writeValueAsString(metodo())))
+                            .param("metodoPagoId", "1")
+                            .param("idempotencyKey", "idem-123"))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.id").value(1))
                     .andExpect(jsonPath("$.montoTotal").value(50000.0))
@@ -114,24 +90,17 @@ class PagoControllerTest {
         }
 
         @Test
-        @DisplayName("400 si el service lanza RuntimeException (estado PENDIENTE no existe)")
+        @DisplayName("400 si el service lanza RuntimeException")
         void estadoNoExiste() throws Exception {
-            when(pagoService.iniciarPago(anyLong(), anyLong(), any(Double.class), any()))
-                    .thenThrow(new RuntimeException("Estado PENDIENTE no encontrado"));
+            when(pagoService.iniciarPago(anyLong(), anyLong(), any()))
+                    .thenThrow(new RuntimeException("Error"));
 
             mvc.perform(post("/api/pagos/iniciar")
                             .param("pedidoId", "10")
-                            .param("clienteId", "5")
-                            .param("monto", "50000.0")
-                            .contentType(MediaType.APPLICATION_JSON)
-                            .content(mapper.writeValueAsString(metodo())))
+                            .param("metodoPagoId", "1"))
                     .andExpect(status().isBadRequest());
         }
     }
-
-    // ═════════════════════════════════════════════════════════════════════════
-    // GET /api/pagos/{transaccionId}
-    // ═════════════════════════════════════════════════════════════════════════
 
     @Nested
     @DisplayName("GET /{transaccionId}")
@@ -159,10 +128,6 @@ class PagoControllerTest {
         }
     }
 
-    // ═════════════════════════════════════════════════════════════════════════
-    // POST /api/pagos/{transaccionId}/cupon/{cuponId}
-    // ═════════════════════════════════════════════════════════════════════════
-
     @Nested
     @DisplayName("POST /{transaccionId}/cupon/{cuponId}")
     class AnadirCupon {
@@ -185,7 +150,7 @@ class PagoControllerTest {
         }
 
         @Test
-        @DisplayName("400 si cupón expirado o inválido")
+        @DisplayName("400 si cupón inválido")
         void cuponInvalido() throws Exception {
             when(pagoService.anadirCuponDescuento(1L, 2L))
                     .thenThrow(new RuntimeException("El cupón no es válido o está expirado"));
@@ -205,10 +170,6 @@ class PagoControllerTest {
         }
     }
 
-    // ═════════════════════════════════════════════════════════════════════════
-    // POST /api/pagos/{transaccionId}/transbank
-    // ═════════════════════════════════════════════════════════════════════════
-
     @Nested
     @DisplayName("POST /{transaccionId}/transbank")
     class ProcesarTransbank {
@@ -220,7 +181,6 @@ class PagoControllerTest {
             aprobado.setEstado(estado("APROBADO"));
             aprobado.setTokenTransbank("TOKEN-XYZ");
             aprobado.setCodigoAutorizacion("AUTH-001");
-            aprobado.setFechaAutorizacion(LocalDateTime.now());
 
             when(pagoService.procesarConTransbank(1L, "TOKEN-XYZ")).thenReturn(aprobado);
 
@@ -242,10 +202,6 @@ class PagoControllerTest {
                     .andExpect(status().isBadRequest());
         }
     }
-
-    // ═════════════════════════════════════════════════════════════════════════
-    // POST /api/pagos/{transaccionId}/reembolso
-    // ═════════════════════════════════════════════════════════════════════════
 
     @Nested
     @DisplayName("POST /{transaccionId}/reembolso")
@@ -273,10 +229,6 @@ class PagoControllerTest {
                     .andExpect(status().isBadRequest());
         }
     }
-
-    // ═════════════════════════════════════════════════════════════════════════
-    // POST /api/pagos/{transaccionId}/factura
-    // ═════════════════════════════════════════════════════════════════════════
 
     @Nested
     @DisplayName("POST /{transaccionId}/factura")
@@ -308,10 +260,6 @@ class PagoControllerTest {
                     .andExpect(status().isBadRequest());
         }
     }
-
-    // ═════════════════════════════════════════════════════════════════════════
-    // POST /api/pagos/{transaccionId}/email
-    // ═════════════════════════════════════════════════════════════════════════
 
     @Nested
     @DisplayName("POST /{transaccionId}/email")

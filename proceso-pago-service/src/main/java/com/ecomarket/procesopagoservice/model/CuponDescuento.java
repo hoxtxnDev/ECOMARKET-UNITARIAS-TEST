@@ -4,31 +4,28 @@ import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.PositiveOrZero;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
-
-import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "cupon_descuento")
-@Getter @Setter @NoArgsConstructor @AllArgsConstructor
+@Data @NoArgsConstructor @AllArgsConstructor
 public class CuponDescuento {
-    
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @NotNull
     @NotBlank
     private String codigo;
 
     @NotNull
     @PositiveOrZero
-    private BigDecimal porcentajeDescuento;
+    private Double porcentajeDescuento;
 
     @PositiveOrZero
-    private BigDecimal montoMaximoDescuento;
+    private Double montoMaximoDescuento;
 
     @NotNull
     private LocalDateTime fechaExpiracion;
@@ -36,7 +33,9 @@ public class CuponDescuento {
     @NotNull
     private Boolean activo;
 
-    public boolean esValido() {
-        return Boolean.TRUE.equals(activo) && LocalDateTime.now().isBefore(fechaExpiracion);
+    public Boolean esValido() {
+        return activo != null && activo
+                && fechaExpiracion != null
+                && LocalDateTime.now().isBefore(fechaExpiracion);
     }
 }
