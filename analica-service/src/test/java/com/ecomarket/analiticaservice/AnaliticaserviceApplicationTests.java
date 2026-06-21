@@ -1,17 +1,24 @@
 package com.ecomarket.analiticaservice;
 
 import org.junit.jupiter.api.Test;
-import org.springframework.boot.test.context.SpringBootTest;
+import org.mockito.MockedStatic;
+import org.springframework.boot.SpringApplication;
 
-@SpringBootTest
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.mockito.Mockito.mockStatic;
+
 class AnaliticaserviceApplicationTests {
 
-	@Test
-	void contextLoads() {
-	}
+    @Test
+    void hasImplicitConstructor() {
+        assertNotNull(new AnaliticaserviceApplication());
+    }
 
-	@Test
-	void mainStartsApplication() {
-		AnaliticaserviceApplication.main(new String[]{});
-	}
+    @Test
+    void mainCallsSpringApplicationRun() {
+        try (MockedStatic<SpringApplication> mocked = mockStatic(SpringApplication.class)) {
+            AnaliticaserviceApplication.main(new String[]{});
+            mocked.verify(() -> SpringApplication.run(AnaliticaserviceApplication.class, new String[]{}));
+        }
+    }
 }

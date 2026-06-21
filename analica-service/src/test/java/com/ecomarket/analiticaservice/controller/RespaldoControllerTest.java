@@ -7,24 +7,37 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import java.util.List;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.MediaType;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 import com.ecomarket.analiticaservice.dto.RespaldoRequestDTO;
+import com.ecomarket.analiticaservice.exception.GlobalExceptionHandler;
 import com.ecomarket.analiticaservice.model.entity.RespaldoBaseDatos;
 import com.ecomarket.analiticaservice.model.reference.EstadoRespaldo;
 import com.ecomarket.analiticaservice.service.AnaliticaService;
 
-@WebMvcTest(RespaldoController.class)
+@ExtendWith(MockitoExtension.class)
 class RespaldoControllerTest {
 
-    @Autowired private MockMvc mockMvc;
+    private MockMvc mockMvc;
 
-    @MockitoBean private AnaliticaService analiticaService;
+    @Mock private AnaliticaService analiticaService;
+
+    @InjectMocks private RespaldoController controller;
+
+    @BeforeEach
+    void setUp() {
+        mockMvc = MockMvcBuilders.standaloneSetup(controller)
+                .setControllerAdvice(new GlobalExceptionHandler())
+                .build();
+    }
 
     @Test
     void listarReturnsOk() throws Exception {

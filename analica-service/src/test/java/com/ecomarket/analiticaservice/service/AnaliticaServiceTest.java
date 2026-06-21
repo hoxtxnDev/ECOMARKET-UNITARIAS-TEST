@@ -16,7 +16,6 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpMethod;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.web.client.ResourceAccessException;
@@ -114,6 +113,7 @@ class AnaliticaServiceTest {
         assertEquals(1L, result.getId());
     }
 
+    @SuppressWarnings("unchecked")
     @Test
     void generarReporteUsuariosFetchesDataAndCreatesReport() {
         List<ClienteDTO> clientes = List.of(new ClienteDTO(1L, "Juan", "juan@test.com", "123"));
@@ -128,6 +128,7 @@ class AnaliticaServiceTest {
         assertEquals(1, result.getTotalRegistrosProcesados());
     }
 
+    @SuppressWarnings("unchecked")
     @Test
     void generarReporteUsuariosHandlesServiceUnavailable() {
         when(restTemplate.exchange(anyString(), eq(HttpMethod.GET), isNull(), any(ParameterizedTypeReference.class)))
@@ -141,6 +142,7 @@ class AnaliticaServiceTest {
         assertEquals(0, result.getTotalRegistrosProcesados());
     }
 
+    @SuppressWarnings("unchecked")
     @Test
     void generarReportePedidosFetchesAndCreates() {
         List<PedidoDTO> pedidos = List.of(new PedidoDTO());
@@ -155,6 +157,7 @@ class AnaliticaServiceTest {
         assertEquals(1, result.getTotalRegistrosProcesados());
     }
 
+    @SuppressWarnings("unchecked")
     @Test
     void generarReporteInventarioFetchesDataAndCreates() {
         List<ProductoDTO> productos = List.of(new ProductoDTO(), new ProductoDTO());
@@ -172,6 +175,7 @@ class AnaliticaServiceTest {
         assertEquals(3, result.getTotalRegistrosProcesados());
     }
 
+    @SuppressWarnings("unchecked")
     @Test
     void generarReportePagosFetchesAndCreates() {
         List<PagoDTO> pagos = List.of(new PagoDTO());
@@ -186,6 +190,7 @@ class AnaliticaServiceTest {
         assertEquals(1, result.getTotalRegistrosProcesados());
     }
 
+    @SuppressWarnings("unchecked")
     @Test
     void generarReporteCarritoFetchesAndCreates() {
         List<CarritoDTO> items = List.of(new CarritoDTO());
@@ -200,6 +205,7 @@ class AnaliticaServiceTest {
         assertEquals(1, result.getTotalRegistrosProcesados());
     }
 
+    @SuppressWarnings("unchecked")
     @Test
     void generarReporteSoporteFetchesAndCreates() {
         List<TicketSoporteDTO> tickets = List.of(new TicketSoporteDTO());
@@ -214,6 +220,7 @@ class AnaliticaServiceTest {
         assertEquals(1, result.getTotalRegistrosProcesados());
     }
 
+    @SuppressWarnings("unchecked")
     @Test
     void generarReporteEnviosFetchesAndCreates() {
         List<EnvioDTO> envios = List.of(new EnvioDTO());
@@ -228,6 +235,7 @@ class AnaliticaServiceTest {
         assertEquals(1, result.getTotalRegistrosProcesados());
     }
 
+    @SuppressWarnings("unchecked")
     @Test
     void generarReporteCompletoFetchesAllAndCreates() {
         when(restTemplate.exchange(anyString(), eq(HttpMethod.GET), isNull(), any(ParameterizedTypeReference.class)))
@@ -241,6 +249,7 @@ class AnaliticaServiceTest {
         assertEquals(16, result.getTotalRegistrosProcesados());
     }
 
+    @SuppressWarnings("unchecked")
     @Test
     void generarReporteCompletoHandlesServiceUnavailable() {
         when(restTemplate.exchange(anyString(), eq(HttpMethod.GET), isNull(), any(ParameterizedTypeReference.class)))
@@ -254,6 +263,7 @@ class AnaliticaServiceTest {
         assertEquals(0, result.getTotalRegistrosProcesados());
     }
 
+    @SuppressWarnings("unchecked")
     @Test
     void fetchListHandlesNullBody() {
         when(restTemplate.exchange(anyString(), eq(HttpMethod.GET), isNull(), any(ParameterizedTypeReference.class)))
@@ -267,6 +277,7 @@ class AnaliticaServiceTest {
         assertEquals(0, result.getTotalRegistrosProcesados());
     }
 
+    @SuppressWarnings("unchecked")
     @Test
     void fetchListHandlesGenericException() {
         when(restTemplate.exchange(anyString(), eq(HttpMethod.GET), isNull(), any(ParameterizedTypeReference.class)))
@@ -280,6 +291,7 @@ class AnaliticaServiceTest {
         assertEquals(0, result.getTotalRegistrosProcesados());
     }
 
+    @SuppressWarnings("unchecked")
     @Test
     void generarReportePedidosHandlesServiceUnavailable() {
         when(restTemplate.exchange(anyString(), eq(HttpMethod.GET), isNull(), any(ParameterizedTypeReference.class)))
@@ -293,6 +305,7 @@ class AnaliticaServiceTest {
         assertEquals(0, result.getTotalRegistrosProcesados());
     }
 
+    @SuppressWarnings("unchecked")
     @Test
     void generarReporteInventarioHandlesServiceUnavailable() {
         when(restTemplate.exchange(anyString(), eq(HttpMethod.GET), isNull(), any(ParameterizedTypeReference.class)))
@@ -306,6 +319,7 @@ class AnaliticaServiceTest {
         assertEquals(0, result.getTotalRegistrosProcesados());
     }
 
+    @SuppressWarnings("unchecked")
     @Test
     void generarReportePagosHandlesServiceUnavailable() {
         when(restTemplate.exchange(anyString(), eq(HttpMethod.GET), isNull(), any(ParameterizedTypeReference.class)))
@@ -319,6 +333,7 @@ class AnaliticaServiceTest {
         assertEquals(0, result.getTotalRegistrosProcesados());
     }
 
+    @SuppressWarnings("unchecked")
     @Test
     void generarReporteCarritoHandlesServiceUnavailable() {
         when(restTemplate.exchange(anyString(), eq(HttpMethod.GET), isNull(), any(ParameterizedTypeReference.class)))
@@ -332,6 +347,7 @@ class AnaliticaServiceTest {
         assertEquals(0, result.getTotalRegistrosProcesados());
     }
 
+    @SuppressWarnings("unchecked")
     @Test
     void generarReporteSoporteHandlesServiceUnavailable() {
         when(restTemplate.exchange(anyString(), eq(HttpMethod.GET), isNull(), any(ParameterizedTypeReference.class)))
@@ -345,6 +361,7 @@ class AnaliticaServiceTest {
         assertEquals(0, result.getTotalRegistrosProcesados());
     }
 
+    @SuppressWarnings("unchecked")
     @Test
     void generarReporteEnviosHandlesServiceUnavailable() {
         when(restTemplate.exchange(anyString(), eq(HttpMethod.GET), isNull(), any(ParameterizedTypeReference.class)))
