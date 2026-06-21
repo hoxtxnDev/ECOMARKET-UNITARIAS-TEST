@@ -19,6 +19,7 @@ public class RouteConfiguration {
     public RouteLocator customRouteLocator(RouteLocatorBuilder builder) {
         return builder.routes()
                 .route("registro-service", r -> r.path("/api/usuarios/**").filters(f -> f.filter(jwtFilter.apply(new JwtAuthenticationFilter.Config()))).uri("http://localhost:8081"))
+                .route("login-service", r -> r.path("/api/sesion/**").uri("http://localhost:8086"))
                 .route("carrito-service", r -> r.path("/api/carrito/**").filters(f -> f.filter(jwtFilter.apply(new JwtAuthenticationFilter.Config()))).uri("http://localhost:8082"))
                 .route("catalogo-service", r -> r.path("/api/catalogo/**").filters(f -> f.filter(jwtFilter.apply(new JwtAuthenticationFilter.Config()))).uri("http://localhost:8087"))
                 .route("envio-service", r -> r.path("/api/v1/logistica-envios/**").filters(f -> f.filter(jwtFilter.apply(new JwtAuthenticationFilter.Config()))).uri("http://localhost:8083"))

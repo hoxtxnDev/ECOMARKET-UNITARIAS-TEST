@@ -24,10 +24,31 @@ public class JwtAuthenticationFilter extends AbstractGatewayFilterFactory<JwtAut
     public GatewayFilter apply(Config config) {
         return (exchange, chain) -> {
             String path = exchange.getRequest().getURI().getPath();
-            @SuppressWarnings("unused")
             HttpMethod method = exchange.getRequest().getMethod();
+            
+            System.out.println("PATH RECIBIDO EN JWT FILTER: " + path);
 
-            if (path.contains("/api/usuarios/login") || path.contains("/api/usuarios/registro")) {
+            // Permitir preflight CORS
+            if (HttpMethod.OPTIONS.equals(method)) {
+                return chain.filter(exchange);
+            }
+
+            // Endpoints públicos: login, registro, creación de credenciales y seeders iniciales
+            if (path.startsWith("/api/sesion/login") || 
+                path.startsWith("/api/sesion/credencial") || 
+                path.startsWith("/api/usuarios/registro") || 
+                path.startsWith("/api/usuarios/roles") || 
+                path.startsWith("/api/usuarios/estados-perfil") || 
+                path.startsWith("/api/usuarios/permisos") || 
+                path.startsWith("/api/estado-pago") || 
+                path.startsWith("/api/metodo-pago") || 
+                path.startsWith("/api/direccion-envio") || 
+                path.startsWith("/api/estado-pedido") || 
+                path.startsWith("/api/v1/estado-envio") || 
+                path.startsWith("/api/v1/metodo-envio") || 
+                path.startsWith("/api/v1/puntos-retiro") || 
+                path.startsWith("/api/soporte/categorias") || 
+                path.startsWith("/api/soporte/estados")) {
                 return chain.filter(exchange);
             }
 
@@ -38,14 +59,15 @@ public class JwtAuthenticationFilter extends AbstractGatewayFilterFactory<JwtAut
             }
 
             String token = authHeader.substring(7);
-
-            String validationUrl = "http://localhost:8081/api/usuarios/validar";
+            
+            // Validar token llamando al iniciosesion-service
+            String validationUrl = "http://localhost:8086/api/sesion/validar";
             Map<String, String> request = Map.of("token", token);
-
+            
             try {
                 ResponseEntity<Map> response = restTemplate.postForEntity(validationUrl, request, Map.class);
                 Boolean isValid = (Boolean) response.getBody().get("valido");
-
+                
                 if (isValid != null && isValid) {
                     return chain.filter(exchange);
                 }

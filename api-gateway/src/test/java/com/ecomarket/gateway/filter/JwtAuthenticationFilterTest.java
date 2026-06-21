@@ -9,6 +9,8 @@ import java.util.Map;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.cloud.gateway.filter.GatewayFilter;
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
 import org.springframework.http.HttpHeaders;
@@ -49,9 +51,9 @@ class JwtAuthenticationFilterTest {
     }
 
     @Test
-    void allowsLoginPathWithoutAuth() {
-        when(request.getURI()).thenReturn(URI.create("http://localhost/api/usuarios/login"));
-        when(request.getMethod()).thenReturn(HttpMethod.POST);
+    void allowsOptionsRequestWithoutAuth() {
+        when(request.getURI()).thenReturn(URI.create("http://localhost/api/usuarios"));
+        when(request.getMethod()).thenReturn(HttpMethod.OPTIONS);
 
         GatewayFilter gatewayFilter = filter.apply(new JwtAuthenticationFilter.Config());
         assertNotNull(gatewayFilter.filter(exchange, chain));
@@ -60,15 +62,33 @@ class JwtAuthenticationFilterTest {
         verify(response, never()).setStatusCode(any());
     }
 
-    @Test
-    void allowsRegistroPathWithoutAuth() {
-        when(request.getURI()).thenReturn(URI.create("http://localhost/api/usuarios/registro"));
-        when(request.getMethod()).thenReturn(HttpMethod.POST);
+    @ParameterizedTest
+    @ValueSource(strings = {
+        "/api/sesion/login",
+        "/api/sesion/credencial",
+        "/api/usuarios/registro",
+        "/api/usuarios/roles",
+        "/api/usuarios/estados-perfil",
+        "/api/usuarios/permisos",
+        "/api/estado-pago",
+        "/api/metodo-pago",
+        "/api/direccion-envio",
+        "/api/estado-pedido",
+        "/api/v1/estado-envio",
+        "/api/v1/metodo-envio",
+        "/api/v1/puntos-retiro",
+        "/api/soporte/categorias",
+        "/api/soporte/estados"
+    })
+    void allowsAllPublicPathsWithoutAuth(String path) {
+        when(request.getURI()).thenReturn(URI.create("http://localhost" + path));
+        when(request.getMethod()).thenReturn(HttpMethod.GET);
 
         GatewayFilter gatewayFilter = filter.apply(new JwtAuthenticationFilter.Config());
         assertNotNull(gatewayFilter.filter(exchange, chain));
 
         verify(chain).filter(exchange);
+        verify(response, never()).setStatusCode(any());
     }
 
     @Test
