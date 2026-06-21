@@ -1,13 +1,16 @@
 package com.ecomarket.gestiontiendaservice.controller;
 
+import com.ecomarket.gestiontiendaservice.dto.EstadoRequestDTO;
+import com.ecomarket.gestiontiendaservice.dto.GerenteRequestDTO;
+import com.ecomarket.gestiontiendaservice.dto.SucursalRequestDTO;
 import com.ecomarket.gestiontiendaservice.model.*;
 import com.ecomarket.gestiontiendaservice.service.GestionTiendaService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.time.LocalDateTime;
 import java.util.List;
 
 @RestController
@@ -17,16 +20,12 @@ public class GestionTiendaController {
 
     private final GestionTiendaService gestionTiendaService;
 
-    @PostMapping("/sucursales")
-    public ResponseEntity<Sucursal> registrarSucursal(
-            @RequestParam String nombre,
-            @RequestParam String direccion,
-            @RequestParam String telefono,
-            @RequestParam Long garanteId) {
-        return ResponseEntity.ok(gestionTiendaService.registrarSucursal(nombre, direccion, telefono, garanteId));
+    @PostMapping("/sucursal")
+    public ResponseEntity<Sucursal> registrarSucursal(@RequestBody @Valid SucursalRequestDTO dto) {
+        return ResponseEntity.ok(gestionTiendaService.registrarSucursal(dto));
     }
 
-    @GetMapping("/sucursales/{sucursalId}")
+    @GetMapping("/sucursal/{sucursalId}")
     public ResponseEntity<Sucursal> obtenerSucursal(@PathVariable Long sucursalId) {
         return ResponseEntity.ok(gestionTiendaService.obtenerDatosSucursal(sucursalId));
     }
@@ -36,43 +35,73 @@ public class GestionTiendaController {
         return ResponseEntity.ok(gestionTiendaService.listarSucursalesActivas());
     }
 
+    @PutMapping("/sucursal/{sucursalId}/gerente")
+    public ResponseEntity<Sucursal> asignarGerente(
+            @PathVariable Long sucursalId,
+            @RequestBody @Valid GerenteRequestDTO dto) {
+        return ResponseEntity.ok(gestionTiendaService.asignarGerente(sucursalId, dto.getGerenteCargoId()));
+    }
+
     @PostMapping("/permisos-pos")
     public ResponseEntity<PermisoPOS> configurarPermisoPOS(@RequestBody PermisoPOS permisoPOS) {
         return ResponseEntity.ok(gestionTiendaService.configurarPermisoPOS(permisoPOS));
     }
 
-    @PostMapping("/tareas")
-    public ResponseEntity<TareaPersonal> asignarTarea(
-            @RequestParam Long empleadoId,
-            @RequestParam Long sucursalId,
-            @RequestParam String titulo,
-            @RequestParam String descripcionTarea,
-            @RequestParam LocalDateTime limite) {
-        return ResponseEntity.ok(gestionTiendaService.asignarTareaPersonal(
-                empleadoId, sucursalId, titulo, descripcionTarea, limite));
+    @PostMapping("/tarea")
+    public ResponseEntity<TareaPersonal> asignarTarea(@RequestBody TareaPersonal tarea) {
+        return ResponseEntity.ok(gestionTiendaService.asignarTareaPersonal(tarea));
     }
 
     @PatchMapping("/tareas/{tareaId}/estado")
     public ResponseEntity<TareaPersonal> actualizarEstadoTarea(
             @PathVariable Long tareaId,
-            @RequestBody EstadoTareaPersonal nuevoEstado) {
-        return ResponseEntity.ok(gestionTiendaService.actualizarEstadoTarea(tareaId, nuevoEstado));
+            @RequestBody @Valid EstadoRequestDTO dto) {
+        return ResponseEntity.ok(gestionTiendaService.actualizarEstadoTarea(tareaId, dto.getEstadoId()));
     }
 
-    @PostMapping("/sucursales/{sucursalId}/reglamento")
+    // ── EstadoTareaPersonal CRUD ──
+
+    @GetMapping("/estados-tarea")
+    public ResponseEntity<List<EstadoTareaPersonal>> listarEstadosTarea() {
+        return ResponseEntity.ok(gestionTiendaService.listarEstadosTarea());
+    }
+
+    @GetMapping("/estados-tarea/{id}")
+    public ResponseEntity<EstadoTareaPersonal> obtenerEstadoTarea(@PathVariable Long id) {
+        return ResponseEntity.ok(gestionTiendaService.obtenerEstadoTarea(id));
+    }
+
+    @PostMapping("/estados-tarea")
+    public ResponseEntity<EstadoTareaPersonal> crearEstadoTarea(@RequestBody @Valid EstadoTareaPersonal estado) {
+        return ResponseEntity.ok(gestionTiendaService.crearEstadoTarea(estado));
+    }
+
+    @PutMapping("/estados-tarea/{id}")
+    public ResponseEntity<EstadoTareaPersonal> editarEstadoTarea(
+            @PathVariable Long id,
+            @RequestBody @Valid EstadoTareaPersonal datos) {
+        return ResponseEntity.ok(gestionTiendaService.editarEstadoTarea(id, datos));
+    }
+
+    @DeleteMapping("/estados-tarea/{id}")
+    public ResponseEntity<Boolean> eliminarEstadoTarea(@PathVariable Long id) {
+        return ResponseEntity.ok(gestionTiendaService.eliminarEstadoTarea(id));
+    }
+
+    @PostMapping("/sucursal/{sucursalId}/reglamento")
     public ResponseEntity<ReglamentoInterno> establecerReglamento(
             @RequestBody ReglamentoInterno reglamentoInterno) {
         return ResponseEntity.ok(gestionTiendaService.establecerReglamento(reglamentoInterno));
     }
 
-    @PutMapping("/sucursales/{sucursalId}/horarios")
+    @PutMapping("/sucursal/{sucursalId}/horarios")
     public ResponseEntity<Boolean> administrarHorario(
             @PathVariable Long sucursalId,
             @RequestBody List<HorarioAtencion> horarios) {
         return ResponseEntity.ok(gestionTiendaService.administrarHorario(sucursalId, horarios));
     }
 
-    @GetMapping("/sucursales/{sucursalId}/horarios")
+    @GetMapping("/sucursal/{sucursalId}/horarios")
     public ResponseEntity<List<HorarioAtencion>> consultarHorarios(@PathVariable Long sucursalId) {
         return ResponseEntity.ok(gestionTiendaService.consultarHorariosTienda(sucursalId));
     }

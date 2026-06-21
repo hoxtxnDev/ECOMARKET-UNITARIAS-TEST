@@ -10,12 +10,15 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.validation.BindingResult;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.MissingServletRequestParameterException;
+import org.springframework.core.MethodParameter;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 import java.util.List;
-import java.util.Map;
 
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.Mockito.*;
@@ -27,6 +30,32 @@ class GlobalExceptionHandlerTest {
     HttpServletRequest request;
 
     GlobalExceptionHandler handler = new GlobalExceptionHandler();
+
+    @Test
+    @DisplayName("handleYaExisteEnDBException retorna 409 CONFLICT")
+    void yaExisteEnDB() {
+        when(request.getRequestURI()).thenReturn("/api/test");
+
+        ResponseEntity<ErrorResponseDTO> response = handler.handleYaExisteEnDBException(
+                new YaExisteEnBdException("El recurso ya existe"), request);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
+        assertThat(response.getBody().getMessage()).isEqualTo("El recurso ya existe");
+        assertThat(response.getBody().getPath()).isEqualTo("/api/test");
+    }
+
+    @Test
+    @DisplayName("handleNoExisteEnDBException retorna 404 NOT_FOUND")
+    void noExisteEnDB() {
+        when(request.getRequestURI()).thenReturn("/api/test");
+
+        ResponseEntity<ErrorResponseDTO> response = handler.handleNoExisteEnDBException(
+                new NoExisteEnBdException("El recurso no existe"), request);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+        assertThat(response.getBody().getMessage()).isEqualTo("El recurso no existe");
+        assertThat(response.getBody().getPath()).isEqualTo("/api/test");
+    }
 
     @Test
     @DisplayName("handleValidationExceptions retorna 400 con detalles de errores")
@@ -59,15 +88,49 @@ class GlobalExceptionHandlerTest {
     }
 
     @Test
-    @DisplayName("handleRuntimeException retorna 400 con el mensaje")
-    void runtimeException() {
+    @DisplayName("handleHttpMessageNotReadableException retorna 400")
+    void httpMessageNotReadable() {
         when(request.getRequestURI()).thenReturn("/api/test");
 
-        ResponseEntity<ErrorResponseDTO> response = handler.handleRuntimeException(
-                new RuntimeException("Algo salio mal"), request);
+        HttpMessageNotReadableException ex = mock(HttpMessageNotReadableException.class);
+
+        ResponseEntity<ErrorResponseDTO> response = handler.handleHttpMessageNotReadableException(ex, request);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
-        assertThat(response.getBody().getMessage()).isEqualTo("Algo salio mal");
+        assertThat(response.getBody().getMessage()).contains("JSON mal formado");
+        assertThat(response.getBody().getPath()).isEqualTo("/api/test");
+    }
+
+    @Test
+    @DisplayName("handleMissingParams retorna 400 con nombre del parametro")
+    void missingParams() {
+        when(request.getRequestURI()).thenReturn("/api/test");
+
+        MissingServletRequestParameterException ex = new MissingServletRequestParameterException("id", "Long");
+
+        ResponseEntity<ErrorResponseDTO> response = handler.handleMissingParams(ex, request);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+        assertThat(response.getBody().getMessage()).contains("id");
+        assertThat(response.getBody().getPath()).isEqualTo("/api/test");
+    }
+
+    @Test
+    @DisplayName("handleTypeMismatch retorna 400 con tipo esperado")
+    void typeMismatch() {
+        when(request.getRequestURI()).thenReturn("/api/test");
+
+        MethodParameter param = mock(MethodParameter.class);
+        when(param.getParameterName()).thenReturn("id");
+        MethodArgumentTypeMismatchException ex = mock(MethodArgumentTypeMismatchException.class);
+        when(ex.getParameter()).thenReturn(param);
+        when(ex.getRequiredType()).thenReturn((Class) Integer.class);
+
+        ResponseEntity<ErrorResponseDTO> response = handler.handleTypeMismatch(ex, request);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+        assertThat(response.getBody().getMessage()).contains("id");
+        assertThat(response.getBody().getMessage()).contains("Integer");
     }
 
     @Test

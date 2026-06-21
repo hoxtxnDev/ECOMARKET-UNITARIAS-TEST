@@ -27,7 +27,6 @@ class GestiontiendaserviceApplicationTests {
         }
     }
 
-    @SuppressWarnings("unchecked")
     private <T> T any(Class<T> type) {
         return Mockito.any(type);
     }

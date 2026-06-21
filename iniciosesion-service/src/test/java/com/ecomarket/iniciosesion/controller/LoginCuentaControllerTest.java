@@ -2,6 +2,7 @@ package com.ecomarket.iniciosesion.controller;
 
 import com.ecomarket.iniciosesion.dto.*;
 import com.ecomarket.iniciosesion.exception.*;
+import com.ecomarket.iniciosesion.service.JwtUtil;
 import com.ecomarket.iniciosesion.service.LoginCuentaService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -43,6 +44,9 @@ class LoginCuentaControllerTest {
 
     @MockitoBean
     private LoginCuentaService loginCuentaService;
+
+    @MockitoBean
+    private JwtUtil jwtUtil;
 
     // ── Helper: serializa objeto a JSON ───────────────────────────────────────
     private String json(Object obj) throws Exception {

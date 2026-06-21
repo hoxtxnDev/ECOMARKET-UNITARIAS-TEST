@@ -10,7 +10,6 @@ import com.ecomarket.iniciosesion.repository.SesionJWTRepository;
 import com.ecomarket.iniciosesion.repository.TokenRecuperacionRepository;
 import io.jsonwebtoken.Claims;
 
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -55,17 +54,7 @@ class LoginCuentaServiceTest {
     private RestTemplate restTemplate;
 
     @InjectMocks
-    private LoginCuentaService service;
-
-    @BeforeEach
-    void setup() {
-        service = new LoginCuentaService(
-                credencialRepository,
-                tokenRecuperacionRepository,
-                sesionJWTRepository,
-                jwtUtil,
-                restTemplate);
-    }
+    private LoginCuentaServiceImpl service;
 
     // ── Helper: construye una credencial activa con la contraseña ya hasheada ─
     private Credencial credencialActiva(Long usuarioId, String correo, String contrasenaPlana) {

@@ -1,7 +1,6 @@
 package com.horacio.ecomarket.usuarios.controller;
 
 import com.horacio.ecomarket.usuarios.exception.RecursoNoEncontradoException;
-import com.horacio.ecomarket.usuarios.exception.RecursoNoEncontradoException;
 import com.horacio.ecomarket.usuarios.model.EstadoPerfil;
 import com.horacio.ecomarket.usuarios.model.Permiso;
 import com.horacio.ecomarket.usuarios.model.Rol;

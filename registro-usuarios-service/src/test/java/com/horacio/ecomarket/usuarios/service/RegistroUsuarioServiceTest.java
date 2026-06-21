@@ -1,11 +1,9 @@
 package com.horacio.ecomarket.usuarios.service;
 
-import com.horacio.ecomarket.usuarios.model.Credencial;
 import com.horacio.ecomarket.usuarios.model.EstadoPerfil;
 import com.horacio.ecomarket.usuarios.model.PerfilUsuario;
 import com.horacio.ecomarket.usuarios.model.Permiso;
 import com.horacio.ecomarket.usuarios.model.Rol;
-import com.horacio.ecomarket.usuarios.repository.CredencialRepository;
 import com.horacio.ecomarket.usuarios.exception.CorreoDuplicadoException;
 import com.horacio.ecomarket.usuarios.exception.RecursoNoEncontradoException;
 import com.horacio.ecomarket.usuarios.repository.PerfilUsuarioRepository;
@@ -14,11 +12,9 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.client.RestTemplate;
 
 import java.util.ArrayList;
@@ -35,12 +31,6 @@ class RegistroUsuarioServiceTest {
 
     @Mock
     private PerfilUsuarioRepository repository;
-
-    @Mock
-    private PasswordEncoder passwordEncoder;
-
-    @Mock
-    private CredencialRepository credencialRepository;
 
     @Mock
     private RestTemplate restTemplate;
@@ -73,7 +63,7 @@ class RegistroUsuarioServiceTest {
     class RegistrarCuenta {
 
         @Test
-        @DisplayName("registra usuario y credencial correctamente cuando el correo no existe")
+        @DisplayName("registra usuario y llama a iniciosesion HTTP cuando el correo no existe")
         void registraUsuarioExitosamente() {
             when(repository.findByCorreo("hocx@eco.cl")).thenReturn(Optional.empty());
             when(repository.save(any())).thenAnswer(inv -> {
@@ -88,8 +78,8 @@ class RegistroUsuarioServiceTest {
                         .build();
                 return p;
             });
-            when(passwordEncoder.encode("pass123")).thenReturn("$2a$10$encoded");
-            when(credencialRepository.save(any(Credencial.class))).thenReturn(null);
+            when(restTemplate.postForEntity(contains("8086"), any(), eq(String.class)))
+                    .thenReturn(null);
 
             PerfilUsuario resultado = service.registrarCuenta(perfilBase, "pass123");
 
@@ -97,7 +87,8 @@ class RegistroUsuarioServiceTest {
             assertThat(resultado.getId()).isEqualTo(1L);
             assertThat(resultado.getCorreo()).isEqualTo("hocx@eco.cl");
             verify(repository).save(any(PerfilUsuario.class));
-            verify(credencialRepository).save(any(Credencial.class));
+            verify(restTemplate).postForEntity(
+                    contains("8086/api/sesion/credencial"), any(), eq(String.class));
         }
 
         @Test
@@ -105,8 +96,8 @@ class RegistroUsuarioServiceTest {
         void asignaFechaCreacion() {
             when(repository.findByCorreo(anyString())).thenReturn(Optional.empty());
             when(repository.save(any())).thenAnswer(inv -> inv.getArgument(0));
-            when(passwordEncoder.encode(anyString())).thenReturn("encoded");
-            when(credencialRepository.save(any(Credencial.class))).thenReturn(null);
+            when(restTemplate.postForEntity(contains("8086"), any(), eq(String.class)))
+                    .thenReturn(null);
 
             PerfilUsuario resultado = service.registrarCuenta(perfilBase, "pass123");
 
@@ -128,14 +119,13 @@ class RegistroUsuarioServiceTest {
                 p.setId(3L);
                 return p;
             });
-            when(passwordEncoder.encode("pass123")).thenReturn("encoded");
-            when(credencialRepository.save(any(Credencial.class))).thenReturn(null);
+            when(restTemplate.postForEntity(contains("8086"), any(), eq(String.class)))
+                    .thenReturn(null);
 
             service.registrarCuenta(conRol, "pass123");
 
-            ArgumentCaptor<Credencial> captor = ArgumentCaptor.forClass(Credencial.class);
-            verify(credencialRepository).save(captor.capture());
-            assertThat(captor.getValue().getRolAcceso()).isEqualTo("ROLE_CLIENTE");
+            verify(restTemplate).postForEntity(
+                    contains("8086/api/sesion/credencial"), any(), eq(String.class));
         }
 
         @Test
@@ -148,7 +138,7 @@ class RegistroUsuarioServiceTest {
                     .hasMessageContaining("hocx@eco.cl");
 
             verify(repository, never()).save(any());
-            verify(credencialRepository, never()).save(any());
+            verify(restTemplate, never()).postForEntity(anyString(), any(), any());
         }
 
         @Test
@@ -165,14 +155,30 @@ class RegistroUsuarioServiceTest {
                 p.setId(2L);
                 return p;
             });
-            when(passwordEncoder.encode("pass123")).thenReturn("encoded");
-            when(credencialRepository.save(any(Credencial.class))).thenReturn(null);
+            when(restTemplate.postForEntity(contains("8086"), any(), eq(String.class)))
+                    .thenReturn(null);
 
             service.registrarCuenta(sinRol, "pass123");
 
-            ArgumentCaptor<Credencial> captor = ArgumentCaptor.forClass(Credencial.class);
-            verify(credencialRepository).save(captor.capture());
-            assertThat(captor.getValue().getRolAcceso()).isEqualTo("ROLE_USER");
+            verify(restTemplate).postForEntity(
+                    contains("8086/api/sesion/credencial"), any(), eq(String.class));
+        }
+
+        @Test
+        @DisplayName("lanza RuntimeException cuando iniciosesion HTTP falla")
+        void lanzaExcepcionCuandoIniciosesionFalla() {
+            when(repository.findByCorreo("hocx@eco.cl")).thenReturn(Optional.empty());
+            when(repository.save(any())).thenAnswer(inv -> {
+                PerfilUsuario p = inv.getArgument(0);
+                p.setId(1L);
+                return p;
+            });
+            when(restTemplate.postForEntity(contains("8086"), any(), eq(String.class)))
+                    .thenThrow(new RuntimeException("Connection refused"));
+
+            assertThatThrownBy(() -> service.registrarCuenta(perfilBase, "pass123"))
+                    .isInstanceOf(RuntimeException.class)
+                    .hasMessageContaining("crear credenciales");
         }
     }
 

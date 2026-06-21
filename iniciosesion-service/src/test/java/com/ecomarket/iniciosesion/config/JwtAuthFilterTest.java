@@ -140,5 +140,23 @@ class JwtAuthFilterTest {
 
             verify(filterChain).doFilter(request, response);
         }
+
+        @Test
+        @DisplayName("setea authentication con authorities vacías cuando roles es null")
+        void rolesNullSeteaAuthenticationConAutoridadesVacias() throws Exception {
+            request.addHeader("Authorization", "Bearer token-sin-roles");
+
+            when(jwtUtil.esTokenValido("token-sin-roles")).thenReturn(true);
+            when(jwtUtil.obtenerCorreo("token-sin-roles")).thenReturn("user@eco.cl");
+            when(jwtUtil.obtenerRoles("token-sin-roles")).thenReturn(null);
+
+            filter.doFilterInternal(request, response, filterChain);
+
+            Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+            assertThat(auth).isNotNull();
+            assertThat(auth.getPrincipal()).isEqualTo("user@eco.cl");
+            assertThat(auth.getAuthorities()).isEmpty();
+            verify(filterChain).doFilter(request, response);
+        }
     }
 }

@@ -146,70 +146,19 @@ class GlobalExceptionHandlerTest {
     }
 
     @Nested
-    @DisplayName("handleCredencialNotFound")
-    class CredencialNotFoundTest {
+    @DisplayName("handleRecursoNoEncontrado")
+    class RecursoNoEncontradoTest {
 
         @Test
         @DisplayName("Debería retornar 404 NOT FOUND")
-        void testHandleCredencialNotFound() {
-            CredencialNotFoundException ex = new CredencialNotFoundException("Credencial no encontrada");
-            ResponseEntity<ErrorResponseDTO> response = globalExceptionHandler.handleCredencialNotFound(ex, request);
+        void testHandleRecursoNoEncontrado() {
+            RecursoNoEncontradoException ex = new RecursoNoEncontradoException("Dirección no encontrada.");
+            ResponseEntity<ErrorResponseDTO> response = globalExceptionHandler.handleRecursoNoEncontrado(ex, request);
 
             assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
             assertThat(response.getBody()).isNotNull();
             assertThat(response.getBody().getStatus()).isEqualTo(404);
-            assertThat(response.getBody().getMessage()).isEqualTo("Credencial no encontrada");
-        }
-    }
-
-    @Nested
-    @DisplayName("handleAutenticacion")
-    class AutenticacionTest {
-
-        @Test
-        @DisplayName("Debería retornar 401 UNAUTHORIZED")
-        void testHandleAutenticacion() {
-            AutenticacionException ex = new AutenticacionException("Credenciales inválidas");
-            ResponseEntity<ErrorResponseDTO> response = globalExceptionHandler.handleAutenticacion(ex, request);
-
-            assertThat(response.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
-            assertThat(response.getBody()).isNotNull();
-            assertThat(response.getBody().getStatus()).isEqualTo(401);
-            assertThat(response.getBody().getMessage()).isEqualTo("Credenciales inválidas");
-        }
-    }
-
-    @Nested
-    @DisplayName("handleCuentaBloqueada")
-    class CuentaBloqueadaTest {
-
-        @Test
-        @DisplayName("Debería retornar 403 FORBIDDEN")
-        void testHandleCuentaBloqueada() {
-            CuentaBloqueadaException ex = new CuentaBloqueadaException("Cuenta bloqueada");
-            ResponseEntity<ErrorResponseDTO> response = globalExceptionHandler.handleCuentaBloqueada(ex, request);
-
-            assertThat(response.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
-            assertThat(response.getBody()).isNotNull();
-            assertThat(response.getBody().getStatus()).isEqualTo(403);
-            assertThat(response.getBody().getMessage()).isEqualTo("Cuenta bloqueada");
-        }
-    }
-
-    @Nested
-    @DisplayName("handleTokenInvalido")
-    class TokenInvalidoTest {
-
-        @Test
-        @DisplayName("Debería retornar 401 UNAUTHORIZED")
-        void testHandleTokenInvalido() {
-            TokenInvalidoException ex = new TokenInvalidoException("Token inválido");
-            ResponseEntity<ErrorResponseDTO> response = globalExceptionHandler.handleTokenInvalido(ex, request);
-
-            assertThat(response.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
-            assertThat(response.getBody()).isNotNull();
-            assertThat(response.getBody().getStatus()).isEqualTo(401);
-            assertThat(response.getBody().getMessage()).isEqualTo("Token inválido");
+            assertThat(response.getBody().getMessage()).isEqualTo("Dirección no encontrada.");
         }
     }
 

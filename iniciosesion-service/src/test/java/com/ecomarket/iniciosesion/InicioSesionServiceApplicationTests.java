@@ -21,7 +21,7 @@ class InicioSesionServiceApplicationTests {
     void mainTest() {
         // 2. Le inyectamos el perfil 'test' también a los argumentos del main
         InicioSesionServiceApplication.main(new String[] {
-            "--spring.main.web-application-type=none",
+            "--server.port=0",
             "--spring.profiles.active=test"
         });
     }

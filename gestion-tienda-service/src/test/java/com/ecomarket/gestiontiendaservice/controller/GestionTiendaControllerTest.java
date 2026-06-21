@@ -1,5 +1,8 @@
 package com.ecomarket.gestiontiendaservice.controller;
 
+import com.ecomarket.gestiontiendaservice.dto.EstadoRequestDTO;
+import com.ecomarket.gestiontiendaservice.dto.GerenteRequestDTO;
+import com.ecomarket.gestiontiendaservice.dto.SucursalRequestDTO;
 import com.ecomarket.gestiontiendaservice.model.*;
 import com.ecomarket.gestiontiendaservice.service.GestionTiendaService;
 import org.junit.jupiter.api.BeforeEach;
@@ -10,7 +13,6 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.ResponseEntity;
 
-import java.time.LocalDateTime;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.*;
@@ -35,9 +37,15 @@ class GestionTiendaControllerTest {
     void registrarSucursal() {
         Sucursal s = new Sucursal();
         s.setId(1L);
-        when(gestionTiendaService.registrarSucursal(anyString(), anyString(), anyString(), anyLong())).thenReturn(s);
+        when(gestionTiendaService.registrarSucursal(any(SucursalRequestDTO.class))).thenReturn(s);
 
-        ResponseEntity<Sucursal> res = controller.registrarSucursal("Centro", "Av 1", "412345", 10L);
+        SucursalRequestDTO dto = new SucursalRequestDTO();
+        dto.setNombre("Centro");
+        dto.setDireccion("Av 1");
+        dto.setTelefono("412345");
+        dto.setGerenteCargoId(10L);
+
+        ResponseEntity<Sucursal> res = controller.registrarSucursal(dto);
 
         assertThat(res.getBody().getId()).isEqualTo(1L);
     }
@@ -65,6 +73,22 @@ class GestionTiendaControllerTest {
     }
 
     @Test
+    @DisplayName("asignarGerente")
+    void asignarGerente() {
+        Sucursal s = new Sucursal();
+        s.setId(1L);
+        s.setGerenteCargoId(20L);
+        when(gestionTiendaService.asignarGerente(1L, 20L)).thenReturn(s);
+
+        GerenteRequestDTO dto = new GerenteRequestDTO();
+        dto.setGerenteCargoId(20L);
+
+        ResponseEntity<Sucursal> res = controller.asignarGerente(1L, dto);
+
+        assertThat(res.getBody().getGerenteCargoId()).isEqualTo(20L);
+    }
+
+    @Test
     @DisplayName("configurarPermisoPOS")
     void configurarPermisoPOS() {
         PermisoPOS p = new PermisoPOS();
@@ -81,9 +105,15 @@ class GestionTiendaControllerTest {
     void asignarTarea() {
         TareaPersonal t = new TareaPersonal();
         t.setId(1L);
-        when(gestionTiendaService.asignarTareaPersonal(anyLong(), anyLong(), anyString(), anyString(), any())).thenReturn(t);
+        when(gestionTiendaService.asignarTareaPersonal(any(TareaPersonal.class))).thenReturn(t);
 
-        ResponseEntity<TareaPersonal> res = controller.asignarTarea(5L, 1L, "Tit", "Desc", LocalDateTime.now());
+        TareaPersonal tarea = new TareaPersonal();
+        tarea.setEmpleadoId(5L);
+        tarea.setSucursalId(1L);
+        tarea.setTitulo("Tit");
+        tarea.setDescripcion("Desc");
+
+        ResponseEntity<TareaPersonal> res = controller.asignarTarea(tarea);
 
         assertThat(res.getBody().getId()).isEqualTo(1L);
     }
@@ -93,11 +123,70 @@ class GestionTiendaControllerTest {
     void actualizarEstadoTarea() {
         TareaPersonal t = new TareaPersonal();
         t.setId(1L);
-        when(gestionTiendaService.actualizarEstadoTarea(anyLong(), any())).thenReturn(t);
+        when(gestionTiendaService.actualizarEstadoTarea(1L, 2L)).thenReturn(t);
 
-        ResponseEntity<TareaPersonal> res = controller.actualizarEstadoTarea(1L, new EstadoTareaPersonal());
+        EstadoRequestDTO dto = new EstadoRequestDTO();
+        dto.setEstadoId(2L);
+
+        ResponseEntity<TareaPersonal> res = controller.actualizarEstadoTarea(1L, dto);
 
         assertThat(res.getBody().getId()).isEqualTo(1L);
+    }
+
+    @Test
+    @DisplayName("listarEstadosTarea")
+    void listarEstadosTarea() {
+        when(gestionTiendaService.listarEstadosTarea()).thenReturn(List.of(new EstadoTareaPersonal()));
+
+        ResponseEntity<List<EstadoTareaPersonal>> res = controller.listarEstadosTarea();
+
+        assertThat(res.getBody()).hasSize(1);
+    }
+
+    @Test
+    @DisplayName("obtenerEstadoTarea")
+    void obtenerEstadoTarea() {
+        EstadoTareaPersonal e = new EstadoTareaPersonal();
+        e.setId(1L);
+        when(gestionTiendaService.obtenerEstadoTarea(1L)).thenReturn(e);
+
+        ResponseEntity<EstadoTareaPersonal> res = controller.obtenerEstadoTarea(1L);
+
+        assertThat(res.getBody().getId()).isEqualTo(1L);
+    }
+
+    @Test
+    @DisplayName("crearEstadoTarea")
+    void crearEstadoTarea() {
+        EstadoTareaPersonal e = new EstadoTareaPersonal();
+        e.setId(1L);
+        when(gestionTiendaService.crearEstadoTarea(any())).thenReturn(e);
+
+        ResponseEntity<EstadoTareaPersonal> res = controller.crearEstadoTarea(new EstadoTareaPersonal());
+
+        assertThat(res.getBody().getId()).isEqualTo(1L);
+    }
+
+    @Test
+    @DisplayName("editarEstadoTarea")
+    void editarEstadoTarea() {
+        EstadoTareaPersonal e = new EstadoTareaPersonal();
+        e.setId(1L);
+        when(gestionTiendaService.editarEstadoTarea(eq(1L), any())).thenReturn(e);
+
+        ResponseEntity<EstadoTareaPersonal> res = controller.editarEstadoTarea(1L, new EstadoTareaPersonal());
+
+        assertThat(res.getBody().getId()).isEqualTo(1L);
+    }
+
+    @Test
+    @DisplayName("eliminarEstadoTarea")
+    void eliminarEstadoTarea() {
+        when(gestionTiendaService.eliminarEstadoTarea(1L)).thenReturn(true);
+
+        ResponseEntity<Boolean> res = controller.eliminarEstadoTarea(1L);
+
+        assertThat(res.getBody()).isTrue();
     }
 
     @Test

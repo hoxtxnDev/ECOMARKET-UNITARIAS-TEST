@@ -5,46 +5,26 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentCaptor;
-import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.http.HttpRequest;
-import org.springframework.http.client.ClientHttpResponse;
 import org.springframework.test.util.ReflectionTestUtils;
-import org.springframework.web.client.RestClient;
-
-import java.io.IOException;
+import org.springframework.web.client.RestTemplate;
 
 import static org.assertj.core.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class RegistroUsuariosClientTest {
 
     @Mock
-    RestClient restClient;
-    @Mock
-    RestClient.RequestHeadersUriSpec requestHeadersUriSpec;
-    @Mock
-    RestClient.RequestHeadersSpec requestHeadersSpec;
-    @Mock
-    RestClient.ResponseSpec responseSpec;
-
-    @Captor
-    ArgumentCaptor<RestClient.ResponseSpec.ErrorHandler> errorHandlerCaptor;
+    RestTemplate restTemplate;
 
     RegistroUsuariosClient client;
 
     @BeforeEach
     void setup() {
-        client = new RegistroUsuariosClient(restClient);
+        client = new RegistroUsuariosClient(restTemplate);
         ReflectionTestUtils.setField(client, "registroUsuariosUrl", "http://localhost:8085");
-        lenient().when(restClient.get()).thenReturn(requestHeadersUriSpec);
-        lenient().when(requestHeadersUriSpec.uri(anyString())).thenReturn(requestHeadersSpec);
-        lenient().when(requestHeadersSpec.retrieve()).thenReturn(responseSpec);
-        lenient().when(responseSpec.onStatus(any(), any())).thenReturn(responseSpec);
     }
 
     @Nested
@@ -57,7 +37,10 @@ class RegistroUsuariosClientTest {
             EmpleadoDTO emp = new EmpleadoDTO();
             emp.setId(1L);
             emp.setNombre("Juan");
-            when(responseSpec.body(eq(EmpleadoDTO.class))).thenReturn(emp);
+            when(restTemplate.getForObject(
+                    "http://localhost:8085/api/usuarios/1",
+                    EmpleadoDTO.class))
+                    .thenReturn(emp);
 
             EmpleadoDTO resultado = client.obtenerEmpleado(1L);
 
@@ -67,25 +50,14 @@ class RegistroUsuariosClientTest {
         @Test
         @DisplayName("lanza RuntimeException cuando falla la llamada")
         void error() {
-            when(responseSpec.body(eq(EmpleadoDTO.class)))
+            when(restTemplate.getForObject(
+                    "http://localhost:8085/api/usuarios/1",
+                    EmpleadoDTO.class))
                     .thenThrow(new RuntimeException("Error externo"));
 
             assertThatThrownBy(() -> client.obtenerEmpleado(1L))
                     .isInstanceOf(RuntimeException.class)
                     .hasMessageContaining("No se pudo obtener el empleado");
-        }
-
-        @Test
-        @DisplayName("el error handler lanza RuntimeException con el id del empleado")
-        void errorHandlerLanzaExcepcion() throws IOException {
-            when(responseSpec.body(eq(EmpleadoDTO.class))).thenReturn(new EmpleadoDTO());
-            client.obtenerEmpleado(1L);
-            verify(responseSpec).onStatus(any(), errorHandlerCaptor.capture());
-
-            assertThatThrownBy(() -> errorHandlerCaptor.getValue().handle(
-                    mock(HttpRequest.class), mock(ClientHttpResponse.class)))
-                    .isInstanceOf(RuntimeException.class)
-                    .hasMessageContaining("1");
         }
     }
 
@@ -98,7 +70,10 @@ class RegistroUsuariosClientTest {
         void existe() {
             EmpleadoDTO emp = new EmpleadoDTO();
             emp.setId(1L);
-            when(responseSpec.body(eq(EmpleadoDTO.class))).thenReturn(emp);
+            when(restTemplate.getForObject(
+                    "http://localhost:8085/api/usuarios/1",
+                    EmpleadoDTO.class))
+                    .thenReturn(emp);
 
             boolean resultado = client.empleadoExiste(1L);
 
@@ -108,7 +83,9 @@ class RegistroUsuariosClientTest {
         @Test
         @DisplayName("retorna false cuando obtenerEmpleado lanza excepcion")
         void noExistePorError() {
-            when(responseSpec.body(eq(EmpleadoDTO.class)))
+            when(restTemplate.getForObject(
+                    "http://localhost:8085/api/usuarios/1",
+                    EmpleadoDTO.class))
                     .thenThrow(new RuntimeException("Error"));
 
             boolean resultado = client.empleadoExiste(1L);
@@ -119,11 +96,79 @@ class RegistroUsuariosClientTest {
         @Test
         @DisplayName("retorna false cuando obtenerEmpleado retorna null")
         void noExistePorNull() {
-            when(responseSpec.body(eq(EmpleadoDTO.class))).thenReturn(null);
+            when(restTemplate.getForObject(
+                    "http://localhost:8085/api/usuarios/1",
+                    EmpleadoDTO.class))
+                    .thenReturn(null);
 
             boolean resultado = client.empleadoExiste(1L);
 
             assertThat(resultado).isFalse();
+        }
+    }
+
+    @Nested
+    @DisplayName("obtenerRolNombrePorUsuarioId")
+    class ObtenerRolNombrePorUsuarioId {
+
+        @Test
+        @DisplayName("retorna el nombre del rol cuando el empleado existe")
+        void exito() {
+            RolDTO rol = new RolDTO();
+            rol.setId(1L);
+            rol.setNombre("GERENTE");
+            EmpleadoDTO emp = new EmpleadoDTO();
+            emp.setId(1L);
+            emp.setRol(rol);
+            when(restTemplate.getForObject(
+                    "http://localhost:8085/api/usuarios/1",
+                    EmpleadoDTO.class))
+                    .thenReturn(emp);
+
+            String resultado = client.obtenerRolNombrePorUsuarioId(1L);
+
+            assertThat(resultado).isEqualTo("GERENTE");
+        }
+
+        @Test
+        @DisplayName("retorna null cuando el empleado no tiene rol")
+        void empleadoSinRol() {
+            EmpleadoDTO emp = new EmpleadoDTO();
+            emp.setId(1L);
+            when(restTemplate.getForObject(
+                    "http://localhost:8085/api/usuarios/1",
+                    EmpleadoDTO.class))
+                    .thenReturn(emp);
+
+            String resultado = client.obtenerRolNombrePorUsuarioId(1L);
+
+            assertThat(resultado).isNull();
+        }
+
+        @Test
+        @DisplayName("retorna null cuando empleado es null")
+        void empleadoNull() {
+            when(restTemplate.getForObject(
+                    "http://localhost:8085/api/usuarios/1",
+                    EmpleadoDTO.class))
+                    .thenReturn(null);
+
+            String resultado = client.obtenerRolNombrePorUsuarioId(1L);
+
+            assertThat(resultado).isNull();
+        }
+
+        @Test
+        @DisplayName("retorna null cuando la llamada falla")
+        void error() {
+            when(restTemplate.getForObject(
+                    "http://localhost:8085/api/usuarios/1",
+                    EmpleadoDTO.class))
+                    .thenThrow(new RuntimeException("Error"));
+
+            String resultado = client.obtenerRolNombrePorUsuarioId(1L);
+
+            assertThat(resultado).isNull();
         }
     }
 }

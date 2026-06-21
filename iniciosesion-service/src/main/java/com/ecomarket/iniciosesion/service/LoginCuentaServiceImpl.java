@@ -1,20 +1,18 @@
-package com.horacio.ecomarket.usuarios.service;
+package com.ecomarket.iniciosesion.service;
 
-import com.horacio.ecomarket.usuarios.dto.*;
-import com.horacio.ecomarket.usuarios.exception.*;
-import com.horacio.ecomarket.usuarios.model.Credencial;
-import com.horacio.ecomarket.usuarios.model.SesionJWT;
-import com.horacio.ecomarket.usuarios.model.TokenRecuperacion;
-import com.horacio.ecomarket.usuarios.repository.CredencialRepository;
-import com.horacio.ecomarket.usuarios.repository.SesionJWTRepository;
-import com.horacio.ecomarket.usuarios.repository.TokenRecuperacionRepository;
+import com.ecomarket.iniciosesion.dto.*;
+import com.ecomarket.iniciosesion.exception.*;
+import com.ecomarket.iniciosesion.model.Credencial;
+import com.ecomarket.iniciosesion.model.SesionJWT;
+import com.ecomarket.iniciosesion.model.TokenRecuperacion;
+import com.ecomarket.iniciosesion.repository.CredencialRepository;
+import com.ecomarket.iniciosesion.repository.SesionJWTRepository;
+import com.ecomarket.iniciosesion.repository.TokenRecuperacionRepository;
 import io.jsonwebtoken.Claims;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.client.RestTemplate;
 
 import java.security.SecureRandom;
 import java.time.LocalDateTime;
@@ -23,19 +21,23 @@ import java.util.Base64;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import org.springframework.web.client.RestTemplate;
 
 @Service
 @RequiredArgsConstructor
-@Slf4j
-public class AuthService {
+public class LoginCuentaServiceImpl implements LoginCuentaService {
 
     private final CredencialRepository credencialRepository;
     private final TokenRecuperacionRepository tokenRecuperacionRepository;
     private final SesionJWTRepository sesionJWTRepository;
     private final JwtUtil jwtUtil;
     private final RestTemplate restTemplate;
-    private final PasswordEncoder passwordEncoder;
 
+    private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
+
+    // ── Crear credencial ──────────────────────────────────────────────────────
+
+    @Override
     @Transactional
     public MensajeResponse crearCredencial(CrearCredencialRequest request) {
         if (credencialRepository.existsByCorreoAcceso(request.getCorreo())) {
@@ -57,6 +59,9 @@ public class AuthService {
         return MensajeResponse.de("Credencial creada exitosamente.");
     }
 
+    // ── Iniciar sesión ────────────────────────────────────────────────────────
+
+    @Override
     @Transactional
     public IniciarSesionResponse iniciarSesion(IniciarSesionRequest request) {
         Credencial credencial = credencialRepository
@@ -89,6 +94,9 @@ public class AuthService {
                 .build();
     }
 
+    // ── Cerrar sesión (blacklist) ─────────────────────────────────────────────
+
+    @Override
     @Transactional
     public MensajeResponse cerrarSesion(CerrarSesionRequest request) {
         String token = request.getToken();
@@ -119,6 +127,9 @@ public class AuthService {
         return MensajeResponse.de("Sesión cerrada exitosamente.");
     }
 
+    // ── Autenticar JWT ────────────────────────────────────────────────────────
+
+    @Override
     public AutenticarJWTResponse autenticarJWT(AutenticarJWTRequest request) {
         String token = request.getToken();
 
@@ -127,6 +138,7 @@ public class AuthService {
         }
 
         if (sesionJWTRepository.existsByToken(token)) {
+            // Token en blacklist (logout previo)
             return AutenticarJWTResponse.builder().valido(false).build();
         }
 
@@ -138,6 +150,9 @@ public class AuthService {
                 .build();
     }
 
+    // ── Cambiar correo ────────────────────────────────────────────────────────
+
+    @Override
     @Transactional
     public MensajeResponse cambiarCorreo(CambiarCorreoRequest request) {
         Credencial credencial = credencialRepository
@@ -159,6 +174,9 @@ public class AuthService {
         return MensajeResponse.de("Correo actualizado exitosamente.");
     }
 
+    // ── Cambiar contraseña ────────────────────────────────────────────────────
+
+    @Override
     @Transactional
     public MensajeResponse cambiarContrasena(CambiarContrasenaRequest request) {
         Credencial credencial = credencialRepository
@@ -175,6 +193,9 @@ public class AuthService {
         return MensajeResponse.de("Contraseña actualizada exitosamente.");
     }
 
+    // ── Recuperar credenciales (genera token) ─────────────────────────────────
+
+    @Override
     @Transactional
     public MensajeResponse recuperarCredenciales(RecuperarCredencialesRequest request) {
         Credencial credencial = credencialRepository
@@ -193,10 +214,14 @@ public class AuthService {
 
         tokenRecuperacionRepository.save(tokenRec);
 
+        // En producción se enviaría por email. Por ahora se devuelve en la respuesta.
         return MensajeResponse.de("Código de recuperación generado: " + codigo
                 + " (válido por 2 horas). En producción, se enviaría al correo registrado.");
     }
 
+    // ── Restablecer con token ─────────────────────────────────────────────────
+
+    @Override
     @Transactional
     public MensajeResponse restablecerConToken(RestablecerConTokenRequest request) {
         TokenRecuperacion tokenRec = tokenRecuperacionRepository
@@ -215,6 +240,9 @@ public class AuthService {
         return MensajeResponse.de("Contraseña restablecida exitosamente.");
     }
 
+    // ── Inhabilitar credenciales ──────────────────────────────────────────────
+
+    @Override
     @Transactional
     public MensajeResponse inhabilitarCredenciales(InhabilitarCredencialesRequest request) {
         Credencial credencial = credencialRepository
@@ -227,6 +255,8 @@ public class AuthService {
         return MensajeResponse.de("Credenciales inhabilitadas. La cuenta ha sido bloqueada.");
     }
 
+    // ── Utilitario interno ────────────────────────────────────────────────────
+
     private String generarCodigoAlfanumerico() {
         byte[] bytes = new byte[24];
         new SecureRandom().nextBytes(bytes);
@@ -234,17 +264,17 @@ public class AuthService {
     }
 
     private void registrarLog(Long usuarioId, String accion, String detalles) {
-        Map<String, Object> logEntry = new HashMap<>();
-        logEntry.put("microservicio", "registro-usuarios-service");
-        logEntry.put("accion", accion);
-        logEntry.put("usuarioId", usuarioId);
-        logEntry.put("detalles", detalles);
-        logEntry.put("fecha", LocalDateTime.now());
+        Map<String, Object> log = new HashMap<>();
+        log.put("microservicio", "iniciosesion-service");
+        log.put("accion", accion);
+        log.put("usuarioId", usuarioId);
+        log.put("detalles", detalles);
+        log.put("fecha", LocalDateTime.now());
 
         try {
-            restTemplate.postForEntity("http://localhost:8084/api/analitica/logs", logEntry, String.class);
+            restTemplate.postForEntity("http://localhost:8084/api/analitica/logs", log, String.class);
         } catch (Exception e) {
-            log.warn("Error al enviar log a analitica", e);
+            // Log error but don't break business flow
         }
     }
 }

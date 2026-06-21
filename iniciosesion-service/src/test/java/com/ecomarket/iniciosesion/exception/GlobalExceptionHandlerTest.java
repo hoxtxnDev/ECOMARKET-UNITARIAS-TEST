@@ -2,6 +2,7 @@ package com.ecomarket.iniciosesion.exception;
 
 import com.ecomarket.iniciosesion.controller.LoginCuentaController;
 import com.ecomarket.iniciosesion.dto.*;
+import com.ecomarket.iniciosesion.service.JwtUtil;
 import com.ecomarket.iniciosesion.service.LoginCuentaService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -43,6 +44,9 @@ class GlobalExceptionHandlerTest {
 
     @MockitoBean
     private LoginCuentaService loginCuentaService;
+
+    @MockitoBean
+    private JwtUtil jwtUtil;
 
     // ── Helper: request mínimo para POST /api/sesion/login ───────────────────
     private String loginJson() throws Exception {

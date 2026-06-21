@@ -2,15 +2,12 @@ package com.horacio.ecomarket.usuarios.service;
 
 import com.horacio.ecomarket.usuarios.exception.CorreoDuplicadoException;
 import com.horacio.ecomarket.usuarios.exception.RecursoNoEncontradoException;
-import com.horacio.ecomarket.usuarios.model.Credencial;
 import com.horacio.ecomarket.usuarios.model.Permiso;
 import com.horacio.ecomarket.usuarios.model.PerfilUsuario;
 import com.horacio.ecomarket.usuarios.model.Rol;
-import com.horacio.ecomarket.usuarios.repository.CredencialRepository;
 import com.horacio.ecomarket.usuarios.repository.PerfilUsuarioRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
@@ -26,10 +23,7 @@ import java.util.Map;
 public class RegistroUsuarioService {
 
     private final PerfilUsuarioRepository repository;
-    private final PasswordEncoder passwordEncoder;
-    private final CredencialRepository credencialRepository;
     private final RestTemplate restTemplate;
-
 
     @Transactional
     public PerfilUsuario registrarCuenta(PerfilUsuario perfilUsuario, String contrasenaInicial) {
@@ -43,21 +37,24 @@ public class RegistroUsuarioService {
 
         String rolNombre = perfilUsuario.getRol() != null ? "ROLE_" + perfilUsuario.getRol().getNombre() : "ROLE_USER";
 
-        Credencial credencial = Credencial.builder()
-                .usuarioId(guardado.getId())
-                .correoAcceso(perfilUsuario.getCorreo())
-                .contrasenaHash(passwordEncoder.encode(contrasenaInicial))
-                .cuentaBloqueada(false)
-                .rolAcceso(rolNombre)
-                .build();
+        Map<String, Object> request = new HashMap<>();
+        request.put("usuarioId", guardado.getId());
+        request.put("correo", perfilUsuario.getCorreo());
+        request.put("contrasena", contrasenaInicial);
+        request.put("rol", rolNombre);
 
-        credencialRepository.save(credencial);
+        String url = "http://localhost:8086/api/sesion/credencial";
+        try {
+            restTemplate.postForEntity(url, request, String.class);
+        } catch (Exception e) {
+            log.error("Error al crear credenciales en iniciosesion-service", e);
+            throw new RuntimeException("Error al crear credenciales de acceso: " + e.getMessage());
+        }
 
         registrarLog(guardado.getId(), "REGISTRO_USUARIO", "Usuario registrado exitosamente con correo: " + perfilUsuario.getCorreo());
 
         return guardado;
     }
-
 
     @Transactional
     public PerfilUsuario modificarDatosUsuario(Long id, PerfilUsuario datosNuevos) {
@@ -85,18 +82,15 @@ public class RegistroUsuarioService {
         return repository.save(existente);
     }
 
-
     @Transactional(readOnly = true)
     public List<PerfilUsuario> listarUsuarios() {
         return repository.findAll();
     }
 
-
     @Transactional(readOnly = true)
     public List<PerfilUsuario> listarPorRol(Rol rolUsuario) {
         return repository.findByRol(rolUsuario);
     }
-
 
     @Transactional(readOnly = true)
     public PerfilUsuario buscarPorId(Long usuarioId) {
@@ -104,13 +98,11 @@ public class RegistroUsuarioService {
                 .orElseThrow(() -> new RecursoNoEncontradoException("Usuario no encontrado con ID: " + usuarioId));
     }
 
-
     @Transactional(readOnly = true)
     public PerfilUsuario buscarPorCorreo(String correo) {
         return repository.findByCorreo(correo)
                 .orElseThrow(() -> new RecursoNoEncontradoException("Usuario no encontrado con correo: " + correo));
     }
-
 
     @Transactional
     public Boolean configurarPermisos(Long usuarioId, List<Permiso> nuevosPermisos) {
@@ -120,7 +112,6 @@ public class RegistroUsuarioService {
         repository.save(usuario);
         return true;
     }
-
 
     @Transactional
     public Boolean eliminarUsuario(Long usuarioId) {

@@ -22,19 +22,40 @@ public class JwtAuthFilter extends OncePerRequestFilter {
     }
 
     @Override
-    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
-            throws ServletException, IOException {
+    protected void doFilterInternal(HttpServletRequest request,
+                                    HttpServletResponse response,
+                                    FilterChain filterChain) throws ServletException, IOException {
+
         String authHeader = request.getHeader("Authorization");
-        if (authHeader != null && authHeader.startsWith("Bearer ")) {
-            String token = authHeader.substring(7);
-            if (jwtUtil.esTokenValido(token)) {
-                String correo = jwtUtil.obtenerCorreo(token);
-                List<String> roles = jwtUtil.obtenerRoles(token);
-                var authorities = roles.stream().map(SimpleGrantedAuthority::new).toList();
-                var authentication = new UsernamePasswordAuthenticationToken(correo, null, authorities);
-                SecurityContextHolder.getContext().setAuthentication(authentication);
-            }
+
+        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+            filterChain.doFilter(request, response);
+            return;
         }
+
+        String token = authHeader.substring(7);
+
+        if (token.isBlank()) {
+            filterChain.doFilter(request, response);
+            return;
+        }
+
+        if (!jwtUtil.esTokenValido(token)) {
+            filterChain.doFilter(request, response);
+            return;
+        }
+
+        String correo = jwtUtil.obtenerCorreo(token);
+        List<String> roles = jwtUtil.obtenerRoles(token);
+
+        List<SimpleGrantedAuthority> authorities = roles != null
+                ? roles.stream().map(SimpleGrantedAuthority::new).toList()
+                : List.of();
+
+        UsernamePasswordAuthenticationToken authentication =
+                new UsernamePasswordAuthenticationToken(correo, null, authorities);
+
+        SecurityContextHolder.getContext().setAuthentication(authentication);
         filterChain.doFilter(request, response);
     }
 }

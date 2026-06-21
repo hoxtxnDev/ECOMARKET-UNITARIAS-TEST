@@ -19,7 +19,7 @@ import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @RestControllerAdvice
-class GlobalExceptionHandler {
+public class GlobalExceptionHandler {
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ErrorResponseDTO> handleValidationExceptions(MethodArgumentNotValidException ex, HttpServletRequest request) {
@@ -40,26 +40,6 @@ class GlobalExceptionHandler {
                 .build();
 
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
-    }
-
-    @ExceptionHandler(CredencialNotFoundException.class)
-    public ResponseEntity<ErrorResponseDTO> handleCredencialNotFound(CredencialNotFoundException ex, HttpServletRequest request) {
-        return buildResponse(HttpStatus.NOT_FOUND, ex.getMessage(), request);
-    }
-
-    @ExceptionHandler(AutenticacionException.class)
-    public ResponseEntity<ErrorResponseDTO> handleAutenticacion(AutenticacionException ex, HttpServletRequest request) {
-        return buildResponse(HttpStatus.UNAUTHORIZED, ex.getMessage(), request);
-    }
-
-    @ExceptionHandler(CuentaBloqueadaException.class)
-    public ResponseEntity<ErrorResponseDTO> handleCuentaBloqueada(CuentaBloqueadaException ex, HttpServletRequest request) {
-        return buildResponse(HttpStatus.FORBIDDEN, ex.getMessage(), request);
-    }
-
-    @ExceptionHandler(TokenInvalidoException.class)
-    public ResponseEntity<ErrorResponseDTO> handleTokenInvalido(TokenInvalidoException ex, HttpServletRequest request) {
-        return buildResponse(HttpStatus.UNAUTHORIZED, ex.getMessage(), request);
     }
 
     @ExceptionHandler(CorreoDuplicadoException.class)
