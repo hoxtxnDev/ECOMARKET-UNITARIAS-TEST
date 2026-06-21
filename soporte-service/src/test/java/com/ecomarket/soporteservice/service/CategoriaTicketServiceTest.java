@@ -4,7 +4,6 @@ import com.ecomarket.soporteservice.exception.NoExisteEnBdException;
 import com.ecomarket.soporteservice.exception.YaExisteEnBdException;
 import com.ecomarket.soporteservice.model.reference.CategoriaTicket;
 import com.ecomarket.soporteservice.repository.CategoriaTicketRepository;
-import com.ecomarket.soporteservice.service.CategoriaTicketService;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;

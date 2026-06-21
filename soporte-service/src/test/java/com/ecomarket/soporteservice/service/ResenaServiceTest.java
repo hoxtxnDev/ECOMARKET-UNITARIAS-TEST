@@ -3,7 +3,6 @@ package com.ecomarket.soporteservice.service;
 import com.ecomarket.soporteservice.exception.NoExisteEnBdException;
 import com.ecomarket.soporteservice.model.entity.Resena;
 import com.ecomarket.soporteservice.repository.ResenaRepository;
-import com.ecomarket.soporteservice.service.ResenaService;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;

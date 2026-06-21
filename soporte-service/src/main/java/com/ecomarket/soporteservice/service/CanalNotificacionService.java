@@ -2,7 +2,6 @@ package com.ecomarket.soporteservice.service;
 
 import java.util.List;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import com.ecomarket.soporteservice.exception.NoExisteEnBdException;
@@ -11,13 +10,14 @@ import com.ecomarket.soporteservice.model.reference.CanalNotificacion;
 import com.ecomarket.soporteservice.repository.CanalNotificacionRepository;
 
 import jakarta.transaction.Transactional;
+import lombok.AllArgsConstructor;
 
 @Service
+@AllArgsConstructor
 @Transactional
 public class CanalNotificacionService {
-    
-    @Autowired
-    private CanalNotificacionRepository canalNotificacionRepository;
+
+    private final CanalNotificacionRepository canalNotificacionRepository;
 
     public List<CanalNotificacion> readAllCanalNotificacion() {
         return canalNotificacionRepository.findAll();

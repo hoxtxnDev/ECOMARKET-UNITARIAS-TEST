@@ -18,8 +18,7 @@ class AnaliticaMetricaClientTest {
     @BeforeEach
     void setUp() {
         restTemplate = mock(RestTemplate.class);
-        client = new AnaliticaMetricaClient();
-        ReflectionTestUtils.setField(client, "restTemplate", restTemplate);
+        client = new AnaliticaMetricaClient(restTemplate);
         ReflectionTestUtils.setField(client, "analiticaUrl", "http://localhost:9090");
     }
 
@@ -40,7 +39,6 @@ class AnaliticaMetricaClientTest {
         when(restTemplate.postForEntity(anyString(), any(), eq(String.class)))
                 .thenThrow(new ResourceAccessException("Connection refused"));
 
-        // No lanza excepción — solo loguea
         client.registrarMetrica("TICKETS_CREADOS", 1.0, "ticket");
 
         verify(restTemplate).postForEntity(anyString(), any(), eq(String.class));
@@ -52,7 +50,6 @@ class AnaliticaMetricaClientTest {
         when(restTemplate.postForEntity(anyString(), any(), eq(String.class)))
                 .thenThrow(new RuntimeException("Error inesperado"));
 
-        // No lanza excepción — solo loguea
         client.registrarMetrica("TICKETS_CREADOS", 1.0, "ticket");
 
         verify(restTemplate).postForEntity(anyString(), any(), eq(String.class));

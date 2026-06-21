@@ -1,18 +1,18 @@
 package com.ecomarket.soporteservice.controller;
 
 import com.ecomarket.soporteservice.dto.ResenaRequestDTO;
+import com.ecomarket.soporteservice.exception.GlobalExceptionHandler;
 import com.ecomarket.soporteservice.exception.NoExisteEnBdException;
 import com.ecomarket.soporteservice.model.entity.Resena;
 import com.ecomarket.soporteservice.service.ResenaService;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
-import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.MediaType;
-import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.time.LocalDateTime;
@@ -21,16 +21,22 @@ import java.util.List;
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+import static org.springframework.test.web.servlet.setup.MockMvcBuilders.standaloneSetup;
 
-@WebMvcTest(ResenaController.class)
-@AutoConfigureMockMvc(addFilters = false)
-@ActiveProfiles("test")
+@ExtendWith(MockitoExtension.class)
 @DisplayName("ResenaController")
 class ResenaControllerTest {
 
-    @Autowired MockMvc mvc;
+    MockMvc mvc;
     private final ObjectMapper mapper = new ObjectMapper();
-    @MockitoBean ResenaService service;
+    @Mock ResenaService service;
+
+    @BeforeEach
+    void setup() {
+        mvc = standaloneSetup(new ResenaController(service))
+                .setControllerAdvice(new GlobalExceptionHandler())
+                .build();
+    }
 
     private Resena resena(Long id) {
         Resena r = new Resena();

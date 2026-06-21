@@ -1,8 +1,8 @@
 package com.ecomarket.soporteservice.controller;
 
 import java.util.List;
-
-import org.springframework.beans.factory.annotation.Autowired;
+ 
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -19,11 +19,11 @@ import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/api/v1/canal-notificacion")
+@RequiredArgsConstructor
 public class CanalNotificacionController {
-    
-    @Autowired
-    private CanalNotificacionService canalNotificacionService;
-
+     
+    private final CanalNotificacionService canalNotificacionService;
+ 
     @GetMapping
     public List<CanalNotificacion> getAllCanalNotificacion() {
         return canalNotificacionService.readAllCanalNotificacion();

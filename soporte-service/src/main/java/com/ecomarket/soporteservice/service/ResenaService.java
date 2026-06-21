@@ -2,10 +2,10 @@ package com.ecomarket.soporteservice.service;
 
 import java.time.LocalDateTime;
 import java.util.List;
-
-import org.springframework.beans.factory.annotation.Autowired;
+ 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-
+ 
 import com.ecomarket.soporteservice.exception.NoExisteEnBdException;
 import com.ecomarket.soporteservice.model.entity.Resena;
 import com.ecomarket.soporteservice.repository.ResenaRepository;
@@ -14,11 +14,11 @@ import jakarta.transaction.Transactional;
 
 @Service
 @Transactional
+@RequiredArgsConstructor
 public class ResenaService {
-
-    @Autowired
-    private ResenaRepository resenaRepository;
-
+ 
+    private final ResenaRepository resenaRepository;
+ 
     public List<Resena> readAllResenas() {
         return resenaRepository.findAll();
     }

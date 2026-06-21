@@ -3,7 +3,6 @@ package com.ecomarket.soporteservice.service;
 import java.time.LocalDateTime;
 import java.util.List;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import com.ecomarket.soporteservice.exception.NoExisteEnBdException;
@@ -11,13 +10,15 @@ import com.ecomarket.soporteservice.model.entity.MensajeChat;
 import com.ecomarket.soporteservice.repository.MensajeChatRepository;
 
 import jakarta.transaction.Transactional;
+import lombok.AllArgsConstructor;
 
 @Service
+@AllArgsConstructor
 @Transactional
 public class MensajeChatService {
 
-    @Autowired
-    private MensajeChatRepository mensajeChatRepository;
+
+    private final MensajeChatRepository mensajeChatRepository;
 
     public List<MensajeChat> readAllMensajes() {
         return mensajeChatRepository.findAll();

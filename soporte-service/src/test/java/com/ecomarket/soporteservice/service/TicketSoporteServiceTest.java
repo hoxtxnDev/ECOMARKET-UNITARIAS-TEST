@@ -9,9 +9,6 @@ import com.ecomarket.soporteservice.model.entity.TicketSoporte;
 import com.ecomarket.soporteservice.model.reference.CategoriaTicket;
 import com.ecomarket.soporteservice.model.reference.EstadoTicket;
 import com.ecomarket.soporteservice.repository.TicketSoporteRepository;
-import com.ecomarket.soporteservice.service.CategoriaTicketService;
-import com.ecomarket.soporteservice.service.EstadoTicketService;
-import com.ecomarket.soporteservice.service.TicketSoporteService;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;

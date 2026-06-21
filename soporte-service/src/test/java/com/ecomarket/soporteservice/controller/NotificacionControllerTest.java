@@ -1,18 +1,18 @@
 package com.ecomarket.soporteservice.controller;
 
+import com.ecomarket.soporteservice.exception.GlobalExceptionHandler;
 import com.ecomarket.soporteservice.exception.NoExisteEnBdException;
 import com.ecomarket.soporteservice.model.entity.Notificacion;
 import com.ecomarket.soporteservice.model.reference.CanalNotificacion;
 import com.ecomarket.soporteservice.service.CanalNotificacionService;
 import com.ecomarket.soporteservice.service.NotificacionService;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
-import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.web.client.RestTemplate;
 
@@ -22,19 +22,26 @@ import java.util.List;
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+import static org.springframework.test.web.servlet.setup.MockMvcBuilders.standaloneSetup;
 
-@SpringBootTest
-@AutoConfigureMockMvc(addFilters = false)
-@ActiveProfiles("test")
+@ExtendWith(MockitoExtension.class)
 @DisplayName("NotificacionController")
 class NotificacionControllerTest {
 
-    @Autowired MockMvc mvc;
+    MockMvc mvc;
+    @SuppressWarnings("unused")
     private final ObjectMapper mapper = new ObjectMapper();
 
-    @MockitoBean NotificacionService service;
-    @MockitoBean CanalNotificacionService canalNotificacionService;
-    @MockitoBean RestTemplate restTemplate;
+    @Mock NotificacionService service;
+    @Mock CanalNotificacionService canalNotificacionService;
+    @Mock RestTemplate restTemplate;
+
+    @BeforeEach
+    void setup() {
+        mvc = standaloneSetup(new NotificacionController(service))
+                .setControllerAdvice(new GlobalExceptionHandler())
+                .build();
+    }
 
     private Notificacion notif(Long id) {
         return Notificacion.builder()

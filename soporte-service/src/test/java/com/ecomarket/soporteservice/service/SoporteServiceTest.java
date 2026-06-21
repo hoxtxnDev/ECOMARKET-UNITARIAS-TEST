@@ -7,11 +7,6 @@ import com.ecomarket.soporteservice.model.entity.TicketSoporte;
 import com.ecomarket.soporteservice.model.reference.CanalNotificacion;
 import com.ecomarket.soporteservice.model.reference.CategoriaTicket;
 import com.ecomarket.soporteservice.model.reference.EstadoTicket;
-import com.ecomarket.soporteservice.service.MensajeChatService;
-import com.ecomarket.soporteservice.service.NotificacionService;
-import com.ecomarket.soporteservice.service.ResenaService;
-import com.ecomarket.soporteservice.service.SoporteService;
-import com.ecomarket.soporteservice.service.TicketSoporteService;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;

@@ -5,8 +5,6 @@ import com.ecomarket.soporteservice.exception.NoExisteEnBdException;
 import com.ecomarket.soporteservice.model.entity.Notificacion;
 import com.ecomarket.soporteservice.model.reference.CanalNotificacion;
 import com.ecomarket.soporteservice.repository.NotificacionRepository;
-import com.ecomarket.soporteservice.service.CanalNotificacionService;
-import com.ecomarket.soporteservice.service.NotificacionService;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;

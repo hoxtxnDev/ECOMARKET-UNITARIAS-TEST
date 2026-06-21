@@ -3,7 +3,6 @@ package com.ecomarket.soporteservice.service;
 import com.ecomarket.soporteservice.exception.NoExisteEnBdException;
 import com.ecomarket.soporteservice.model.entity.MensajeChat;
 import com.ecomarket.soporteservice.repository.MensajeChatRepository;
-import com.ecomarket.soporteservice.service.MensajeChatService;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;

@@ -1,10 +1,10 @@
 package com.ecomarket.soporteservice.service;
 
 import java.util.List;
-
-import org.springframework.beans.factory.annotation.Autowired;
+ 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-
+ 
 import com.ecomarket.soporteservice.model.entity.MensajeChat;
 import com.ecomarket.soporteservice.model.entity.Notificacion;
 import com.ecomarket.soporteservice.model.entity.Resena;
@@ -15,20 +15,17 @@ import jakarta.transaction.Transactional;
 
 @Service
 @Transactional
+@RequiredArgsConstructor
 public class SoporteService {
-
-    @Autowired
-    private NotificacionService notificacionService;
-
-    @Autowired
-    private TicketSoporteService ticketSoporteService;
-
-    @Autowired
-    private MensajeChatService mensajeChatService;
-
-    @Autowired
-    private ResenaService resenaService;
-
+ 
+    private final NotificacionService notificacionService;
+ 
+    private final TicketSoporteService ticketSoporteService;
+ 
+    private final MensajeChatService mensajeChatService;
+ 
+    private final ResenaService resenaService;
+ 
     public Notificacion enviarNotificacionPush(Long destinatarioId, String titulo, String mensaje, Long canalId) {
         return notificacionService.sendNotificacion(destinatarioId, titulo, mensaje, canalId);
     }

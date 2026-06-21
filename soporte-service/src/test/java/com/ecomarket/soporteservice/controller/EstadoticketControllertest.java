@@ -1,18 +1,18 @@
 package com.ecomarket.soporteservice.controller;
 
+import com.ecomarket.soporteservice.exception.GlobalExceptionHandler;
 import com.ecomarket.soporteservice.exception.NoExisteEnBdException;
 import com.ecomarket.soporteservice.exception.YaExisteEnBdException;
 import com.ecomarket.soporteservice.model.reference.EstadoTicket;
 import com.ecomarket.soporteservice.service.EstadoTicketService;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
-import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.MediaType;
-import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.List;
@@ -21,16 +21,22 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+import static org.springframework.test.web.servlet.setup.MockMvcBuilders.standaloneSetup;
 
-@WebMvcTest(EstadoTicketController.class)
-@AutoConfigureMockMvc(addFilters = false)
-@ActiveProfiles("test")
+@ExtendWith(MockitoExtension.class)
 @DisplayName("EstadoTicketController")
 class EstadoTicketControllerTest {
 
-    @Autowired MockMvc mvc;
+    MockMvc mvc;
     private final ObjectMapper mapper = new ObjectMapper();
-    @MockitoBean EstadoTicketService service;
+    @Mock EstadoTicketService service;
+
+    @BeforeEach
+    void setup() {
+        mvc = standaloneSetup(new EstadoTicketController(service))
+                .setControllerAdvice(new GlobalExceptionHandler())
+                .build();
+    }
 
     private EstadoTicket estado(Long id, String nombre) {
         return new EstadoTicket(id, nombre);

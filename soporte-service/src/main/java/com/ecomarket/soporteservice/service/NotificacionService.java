@@ -2,10 +2,10 @@ package com.ecomarket.soporteservice.service;
 
 import java.time.LocalDateTime;
 import java.util.List;
-
+ 
+import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.ResourceAccessException;
@@ -21,17 +21,15 @@ import jakarta.transaction.Transactional;
 
 @Service
 @Transactional
+@RequiredArgsConstructor
 public class NotificacionService {
-    
-    @Autowired
-    private NotificacionRepository notificacionRepository;
-
-    @Autowired
-    private RestTemplate restTemplate;
-
-    @Autowired
-    private CanalNotificacionService canalNotificacionService;
-
+     
+    private final NotificacionRepository notificacionRepository;
+ 
+    private final RestTemplate restTemplate;
+ 
+    private final CanalNotificacionService canalNotificacionService;
+ 
     @org.springframework.beans.factory.annotation.Value("${microservicio.usuarios.url}")
     private String usuariosUrl;
 

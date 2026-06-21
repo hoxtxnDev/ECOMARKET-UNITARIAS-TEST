@@ -4,7 +4,6 @@ import com.ecomarket.soporteservice.exception.NoExisteEnBdException;
 import com.ecomarket.soporteservice.exception.YaExisteEnBdException;
 import com.ecomarket.soporteservice.model.reference.CanalNotificacion;
 import com.ecomarket.soporteservice.repository.CanalNotificacionRepository;
-import com.ecomarket.soporteservice.service.CanalNotificacionService;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;

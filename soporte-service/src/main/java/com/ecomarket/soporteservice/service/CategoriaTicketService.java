@@ -2,7 +2,6 @@ package com.ecomarket.soporteservice.service;
 
 import java.util.List;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import com.ecomarket.soporteservice.exception.NoExisteEnBdException;
@@ -11,13 +10,14 @@ import com.ecomarket.soporteservice.model.reference.CategoriaTicket;
 import com.ecomarket.soporteservice.repository.CategoriaTicketRepository;
 
 import jakarta.transaction.Transactional;
+import lombok.AllArgsConstructor;
 
 @Service
+@AllArgsConstructor
 @Transactional
 public class CategoriaTicketService {
-    
-    @Autowired
-    private CategoriaTicketRepository categoriaTicketRepository;
+
+    private final CategoriaTicketRepository categoriaTicketRepository;
 
     public List<CategoriaTicket> readAllCategoriaTicket() {
         return categoriaTicketRepository.findAll();

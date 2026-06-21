@@ -4,6 +4,7 @@ import com.ecomarket.soporteservice.dto.MensajeChatRequestDTO;
 import com.ecomarket.soporteservice.dto.NotificacionRequestDTO;
 import com.ecomarket.soporteservice.dto.ResenaRequestDTO;
 import com.ecomarket.soporteservice.dto.SoporteTicketRequestDTO;
+import com.ecomarket.soporteservice.exception.GlobalExceptionHandler;
 import com.ecomarket.soporteservice.exception.NoExisteEnBdException;
 import com.ecomarket.soporteservice.exception.PedidoClienteIncompatibleException;
 import com.ecomarket.soporteservice.model.entity.MensajeChat;
@@ -18,15 +19,14 @@ import com.ecomarket.soporteservice.service.ResenaService;
 import com.ecomarket.soporteservice.service.SoporteService;
 import com.ecomarket.soporteservice.service.TicketSoporteService;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
-import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.MediaType;
-import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.time.LocalDateTime;
@@ -36,22 +36,26 @@ import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+import static org.springframework.test.web.servlet.setup.MockMvcBuilders.standaloneSetup;
 
-@WebMvcTest(SoporteController.class)
-@AutoConfigureMockMvc(addFilters = false)
-@ActiveProfiles("test")
+@ExtendWith(MockitoExtension.class)
 @DisplayName("SoporteController")
 class SoporteControllerTest {
 
-    @Autowired MockMvc mvc;
+    MockMvc mvc;
     private final ObjectMapper mapper = new ObjectMapper();
 
-    @MockitoBean SoporteService soporteService;
-    @MockitoBean TicketSoporteService ticketSoporteService;
-    @MockitoBean ResenaService resenaService;
-    @MockitoBean NotificacionService notificacionService;
+    @Mock SoporteService soporteService;
+    @Mock TicketSoporteService ticketSoporteService;
+    @Mock ResenaService resenaService;
+    @Mock NotificacionService notificacionService;
 
-    // ── Fixtures ──────────────────────────────────────────────────────────────
+    @BeforeEach
+    void setup() {
+        mvc = standaloneSetup(new SoporteController(soporteService, ticketSoporteService, resenaService, notificacionService))
+                .setControllerAdvice(new GlobalExceptionHandler())
+                .build();
+    }
 
     private TicketSoporte ticket(Long id) {
         TicketSoporte t = new TicketSoporte();
@@ -94,10 +98,6 @@ class SoporteControllerTest {
         r.setModeracionAprobado(false);
         return r;
     }
-
-    // ═════════════════════════════════════════════════════════════════════════
-    // POST enviar-notificacion-push
-    // ═════════════════════════════════════════════════════════════════════════
 
     @Nested
     @DisplayName("enviarNotificacionPush")
@@ -146,10 +146,6 @@ class SoporteControllerTest {
                     .andExpect(status().isNotFound());
         }
     }
-
-    // ═════════════════════════════════════════════════════════════════════════
-    // POST ingresar-ticket
-    // ═════════════════════════════════════════════════════════════════════════
 
     @Nested
     @DisplayName("ingresarTicket")
@@ -207,10 +203,6 @@ class SoporteControllerTest {
         }
     }
 
-    // ═════════════════════════════════════════════════════════════════════════
-    // GET tickets
-    // ═════════════════════════════════════════════════════════════════════════
-
     @Nested
     @DisplayName("obtenerTickets")
     class ObtenerTickets {
@@ -259,10 +251,6 @@ class SoporteControllerTest {
                     .andExpect(status().isNotFound());
         }
     }
-
-    // ═════════════════════════════════════════════════════════════════════════
-    // PATCH tickets
-    // ═════════════════════════════════════════════════════════════════════════
 
     @Nested
     @DisplayName("actualizarEstadoTicket")
@@ -348,10 +336,6 @@ class SoporteControllerTest {
         }
     }
 
-    // ═════════════════════════════════════════════════════════════════════════
-    // DELETE tickets
-    // ═════════════════════════════════════════════════════════════════════════
-
     @Nested
     @DisplayName("eliminarTicket")
     class EliminarTicket {
@@ -374,10 +358,6 @@ class SoporteControllerTest {
         }
     }
 
-    // ═════════════════════════════════════════════════════════════════════════
-    // GET tickets/{id}/mensajes
-    // ═════════════════════════════════════════════════════════════════════════
-
     @Nested
     @DisplayName("obtenerHistorialChat")
     class HistorialChat {
@@ -399,10 +379,6 @@ class SoporteControllerTest {
                     .andExpect(status().isNotFound());
         }
     }
-
-    // ═════════════════════════════════════════════════════════════════════════
-    // POST enviar-mensaje-chat
-    // ═════════════════════════════════════════════════════════════════════════
 
     @Nested
     @DisplayName("enviarMensajeChat")
@@ -437,10 +413,6 @@ class SoporteControllerTest {
                     .andExpect(status().isBadRequest());
         }
     }
-
-    // ═════════════════════════════════════════════════════════════════════════
-    // GET notificaciones (via SoporteController)
-    // ═════════════════════════════════════════════════════════════════════════
 
     @Nested
     @DisplayName("obtenerNotificaciones")
@@ -489,10 +461,6 @@ class SoporteControllerTest {
                     .andExpect(status().isNotFound());
         }
     }
-
-    // ═════════════════════════════════════════════════════════════════════════
-    // Reseñas via SoporteController
-    // ═════════════════════════════════════════════════════════════════════════
 
     @Nested
     @DisplayName("resenas via SoporteController")
