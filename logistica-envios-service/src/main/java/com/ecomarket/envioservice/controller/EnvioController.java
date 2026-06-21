@@ -47,6 +47,12 @@ public class EnvioController {
         return ResponseEntity.status(201).body(envio);
     }
 
+    @PostMapping("envios/auto/{pedidoId}")
+    public ResponseEntity<Envio> crearEnvioAutomatico(@PathVariable Long pedidoId) throws Exception {
+        Envio envio = envioService.crearEnvioAutomatico(pedidoId);
+        return ResponseEntity.status(201).body(envio);
+    }
+
     @GetMapping("envios")
     public List<Envio> listarEnvios(
             @RequestParam(required = false) Long clienteId,

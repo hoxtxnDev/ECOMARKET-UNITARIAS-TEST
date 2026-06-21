@@ -19,7 +19,7 @@ import com.ecomarket.envioservice.service.PuntoRetiroService;
 import jakarta.validation.Valid;
 
 @RestController
-@RequestMapping("/api/v1/puntos-retiro")
+@RequestMapping("/api/v1/logistica-envios/puntos-retiro")
 @RequiredArgsConstructor
 public class PuntoRetiroController {
 

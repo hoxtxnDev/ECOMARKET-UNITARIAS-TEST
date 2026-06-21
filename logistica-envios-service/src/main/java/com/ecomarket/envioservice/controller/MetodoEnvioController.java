@@ -8,6 +8,7 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -18,7 +19,7 @@ import com.ecomarket.envioservice.service.MetodoEnvioService;
 import jakarta.validation.Valid;
 
 @RestController
-@RequestMapping("/api/v1/metodo-envio")
+@RequestMapping("/api/v1/logistica-envios/metodo-envio")
 @RequiredArgsConstructor
 public class MetodoEnvioController {
 
@@ -27,6 +28,11 @@ public class MetodoEnvioController {
     @GetMapping
     public List<MetodoEnvio> getAll() {
         return metodoEnvioService.readAll();
+    }
+
+    @GetMapping("{id}")
+    public MetodoEnvio getById(@PathVariable Long id) {
+        return metodoEnvioService.findById(id);
     }
 
     @PostMapping
@@ -38,5 +44,10 @@ public class MetodoEnvioController {
     public ResponseEntity<String> delete(@PathVariable Long id) {
         metodoEnvioService.delete(id);
         return ResponseEntity.ok("El metodo envio con id " + id + " ha sido eliminado con exito.");
+    }
+
+    @PutMapping("/{id}/costo")
+    public ResponseEntity<MetodoEnvio> actualizarCosto(@PathVariable Long id, @RequestBody Double nuevoCosto) {
+        return ResponseEntity.ok(metodoEnvioService.actualizarCosto(id, nuevoCosto));
     }
 }

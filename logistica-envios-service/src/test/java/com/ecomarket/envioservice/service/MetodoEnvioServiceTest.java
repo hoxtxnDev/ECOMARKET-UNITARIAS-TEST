@@ -26,7 +26,7 @@ class MetodoEnvioServiceTest {
     @InjectMocks MetodoEnvioService service;
 
     private MetodoEnvio metodo(Long id, String nombre) {
-        return new MetodoEnvio(id, nombre);
+        return new MetodoEnvio(id, nombre, 0.0);
     }
 
     @Nested @DisplayName("readAll")
@@ -77,6 +77,22 @@ class MetodoEnvioServiceTest {
         @Test void lanzaExcepcionSiNoExiste() {
             when(metodoEnvioRepository.findById(99L)).thenReturn(Optional.empty());
             assertThatThrownBy(() -> service.delete(99L)).isInstanceOf(NoExisteEnBdException.class);
+        }
+    }
+
+    @Nested @DisplayName("actualizarCosto")
+    class ActualizarCosto {
+        @Test void actualizaCosto() {
+            MetodoEnvio existente = metodo(1L, "Domicilio");
+            when(metodoEnvioRepository.findById(1L)).thenReturn(Optional.of(existente));
+            when(metodoEnvioRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+            MetodoEnvio resultado = service.actualizarCosto(1L, 9999.0);
+            assertThat(resultado.getCosto()).isEqualTo(9999.0);
+        }
+
+        @Test void lanzaExcepcionSiNoExiste() {
+            when(metodoEnvioRepository.findById(99L)).thenReturn(Optional.empty());
+            assertThatThrownBy(() -> service.actualizarCosto(99L, 100.0)).isInstanceOf(NoExisteEnBdException.class);
         }
     }
 }

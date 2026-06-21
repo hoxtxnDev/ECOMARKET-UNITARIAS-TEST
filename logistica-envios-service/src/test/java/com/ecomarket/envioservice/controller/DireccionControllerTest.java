@@ -1,16 +1,16 @@
 package com.ecomarket.envioservice.controller;
 
+import com.ecomarket.envioservice.exception.GlobalExceptionHandler;
 import com.ecomarket.envioservice.model.entity.Direccion;
 import com.ecomarket.envioservice.service.DireccionService;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
-import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.MediaType;
-import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import tools.jackson.databind.ObjectMapper;
 
@@ -19,18 +19,25 @@ import java.util.List;
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+import static org.springframework.test.web.servlet.setup.MockMvcBuilders.standaloneSetup;
 
-@WebMvcTest(DireccionController.class)
-@AutoConfigureMockMvc(addFilters = false)
-@ActiveProfiles("test")
+@ExtendWith(MockitoExtension.class)
 @DisplayName("DireccionController")
 class DireccionControllerTest {
 
-    @Autowired MockMvc mvc;
+    @Mock DireccionService direccionService;
 
-    @MockitoBean DireccionService direccionService;
+    MockMvc mvc;
+    ObjectMapper mapper;
 
-    private final ObjectMapper mapper = new ObjectMapper();
+    @BeforeEach
+    void setup() {
+        mapper = new ObjectMapper();
+        var controller = new DireccionController(direccionService);
+        mvc = standaloneSetup(controller)
+                .setControllerAdvice(new GlobalExceptionHandler())
+                .build();
+    }
 
     private Direccion direccion(Long id) {
         Direccion d = new Direccion();
@@ -41,35 +48,35 @@ class DireccionControllerTest {
         return d;
     }
 
-    @Nested @DisplayName("GET /api/v1/direcciones")
+    @Nested @DisplayName("GET /api/v1/logistica-envios/direcciones")
     class GetAll {
         @Test @DisplayName("200 OK retorna lista")
         void exitoso() throws Exception {
             when(direccionService.readAll()).thenReturn(List.of(direccion(1L)));
-            mvc.perform(get("/api/v1/direcciones"))
+            mvc.perform(get("/api/v1/logistica-envios/direcciones"))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$[0].id").value(1));
         }
     }
 
-    @Nested @DisplayName("GET /api/v1/direcciones/{id}")
+    @Nested @DisplayName("GET /api/v1/logistica-envios/direcciones/{id}")
     class GetById {
         @Test @DisplayName("200 OK retorna direccion")
         void exitoso() throws Exception {
             when(direccionService.findById(1L)).thenReturn(direccion(1L));
-            mvc.perform(get("/api/v1/direcciones/1"))
+            mvc.perform(get("/api/v1/logistica-envios/direcciones/1"))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.calle").value("Av Siempre Viva"));
         }
     }
 
-    @Nested @DisplayName("POST /api/v1/direcciones")
+    @Nested @DisplayName("POST /api/v1/logistica-envios/direcciones")
     class Create {
         @Test @DisplayName("201 Created")
         void exitoso() throws Exception {
             Direccion d = direccion(1L);
             when(direccionService.create(any())).thenReturn(d);
-            mvc.perform(post("/api/v1/direcciones")
+            mvc.perform(post("/api/v1/logistica-envios/direcciones")
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(mapper.writeValueAsString(d)))
                     .andExpect(status().isCreated())
@@ -77,13 +84,13 @@ class DireccionControllerTest {
         }
     }
 
-    @Nested @DisplayName("PUT /api/v1/direcciones/{id}")
+    @Nested @DisplayName("PUT /api/v1/logistica-envios/direcciones/{id}")
     class Update {
         @Test @DisplayName("200 OK actualiza direccion")
         void exitoso() throws Exception {
             Direccion d = direccion(1L);
             when(direccionService.update(eq(1L), any())).thenReturn(d);
-            mvc.perform(put("/api/v1/direcciones/1")
+            mvc.perform(put("/api/v1/logistica-envios/direcciones/1")
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(mapper.writeValueAsString(d)))
                     .andExpect(status().isOk())
@@ -91,12 +98,12 @@ class DireccionControllerTest {
         }
     }
 
-    @Nested @DisplayName("DELETE /api/v1/direcciones/{id}")
+    @Nested @DisplayName("DELETE /api/v1/logistica-envios/direcciones/{id}")
     class Delete {
         @Test @DisplayName("200 OK elimina direccion")
         void exitoso() throws Exception {
             doNothing().when(direccionService).delete(1L);
-            mvc.perform(delete("/api/v1/direcciones/1"))
+            mvc.perform(delete("/api/v1/logistica-envios/direcciones/1"))
                     .andExpect(status().isOk())
                     .andExpect(content().string("La direccion con id 1 ha sido eliminada con exito."));
         }

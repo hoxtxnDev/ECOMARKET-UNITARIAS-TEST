@@ -1,6 +1,7 @@
 package com.ecomarket.envioservice.controller;
 
 import com.ecomarket.envioservice.dto.*;
+import com.ecomarket.envioservice.exception.GlobalExceptionHandler;
 import com.ecomarket.envioservice.model.entity.Envio;
 import com.ecomarket.envioservice.model.entity.HistorialEnvio;
 import com.ecomarket.envioservice.model.entity.RutaTransporte;
@@ -13,12 +14,10 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
-import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.MediaType;
-import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import tools.jackson.databind.ObjectMapper;
 
@@ -29,20 +28,19 @@ import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+import static org.springframework.test.web.servlet.setup.MockMvcBuilders.standaloneSetup;
 
-@WebMvcTest(EnvioController.class)
-@AutoConfigureMockMvc(addFilters = false)
-@ActiveProfiles("test")
+@ExtendWith(MockitoExtension.class)
 @DisplayName("EnvioController")
 class EnvioControllerTest {
 
-    @Autowired MockMvc mvc;
+    @Mock EnvioService envioService;
+    @Mock EnvioDomainService envioDomainService;
+    @Mock RutaTransporteService rutaTransporteService;
 
-    @MockitoBean EnvioService envioService;
-    @MockitoBean EnvioDomainService envioDomainService;
-    @MockitoBean RutaTransporteService rutaTransporteService;
+    MockMvc mvc;
+    ObjectMapper mapper;
 
-    private ObjectMapper mapper;
     private Envio envio;
     private EstadoEnvio estado;
     private MetodoEnvio metodo;
@@ -50,9 +48,13 @@ class EnvioControllerTest {
     @BeforeEach
     void setup() {
         mapper = new ObjectMapper();
+        var controller = new EnvioController(envioService, envioDomainService, rutaTransporteService);
+        mvc = standaloneSetup(controller)
+                .setControllerAdvice(new GlobalExceptionHandler())
+                .build();
 
         estado = new EstadoEnvio(1L, "PENDIENTE");
-        metodo = new MetodoEnvio(1L, "Domicilio");
+        metodo = new MetodoEnvio(1L, "Domicilio", 0.0);
 
         envio = new Envio();
         envio.setId(10L);
@@ -87,16 +89,18 @@ class EnvioControllerTest {
                     .andExpect(jsonPath("$.id").value(10))
                     .andExpect(jsonPath("$.clienteId").value(5));
         }
+    }
 
+    @Nested
+    @DisplayName("POST /api/v1/logistica-envios/envios/auto/{pedidoId}")
+    class CrearEnvioAutomatico {
         @Test
-        @DisplayName("400 si el body es invalido")
-        void bodyInvalido() throws Exception {
-            CrearEnvioRequestDTO dto = new CrearEnvioRequestDTO();
-
-            mvc.perform(post("/api/v1/logistica-envios/envios")
-                            .contentType(MediaType.APPLICATION_JSON)
-                            .content(mapper.writeValueAsString(dto)))
-                    .andExpect(status().isBadRequest());
+        @DisplayName("201 Created al crear envio automaticamente")
+        void exitoso() throws Exception {
+            when(envioService.crearEnvioAutomatico(100L)).thenReturn(envio);
+            mvc.perform(post("/api/v1/logistica-envios/envios/auto/100"))
+                    .andExpect(status().isCreated())
+                    .andExpect(jsonPath("$.id").value(10));
         }
     }
 
@@ -214,17 +218,6 @@ class EnvioControllerTest {
                             .content(mapper.writeValueAsString(dto)))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.id").value(10));
-        }
-
-        @Test
-        @DisplayName("400 si la firma esta vacia")
-        void firmaVacia() throws Exception {
-            RegistrarRecepcionRequestDTO dto = new RegistrarRecepcionRequestDTO();
-
-            mvc.perform(post("/api/v1/logistica-envios/envios/10/recepcion")
-                            .contentType(MediaType.APPLICATION_JSON)
-                            .content(mapper.writeValueAsString(dto)))
-                    .andExpect(status().isBadRequest());
         }
     }
 

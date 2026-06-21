@@ -19,7 +19,7 @@ import com.ecomarket.envioservice.service.DireccionService;
 import jakarta.validation.Valid;
 
 @RestController
-@RequestMapping("/api/v1/direcciones")
+@RequestMapping("/api/v1/logistica-envios/direcciones")
 @RequiredArgsConstructor
 public class DireccionController {
 

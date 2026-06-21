@@ -5,12 +5,13 @@ import com.ecomarket.envioservice.dto.ErrorResponseDTO;
 import com.ecomarket.envioservice.service.EnvioDomainService;
 import com.ecomarket.envioservice.service.EnvioService;
 import com.ecomarket.envioservice.service.RutaTransporteService;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
-import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpInputMessage;
 import org.springframework.http.HttpStatus;
@@ -18,8 +19,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.core.MethodParameter;
-import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.validation.BindingResult;
 import org.springframework.validation.FieldError;
@@ -31,23 +30,29 @@ import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.test.web.servlet.setup.MockMvcBuilders.standaloneSetup;
 
-@WebMvcTest(EnvioController.class)
-@AutoConfigureMockMvc(addFilters = false)
-@ActiveProfiles("test")
+@ExtendWith(MockitoExtension.class)
 @DisplayName("GlobalExceptionHandler")
 class GlobalExceptionHandlerTest {
 
-    @Autowired MockMvc mvc;
+    @Mock EnvioService envioService;
+    @Mock EnvioDomainService envioDomainService;
+    @Mock RutaTransporteService rutaTransporteService;
 
-    @MockitoBean EnvioService envioService;
-    @MockitoBean EnvioDomainService envioDomainService;
-    @MockitoBean RutaTransporteService rutaTransporteService;
+    MockMvc mvc;
+
+    @BeforeEach
+    void setup() {
+        var controller = new EnvioController(envioService, envioDomainService, rutaTransporteService);
+        mvc = standaloneSetup(controller)
+                .setControllerAdvice(new GlobalExceptionHandler())
+                .build();
+    }
 
     @Nested
     @DisplayName("404 NOT FOUND — NoExisteEnBdException")

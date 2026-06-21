@@ -72,8 +72,8 @@ class EnvioServiceTest {
         estadoCancelado = new EstadoEnvio(5L, "CANCELADO");
         estadoPuntoRetiro = new EstadoEnvio(3L, "EN_PUNTO_RETIRO");
 
-        metodoDomicilio = new MetodoEnvio(1L, "Domicilio");
-        metodoRetiro = new MetodoEnvio(2L, "PuntoRetiro");
+        metodoDomicilio = new MetodoEnvio(1L, "Domicilio", 5000.0);
+        metodoRetiro = new MetodoEnvio(2L, "PuntoRetiro", 0.0);
 
         envioPendiente = new Envio();
         envioPendiente.setId(10L);
@@ -97,11 +97,11 @@ class EnvioServiceTest {
         @DisplayName("crea envio exitosamente con cliente y pedido validos")
         void crearExitoso() throws Exception {
             when(metodoEnvioService.findById(1L)).thenReturn(metodoDomicilio);
-            when(direccionService.findById(1L)).thenReturn(null);
+            when(restTemplate.getForObject(anyString(), eq(Object.class))).thenReturn(null);
             when(restTemplate.getForObject(anyString(), eq(ClienteDTO.class))).thenReturn(new ClienteDTO());
             PedidoDTO pedidoDto = new PedidoDTO();
             pedidoDto.setClienteId(5L);
-            when(restTemplate.getForObject(eq("http://localhost:8082/api/pedido/100"), eq(PedidoDTO.class))).thenReturn(pedidoDto);
+            when(restTemplate.getForObject(anyString(), eq(PedidoDTO.class))).thenReturn(pedidoDto);
             when(estadoEnvioService.findById(1L)).thenReturn(estadoPendiente);
             when(envioDomainService.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
@@ -117,10 +117,34 @@ class EnvioServiceTest {
         }
 
         @Test
+        @DisplayName("lanza NoExisteEnBdException cuando la direccion no existe")
+        void direccionNoExiste() {
+            when(metodoEnvioService.findById(1L)).thenReturn(metodoDomicilio);
+            when(restTemplate.getForObject(anyString(), eq(Object.class)))
+                    .thenThrow(HttpClientErrorException.create(HttpStatus.NOT_FOUND, "Not Found", null, null, null));
+
+            assertThatThrownBy(() -> envioService.crearEnvio(100L, 5L, 1L, 1L))
+                    .isInstanceOf(NoExisteEnBdException.class)
+                    .hasMessageContaining("direccion");
+        }
+
+        @Test
+        @DisplayName("lanza NoExisteEnBdException cuando servicio de usuarios no disponible para validar direccion")
+        void servicioDireccionNoDisponible() {
+            when(metodoEnvioService.findById(1L)).thenReturn(metodoDomicilio);
+            when(restTemplate.getForObject(anyString(), eq(Object.class)))
+                    .thenThrow(new ResourceAccessException("Connection refused"));
+
+            assertThatThrownBy(() -> envioService.crearEnvio(100L, 5L, 1L, 1L))
+                    .isInstanceOf(NoExisteEnBdException.class)
+                    .hasMessageContaining("servicio de usuarios");
+        }
+
+        @Test
         @DisplayName("lanza NoExisteEnBdException cuando el cliente no existe")
         void clienteNoExiste() {
             when(metodoEnvioService.findById(1L)).thenReturn(metodoDomicilio);
-            when(direccionService.findById(1L)).thenReturn(null);
+            when(restTemplate.getForObject(anyString(), eq(Object.class))).thenReturn(null);
             when(restTemplate.getForObject(anyString(), eq(ClienteDTO.class)))
                     .thenThrow(HttpClientErrorException.create(HttpStatus.NOT_FOUND, "Not Found", null, null, null));
 
@@ -133,7 +157,7 @@ class EnvioServiceTest {
         @DisplayName("lanza NoExisteEnBdException cuando servicio de usuarios no disponible")
         void servicioClientesNoDisponible() {
             when(metodoEnvioService.findById(1L)).thenReturn(metodoDomicilio);
-            when(direccionService.findById(1L)).thenReturn(null);
+            when(restTemplate.getForObject(anyString(), eq(Object.class))).thenReturn(null);
             when(restTemplate.getForObject(anyString(), eq(ClienteDTO.class)))
                     .thenThrow(new ResourceAccessException("Connection refused"));
 
@@ -146,7 +170,7 @@ class EnvioServiceTest {
         @DisplayName("lanza PedidoClienteIncompatibleException cuando el pedido no pertenece al cliente")
         void pedidoNoPerteneceAlCliente() throws Exception {
             when(metodoEnvioService.findById(1L)).thenReturn(metodoDomicilio);
-            when(direccionService.findById(1L)).thenReturn(null);
+            when(restTemplate.getForObject(anyString(), eq(Object.class))).thenReturn(null);
             when(restTemplate.getForObject(anyString(), eq(ClienteDTO.class))).thenReturn(new ClienteDTO());
             PedidoDTO pedidoDto = new PedidoDTO();
             pedidoDto.setClienteId(99L);
@@ -161,7 +185,8 @@ class EnvioServiceTest {
         @DisplayName("lanza NoExisteEnBdException cuando el pedido no existe (404)")
         void pedidoNoExiste() {
             when(metodoEnvioService.findById(1L)).thenReturn(metodoDomicilio);
-            when(direccionService.findById(1L)).thenReturn(null);
+            
+            when(restTemplate.getForObject(anyString(), eq(Object.class))).thenReturn(null);
             when(restTemplate.getForObject(anyString(), eq(ClienteDTO.class))).thenReturn(new ClienteDTO());
             when(restTemplate.getForObject(anyString(), eq(PedidoDTO.class)))
                     .thenThrow(new HttpClientErrorException(HttpStatus.NOT_FOUND));
@@ -175,7 +200,8 @@ class EnvioServiceTest {
         @DisplayName("lanza Exception generica cuando el servicio de pedidos devuelve error HTTP inesperado")
         void pedidoErrorHttpInesperado() {
             when(metodoEnvioService.findById(1L)).thenReturn(metodoDomicilio);
-            when(direccionService.findById(1L)).thenReturn(null);
+            
+            when(restTemplate.getForObject(anyString(), eq(Object.class))).thenReturn(null);
             when(restTemplate.getForObject(anyString(), eq(ClienteDTO.class))).thenReturn(new ClienteDTO());
             when(restTemplate.getForObject(anyString(), eq(PedidoDTO.class)))
                     .thenThrow(new HttpClientErrorException(HttpStatus.INTERNAL_SERVER_ERROR));
@@ -188,7 +214,8 @@ class EnvioServiceTest {
         @DisplayName("lanza NoExisteEnBdException cuando servicio de pedidos no disponible")
         void servicioPedidosNoDisponible() {
             when(metodoEnvioService.findById(1L)).thenReturn(metodoDomicilio);
-            when(direccionService.findById(1L)).thenReturn(null);
+            
+            when(restTemplate.getForObject(anyString(), eq(Object.class))).thenReturn(null);
             when(restTemplate.getForObject(anyString(), eq(ClienteDTO.class))).thenReturn(new ClienteDTO());
             when(restTemplate.getForObject(anyString(), eq(PedidoDTO.class)))
                     .thenThrow(new ResourceAccessException("Connection refused"));
@@ -202,7 +229,8 @@ class EnvioServiceTest {
         @DisplayName("crea envio cuando el servicio de pedidos retorna null (pedido null, no incompatible)")
         void pedidoNullNoLanzaIncompatibilidad() throws Exception {
             when(metodoEnvioService.findById(1L)).thenReturn(metodoDomicilio);
-            when(direccionService.findById(1L)).thenReturn(null);
+            
+            when(restTemplate.getForObject(anyString(), eq(Object.class))).thenReturn(null);
             when(restTemplate.getForObject(anyString(), eq(ClienteDTO.class))).thenReturn(new ClienteDTO());
             when(restTemplate.getForObject(anyString(), eq(PedidoDTO.class))).thenReturn(null);
             when(estadoEnvioService.findById(1L)).thenReturn(estadoPendiente);
@@ -219,7 +247,8 @@ class EnvioServiceTest {
         @DisplayName("usa costo 0 para metodo PuntoRetiro")
         void costoGratisParaPuntoRetiro() throws Exception {
             when(metodoEnvioService.findById(2L)).thenReturn(metodoRetiro);
-            when(direccionService.findById(1L)).thenReturn(null);
+            
+            when(restTemplate.getForObject(anyString(), eq(Object.class))).thenReturn(null);
             when(restTemplate.getForObject(anyString(), eq(ClienteDTO.class))).thenReturn(new ClienteDTO());
             PedidoDTO pedidoDto = new PedidoDTO();
             pedidoDto.setClienteId(5L);
@@ -230,6 +259,67 @@ class EnvioServiceTest {
             Envio resultado = envioService.crearEnvio(100L, 5L, 2L, 1L);
 
             assertThat(resultado.getCostoEnvio()).isEqualTo(0.0);
+        }
+    }
+
+    @Nested
+    @DisplayName("crearEnvioAutomatico")
+    class CrearEnvioAutomatico {
+
+        private PedidoDTO pedidoDto;
+
+        @BeforeEach
+        void setup() {
+            pedidoDto = new PedidoDTO();
+            pedidoDto.setId(200L);
+            pedidoDto.setClienteId(5L);
+            pedidoDto.setDireccionEnvioId(1L);
+        }
+
+        @Test
+        @DisplayName("crea envio automaticamente a partir de pedido")
+        void exito() throws Exception {
+            when(restTemplate.getForObject("http://localhost:8082/api/pedidos/200", PedidoDTO.class)).thenReturn(pedidoDto);
+            when(metodoEnvioService.findById(1L)).thenReturn(metodoDomicilio);
+            when(estadoEnvioService.findById(1L)).thenReturn(estadoPendiente);
+            when(envioDomainService.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+            Envio resultado = envioService.crearEnvioAutomatico(200L);
+
+            assertThat(resultado.getPedidoId()).isEqualTo(200L);
+            assertThat(resultado.getCostoEnvio()).isEqualTo(5000.0);
+        }
+
+        @Test
+        @DisplayName("lanza excepcion si pedido no existe")
+        void pedidoNoExiste() {
+            when(restTemplate.getForObject(anyString(), eq(PedidoDTO.class))).thenReturn(null);
+
+            assertThatThrownBy(() -> envioService.crearEnvioAutomatico(200L))
+                .isInstanceOf(NoExisteEnBdException.class)
+                .hasMessageContaining("Pedido no encontrado");
+        }
+
+        @Test
+        @DisplayName("lanza excepcion si pedido no tiene direccion asignada")
+        void pedidoSinDireccion() {
+            pedidoDto.setDireccionEnvioId(null);
+            when(restTemplate.getForObject(anyString(), eq(PedidoDTO.class))).thenReturn(pedidoDto);
+
+            assertThatThrownBy(() -> envioService.crearEnvioAutomatico(200L))
+                .isInstanceOf(NoExisteEnBdException.class)
+                .hasMessageContaining("dirección de envío");
+        }
+
+        @Test
+        @DisplayName("lanza excepcion si el metodo de envio por defecto no existe")
+        void metodoEnvioNoExiste() {
+            when(restTemplate.getForObject(anyString(), eq(PedidoDTO.class))).thenReturn(pedidoDto);
+            when(metodoEnvioService.findById(1L)).thenThrow(new NoExisteEnBdException("MetodoEnvio no encontrado"));
+
+            assertThatThrownBy(() -> envioService.crearEnvioAutomatico(200L))
+                .isInstanceOf(NoExisteEnBdException.class)
+                .hasMessageContaining("MetodoEnvio");
         }
     }
 

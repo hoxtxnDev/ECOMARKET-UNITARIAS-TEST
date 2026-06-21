@@ -18,7 +18,7 @@ import com.ecomarket.envioservice.service.EstadoEnvioService;
 import jakarta.validation.Valid;
 
 @RestController
-@RequestMapping("/api/v1/estado-envio")
+@RequestMapping("/api/v1/logistica-envios/estado-envio")
 @RequiredArgsConstructor
 public class EstadoEnvioController {
 

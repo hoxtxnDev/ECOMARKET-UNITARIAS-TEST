@@ -10,6 +10,7 @@ public class PedidoDTO {
 
     private Long id;
     private Long clienteId;
+    private Long direccionEnvioId;
     private Double subtotal;
     private Double total;
 }

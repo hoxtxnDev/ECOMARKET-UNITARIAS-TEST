@@ -43,4 +43,10 @@ public class MetodoEnvioService {
         }
         metodoEnvioRepository.deleteById(id);
     }
+
+    public MetodoEnvio actualizarCosto(Long id, Double nuevoCosto) {
+        MetodoEnvio metodo = findById(id);
+        metodo.setCosto(nuevoCosto);
+        return metodoEnvioRepository.save(metodo);
+    }
 }

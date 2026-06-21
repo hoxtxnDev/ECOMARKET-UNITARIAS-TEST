@@ -25,4 +25,7 @@ public class MetodoEnvio {
     @NotBlank(message = "El nombre del metodo envio no puede estar vacio.")
     @Column(nullable = false, length = 50)
     private String nombre;
+
+    @Column(nullable = false)
+    private Double costo = 0.0;
 }

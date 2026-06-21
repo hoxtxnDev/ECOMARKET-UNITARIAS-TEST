@@ -35,7 +35,7 @@ class EnvioTest {
         void puntoRetiro() {
             Envio e = envio();
             e.setFechaCreacion(LocalDateTime.of(2026, 6, 16, 10, 0));
-            e.setMetodoEnvio(new MetodoEnvio(1L, "PuntoRetiro"));
+            e.setMetodoEnvio(new MetodoEnvio(1L, "PuntoRetiro", 0.0));
             assertThat(e.calcularFechaEstimada()).isEqualTo(
                     LocalDateTime.of(2026, 6, 18, 10, 0));
         }
@@ -44,7 +44,7 @@ class EnvioTest {
         void defecto() {
             Envio e = envio();
             e.setFechaCreacion(LocalDateTime.of(2026, 6, 16, 10, 0));
-            e.setMetodoEnvio(new MetodoEnvio(1L, "Domicilio"));
+            e.setMetodoEnvio(new MetodoEnvio(1L, "Domicilio", 5000.0));
             assertThat(e.calcularFechaEstimada()).isEqualTo(
                     LocalDateTime.of(2026, 6, 21, 10, 0));
         }
