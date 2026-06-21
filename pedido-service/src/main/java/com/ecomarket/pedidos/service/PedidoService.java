@@ -1,17 +1,22 @@
 package com.ecomarket.pedidos.service;
 
+import com.ecomarket.pedidos.client.AnaliticaClient;
+import com.ecomarket.pedidos.client.CarritoCompraClient;
+import com.ecomarket.pedidos.client.CatalogoInventarioClient;
+import com.ecomarket.pedidos.client.RegistroUsuariosClient;
 import com.ecomarket.pedidos.dto.CarritoDTO;
+import com.ecomarket.pedidos.exception.NoExisteEnBdException;
 import com.ecomarket.pedidos.model.*;
 import com.ecomarket.pedidos.repository.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -22,36 +27,57 @@ public class PedidoService {
     private final PedidoRepository pedidoRepository;
     private final ItemPedidoRepository itemPedidoRepository;
     private final EstadoPedidoRepository estadoPedidoRepository;
+    private final RegistroUsuariosClient registroUsuariosClient;
+    private final CarritoCompraClient carritoCompraClient;
+    private final CatalogoInventarioClient catalogoInventarioClient;
+    private final AnaliticaClient analiticaClient;
     private final RestTemplate restTemplate;
 
+    @SuppressWarnings("unchecked")
     @Transactional
-    public Pedido generarPedidoDesdeCarrito(Long clienteId, Long carritoId) {
-        // 1. Obtener datos del carrito desde carritocompraservice
-        String cartUrl = "http://localhost:8082/api/carrito/" + carritoId;
-        CarritoDTO carrito = restTemplate.getForObject(cartUrl, CarritoDTO.class);
+    public Pedido generarPedidoDesdeCarrito(Long clienteId, Long carritoId, Long direccionEnvioId) {
+        registroUsuariosClient.obtenerUsuario(clienteId);
 
+        CarritoDTO carrito = carritoCompraClient.obtenerCarrito(clienteId);
         if (carrito == null || carrito.getItems() == null || carrito.getItems().isEmpty()) {
-            throw new RuntimeException("El carrito está vacío o no existe.");
+            throw new NoExisteEnBdException("El carrito del cliente " + clienteId + " está vacío.");
         }
 
-        // 2. Crear el pedido
-        EstadoPedido estadoInicial = estadoPedidoRepository.findByNombre("PENDIENTE")
-                .orElseThrow(() -> new RuntimeException("Estado PENDIENTE no encontrado"));
+        Long finalDireccionId = direccionEnvioId;
+        if (finalDireccionId == null) {
+            try {
+                Map<String, Object> userDir = restTemplate.getForObject("http://localhost:8081/api/usuarios/" + clienteId + "/direccion-predeterminada", Map.class);
+                if (userDir != null && userDir.get("id") != null) {
+                    finalDireccionId = Long.valueOf(userDir.get("id").toString());
+                } else {
+                    throw new NoExisteEnBdException("El usuario no tiene una dirección predeterminada configurada.");
+                }
+            } catch (Exception e) {
+                throw new NoExisteEnBdException("No se pudo obtener la dirección predeterminada del usuario.");
+            }
+        }
+
+        for (var itemDto : carrito.getItems()) {
+            catalogoInventarioClient.obtenerProducto(itemDto.getProductoId());
+        }
+
+        EstadoPedido estadoInicial = estadoPedidoRepository.findById(1L)
+                .orElseThrow(() -> new NoExisteEnBdException("No se encontró el estado inicial del pedido."));
 
         Pedido pedido = Pedido.builder()
                 .clienteId(clienteId)
+                .direccionEnvioId(finalDireccionId)
                 .subtotal(carrito.getSubtotal())
-                .total(carrito.getSubtotal()) // Simplificado: sin impuestos/envío por ahora
+                .total(carrito.getSubtotal())
                 .estado(estadoInicial)
                 .fechaCreacion(LocalDateTime.now())
                 .build();
 
         Pedido pedidoGuardado = pedidoRepository.save(pedido);
 
-        // 3. Crear items del pedido
-        List<ItemPedido> items = carrito.getItems().stream().map(itemDto -> 
+        List<ItemPedido> items = carrito.getItems().stream().map(itemDto ->
             ItemPedido.builder()
-                .pedido(pedidoGuardado)
+                .pedidoId(pedidoGuardado.getId())
                 .productoId(itemDto.getProductoId())
                 .cantidad(itemDto.getCantidad())
                 .precioUnitarioHistorico(itemDto.getPrecioUnitarioAgregado())
@@ -59,18 +85,16 @@ public class PedidoService {
         ).collect(Collectors.toList());
 
         itemPedidoRepository.saveAll(items);
+        carritoCompraClient.cerrarCarrito(clienteId);
+        carritoCompraClient.vaciarCarrito(clienteId);
 
-        // 4. Vaciar el carrito en carritocompraservice
-        try {
-            String emptyCartUrl = "http://localhost:8082/api/carrito/" + clienteId + "/vaciar";
-            restTemplate.delete(emptyCartUrl);
-        } catch (Exception e) {
-            log.warn("No se pudo vaciar el carrito {}", carritoId, e);
-        }
-
-        registrarLog(clienteId, "PEDIDO_GENERADO", "Pedido generado exitosamente con ID: " + pedidoGuardado.getId() + ". Total: " + pedidoGuardado.getTotal());
-
-        log.info("Pedido {} generado para cliente {} desde carrito {}", pedidoGuardado.getId(), clienteId, carritoId);
+        java.util.Map<String, Object> log = new java.util.HashMap<>();
+        log.put("microservicio", "pedido-service");
+        log.put("accion", "PEDIDO_GENERADO");
+        log.put("usuarioId", clienteId);
+        log.put("detalles", "Pedido generado exitosamente con ID: " + pedidoGuardado.getId());
+        log.put("fecha", LocalDateTime.now());
+        analiticaClient.registrarLog(log);
 
         return pedidoGuardado;
     }
@@ -79,9 +103,24 @@ public class PedidoService {
     public Pedido actualizarEstado(Long pedidoId, Long nuevoEstadoId) {
         Pedido pedido = buscarPorId(pedidoId);
         EstadoPedido estado = estadoPedidoRepository.findById(nuevoEstadoId)
-                .orElseThrow(() -> new RuntimeException("Estado no encontrado"));
+                .orElseThrow(() -> new NoExisteEnBdException("Estado de pedido no encontrado con ID: " + nuevoEstadoId));
+        
+        if (nuevoEstadoId == 4L) {
+            dispararCreacionEnvio(pedido);
+        }
+        
         pedido.setEstado(estado);
         return pedidoRepository.save(pedido);
+    }
+
+    private void dispararCreacionEnvio(Pedido pedido) {
+        try {
+            String url = "http://localhost:8083/api/v1/logistica-envios/envios/auto/" + pedido.getId();
+            restTemplate.postForEntity(url, null, String.class);
+            log.info("Envío creado automáticamente para el pedido {}", pedido.getId());
+        } catch (Exception e) {
+            log.error("Error al disparar la creación automática del envío para el pedido {}: {}", pedido.getId(), e.getMessage());
+        }
     }
 
     public List<Pedido> obtenerHistorialCliente(Long clienteId) {
@@ -90,21 +129,20 @@ public class PedidoService {
 
     public Pedido buscarPorId(Long pedidoId) {
         return pedidoRepository.findById(pedidoId)
-                .orElseThrow(() -> new RuntimeException("Pedido no encontrado con ID: " + pedidoId));
+                .orElseThrow(() -> new NoExisteEnBdException("Pedido no encontrado con ID: " + pedidoId));
     }
 
-    private void registrarLog(Long usuarioId, String accion, String detalles) {
-        java.util.Map<String, Object> logMap = new java.util.HashMap<>();
-        logMap.put("microservicio", "pedido-service");
-        logMap.put("accion", accion);
-        logMap.put("usuarioId", usuarioId);
-        logMap.put("detalles", detalles);
-        logMap.put("fecha", LocalDateTime.now());
-
-        try {
-            restTemplate.postForEntity("http://localhost:8084/api/analitica/logs", logMap, String.class);
-        } catch (Exception e) {
-            log.warn("Error al enviar log a analítica", e);
+    @Transactional
+    public Pedido actualizarEstadoPorNombre(Long pedidoId, String nombreEstado) {
+        Pedido pedido = buscarPorId(pedidoId);
+        EstadoPedido estado = estadoPedidoRepository.findByNombre(nombreEstado)
+                .orElseThrow(() -> new NoExisteEnBdException("Estado de pedido no encontrado con nombre: " + nombreEstado));
+        
+        if ("ENVIADO".equalsIgnoreCase(nombreEstado)) {
+            dispararCreacionEnvio(pedido);
         }
+        
+        pedido.setEstado(estado);
+        return pedidoRepository.save(pedido);
     }
 }

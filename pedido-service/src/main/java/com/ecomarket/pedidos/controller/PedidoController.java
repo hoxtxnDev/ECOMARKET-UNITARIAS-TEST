@@ -16,13 +16,21 @@ public class PedidoController {
     private final PedidoService pedidoService;
 
     @PostMapping("/generar/{clienteId}/{carritoId}")
-    public ResponseEntity<Pedido> generarPedido(@PathVariable Long clienteId, @PathVariable Long carritoId) {
-        return ResponseEntity.ok(pedidoService.generarPedidoDesdeCarrito(clienteId, carritoId));
+    public ResponseEntity<Pedido> generarPedido(
+            @PathVariable Long clienteId,
+            @PathVariable Long carritoId,
+            @RequestParam(required = false) Long direccionEnvioId) {
+        return ResponseEntity.ok(pedidoService.generarPedidoDesdeCarrito(clienteId, carritoId, direccionEnvioId));
     }
 
     @PutMapping("/{pedidoId}/estado/{estadoId}")
     public ResponseEntity<Pedido> actualizarEstado(@PathVariable Long pedidoId, @PathVariable Long estadoId) {
         return ResponseEntity.ok(pedidoService.actualizarEstado(pedidoId, estadoId));
+    }
+
+    @PutMapping("/{pedidoId}/estado-nombre")
+    public ResponseEntity<Pedido> actualizarEstadoPorNombre(@PathVariable Long pedidoId, @RequestBody String nombreEstado) {
+        return ResponseEntity.ok(pedidoService.actualizarEstadoPorNombre(pedidoId, nombreEstado));
     }
 
     @GetMapping("/cliente/{clienteId}")

@@ -18,6 +18,7 @@ import tools.jackson.databind.ObjectMapper;
 import java.time.LocalDateTime;
 import java.util.List;
 
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -32,6 +33,7 @@ class PedidoControllerTest {
 
     @MockitoBean PedidoService pedidoService;
 
+    @SuppressWarnings("unused")
     private ObjectMapper mapper;
 
     @BeforeEach
@@ -64,7 +66,7 @@ class PedidoControllerTest {
         @Test
         @DisplayName("200 OK al generar pedido")
         void exitoso() throws Exception {
-            when(pedidoService.generarPedidoDesdeCarrito(5L, 1L)).thenReturn(pedido(1L));
+            when(pedidoService.generarPedidoDesdeCarrito(eq(5L), eq(1L), any())).thenReturn(pedido(1L));
 
             mvc.perform(post("/api/pedidos/generar/5/1"))
                     .andExpect(status().isOk())
@@ -76,7 +78,7 @@ class PedidoControllerTest {
         @Test
         @DisplayName("400 si el carrito está vacío")
         void carritoVacio() throws Exception {
-            when(pedidoService.generarPedidoDesdeCarrito(5L, 1L))
+            when(pedidoService.generarPedidoDesdeCarrito(eq(5L), eq(1L), any()))
                     .thenThrow(new RuntimeException("El carrito está vacío o no existe."));
 
             mvc.perform(post("/api/pedidos/generar/5/1"))
@@ -107,6 +109,37 @@ class PedidoControllerTest {
                     .thenThrow(new RuntimeException("Estado no encontrado"));
 
             mvc.perform(put("/api/pedidos/1/estado/99"))
+                    .andExpect(status().isBadRequest());
+        }
+    }
+
+    @Nested
+    @DisplayName("PUT /{pedidoId}/estado-nombre")
+    class ActualizarEstadoPorNombre {
+
+        @Test
+        @DisplayName("200 OK al actualizar estado por nombre")
+        void exitoso() throws Exception {
+            Pedido actualizado = pedido(1L);
+            actualizado.setEstado(estado("CONFIRMADO"));
+            when(pedidoService.actualizarEstadoPorNombre(1L, "CONFIRMADO")).thenReturn(actualizado);
+
+            mvc.perform(put("/api/pedidos/1/estado-nombre")
+                            .contentType(org.springframework.http.MediaType.TEXT_PLAIN)
+                            .content("CONFIRMADO"))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.estado.nombre").value("CONFIRMADO"));
+        }
+
+        @Test
+        @DisplayName("400 si el estado no existe")
+        void estadoNoExiste() throws Exception {
+            when(pedidoService.actualizarEstadoPorNombre(1L, "INEXISTENTE"))
+                    .thenThrow(new RuntimeException("Estado no encontrado"));
+
+            mvc.perform(put("/api/pedidos/1/estado-nombre")
+                            .contentType(org.springframework.http.MediaType.TEXT_PLAIN)
+                            .content("INEXISTENTE"))
                     .andExpect(status().isBadRequest());
         }
     }

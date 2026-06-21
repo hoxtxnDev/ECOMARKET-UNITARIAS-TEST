@@ -34,12 +34,22 @@ public class GlobalExceptionHandler {
                 .timestamp(LocalDateTime.now())
                 .status(HttpStatus.BAD_REQUEST.value())
                 .error(HttpStatus.BAD_REQUEST.getReasonPhrase())
-                .message("La validación de los datos ha fallado. Revisa los detalles.")
+                .message("La validaci\u00f3n de los datos ha fallado. Revisa los detalles.")
                 .path(request.getRequestURI())
                 .details(errores)
                 .build();
 
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
+    }
+
+    @ExceptionHandler(YaExisteEnBdException.class)
+    public ResponseEntity<ErrorResponseDTO> handleYaExisteEnBdException(YaExisteEnBdException ex, HttpServletRequest request) {
+        return buildResponse(HttpStatus.CONFLICT, ex.getMessage(), request);
+    }
+
+    @ExceptionHandler(NoExisteEnBdException.class)
+    public ResponseEntity<ErrorResponseDTO> handleNoExisteEnBdException(NoExisteEnBdException ex, HttpServletRequest request) {
+        return buildResponse(HttpStatus.NOT_FOUND, ex.getMessage(), request);
     }
 
     @ExceptionHandler(DataIntegrityViolationException.class)
@@ -54,8 +64,8 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponseDTO> handleGeneralException(Exception ex, HttpServletRequest request) {
-        log.error("Error crítico: {}", ex.getMessage(), ex);
-        return buildResponse(HttpStatus.INTERNAL_SERVER_ERROR, "Ocurrió un error inesperado en el servidor.", request);
+        log.error("Error cr\u00edtico: {}", ex.getMessage(), ex);
+        return buildResponse(HttpStatus.INTERNAL_SERVER_ERROR, "Ocurri\u00f3 un error inesperado en el servidor.", request);
     }
 
     private ResponseEntity<ErrorResponseDTO> buildResponse(HttpStatus status, String mensaje, HttpServletRequest request) {

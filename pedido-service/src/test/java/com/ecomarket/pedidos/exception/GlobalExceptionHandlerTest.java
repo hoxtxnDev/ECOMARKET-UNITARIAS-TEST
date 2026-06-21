@@ -80,6 +80,42 @@ class GlobalExceptionHandlerTest {
     }
 
     @Nested
+    @DisplayName("404 NOT FOUND — NoExisteEnBdException")
+    class NoExisteEnBd {
+
+        @Test
+        @DisplayName("recurso no encontrado → 404 con status y message")
+        void noExisteEnBdDevuelve404() throws Exception {
+            when(pedidoService.buscarPorId(99L))
+                    .thenThrow(new NoExisteEnBdException("Pedido no encontrado con ID: 99"));
+
+            mvc.perform(get("/api/pedidos/99"))
+                    .andExpect(status().isNotFound())
+                    .andExpect(jsonPath("$.status").value(404))
+                    .andExpect(jsonPath("$.error").value("Not Found"))
+                    .andExpect(jsonPath("$.message").value("Pedido no encontrado con ID: 99"));
+        }
+    }
+
+    @Nested
+    @DisplayName("409 CONFLICT — YaExisteEnBdException")
+    class YaExisteEnBd {
+
+        @Test
+        @DisplayName("recurso duplicado → 409 con status y message")
+        void yaExisteEnBdDevuelve409() throws Exception {
+            when(pedidoService.buscarPorId(1L))
+                    .thenThrow(new YaExisteEnBdException("El pedido ya existe"));
+
+            mvc.perform(get("/api/pedidos/1"))
+                    .andExpect(status().isConflict())
+                    .andExpect(jsonPath("$.status").value(409))
+                    .andExpect(jsonPath("$.error").value("Conflict"))
+                    .andExpect(jsonPath("$.message").value("El pedido ya existe"));
+        }
+    }
+
+    @Nested
     @DisplayName("400 BAD REQUEST — MethodArgumentNotValidException")
     class Validacion {
 

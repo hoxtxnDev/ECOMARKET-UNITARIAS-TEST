@@ -1,7 +1,13 @@
 package com.ecomarket.pedidos.service;
 
+import com.ecomarket.pedidos.client.AnaliticaClient;
+import com.ecomarket.pedidos.client.CarritoCompraClient;
+import com.ecomarket.pedidos.client.CatalogoInventarioClient;
+import com.ecomarket.pedidos.client.RegistroUsuariosClient;
 import com.ecomarket.pedidos.dto.CarritoDTO;
 import com.ecomarket.pedidos.dto.ItemCarritoDTO;
+import com.ecomarket.pedidos.dto.PerfilUsuarioDTO;
+import com.ecomarket.pedidos.exception.NoExisteEnBdException;
 import com.ecomarket.pedidos.model.*;
 import com.ecomarket.pedidos.repository.*;
 import org.junit.jupiter.api.DisplayName;
@@ -15,6 +21,7 @@ import org.springframework.web.client.RestTemplate;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.*;
@@ -28,15 +35,16 @@ class PedidoServiceTest {
     @Mock PedidoRepository pedidoRepository;
     @Mock ItemPedidoRepository itemPedidoRepository;
     @Mock EstadoPedidoRepository estadoPedidoRepository;
+    @Mock RegistroUsuariosClient registroUsuariosClient;
+    @Mock CarritoCompraClient carritoCompraClient;
+    @Mock CatalogoInventarioClient catalogoInventarioClient;
+    @Mock AnaliticaClient analiticaClient;
     @Mock RestTemplate restTemplate;
 
     @InjectMocks PedidoService service;
 
     private EstadoPedido estado(String nombre) {
-        EstadoPedido e = new EstadoPedido();
-        e.setId(1L);
-        e.setNombre(nombre);
-        return e;
+        return EstadoPedido.builder().id(1L).nombre(nombre).build();
     }
 
     private CarritoDTO carritoDto() {
@@ -57,6 +65,7 @@ class PedidoServiceTest {
         return Pedido.builder()
                 .id(id)
                 .clienteId(5L)
+                .direccionEnvioId(100L)
                 .subtotal(50000.0)
                 .total(50000.0)
                 .estado(estado("PENDIENTE"))
@@ -72,101 +81,141 @@ class PedidoServiceTest {
         @DisplayName("crea pedido y items desde el carrito externo")
         void generaPedidoExitoso() {
             CarritoDTO carrito = carritoDto();
-            when(restTemplate.getForObject(anyString(), eq(CarritoDTO.class))).thenReturn(carrito);
-            when(estadoPedidoRepository.findByNombre("PENDIENTE")).thenReturn(Optional.of(estado("PENDIENTE")));
+            when(registroUsuariosClient.obtenerUsuario(5L)).thenReturn(new PerfilUsuarioDTO());
+            when(carritoCompraClient.obtenerCarrito(5L)).thenReturn(carrito);
+            when(catalogoInventarioClient.obtenerProducto(100L)).thenReturn(null);
+            when(estadoPedidoRepository.findById(1L)).thenReturn(Optional.of(estado("PENDIENTE")));
             when(pedidoRepository.save(any())).thenAnswer(inv -> {
                 Pedido p = inv.getArgument(0);
                 p.setId(1L);
                 return p;
             });
-            when(itemPedidoRepository.saveAll(any())).thenReturn(List.of());
 
-            Pedido resultado = service.generarPedidoDesdeCarrito(5L, 1L);
+            Pedido resultado = service.generarPedidoDesdeCarrito(5L, 1L, 100L);
 
             assertThat(resultado.getId()).isEqualTo(1L);
             assertThat(resultado.getClienteId()).isEqualTo(5L);
+            assertThat(resultado.getDireccionEnvioId()).isEqualTo(100L);
             assertThat(resultado.getSubtotal()).isEqualTo(50000.0);
             assertThat(resultado.getEstado().getNombre()).isEqualTo("PENDIENTE");
-            verify(restTemplate).getForObject(anyString(), eq(CarritoDTO.class));
-            verify(restTemplate).delete(anyString());
+            verify(registroUsuariosClient).obtenerUsuario(5L);
+            verify(carritoCompraClient).obtenerCarrito(5L);
+            verify(catalogoInventarioClient).obtenerProducto(100L);
+            verify(estadoPedidoRepository).findById(1L);
             verify(pedidoRepository).save(any());
             verify(itemPedidoRepository).saveAll(any());
+            verify(carritoCompraClient).cerrarCarrito(5L);
+            verify(carritoCompraClient).vaciarCarrito(5L);
+            verify(analiticaClient).registrarLog(any());
         }
 
         @Test
         @DisplayName("lanza excepción si el carrito está vacío")
         void carritoVacio() {
+            when(registroUsuariosClient.obtenerUsuario(5L)).thenReturn(new PerfilUsuarioDTO());
             CarritoDTO vacio = CarritoDTO.builder().items(List.of()).build();
-            when(restTemplate.getForObject(anyString(), eq(CarritoDTO.class))).thenReturn(vacio);
+            when(carritoCompraClient.obtenerCarrito(5L)).thenReturn(vacio);
 
-            assertThatThrownBy(() -> service.generarPedidoDesdeCarrito(5L, 1L))
-                    .isInstanceOf(RuntimeException.class)
+            assertThatThrownBy(() -> service.generarPedidoDesdeCarrito(5L, 1L, 100L))
+                    .isInstanceOf(NoExisteEnBdException.class)
                     .hasMessageContaining("vacío");
         }
 
         @Test
         @DisplayName("lanza excepción si el carrito es nulo")
         void carritoNulo() {
-            when(restTemplate.getForObject(anyString(), eq(CarritoDTO.class))).thenReturn(null);
+            when(registroUsuariosClient.obtenerUsuario(5L)).thenReturn(new PerfilUsuarioDTO());
+            when(carritoCompraClient.obtenerCarrito(5L)).thenReturn(null);
 
-            assertThatThrownBy(() -> service.generarPedidoDesdeCarrito(5L, 1L))
-                    .isInstanceOf(RuntimeException.class)
+            assertThatThrownBy(() -> service.generarPedidoDesdeCarrito(5L, 1L, 100L))
+                    .isInstanceOf(NoExisteEnBdException.class)
                     .hasMessageContaining("vacío");
         }
 
         @Test
         @DisplayName("lanza excepción si los items del carrito son nulos")
         void carritoItemsNulos() {
+            when(registroUsuariosClient.obtenerUsuario(5L)).thenReturn(new PerfilUsuarioDTO());
             CarritoDTO carrito = CarritoDTO.builder().items(null).build();
-            when(restTemplate.getForObject(anyString(), eq(CarritoDTO.class))).thenReturn(carrito);
+            when(carritoCompraClient.obtenerCarrito(5L)).thenReturn(carrito);
 
-            assertThatThrownBy(() -> service.generarPedidoDesdeCarrito(5L, 1L))
-                    .isInstanceOf(RuntimeException.class)
+            assertThatThrownBy(() -> service.generarPedidoDesdeCarrito(5L, 1L, 100L))
+                    .isInstanceOf(NoExisteEnBdException.class)
                     .hasMessageContaining("vacío");
         }
 
         @Test
-        @DisplayName("lanza excepción si estado PENDIENTE no existe")
-        void estadoPendienteNoExiste() {
-            when(restTemplate.getForObject(anyString(), eq(CarritoDTO.class))).thenReturn(carritoDto());
-            when(estadoPedidoRepository.findByNombre("PENDIENTE")).thenReturn(Optional.empty());
+        @DisplayName("lanza excepción si estado inicial no existe")
+        void estadoInicialNoExiste() {
+            when(registroUsuariosClient.obtenerUsuario(5L)).thenReturn(new PerfilUsuarioDTO());
+            when(carritoCompraClient.obtenerCarrito(5L)).thenReturn(carritoDto());
+            when(catalogoInventarioClient.obtenerProducto(100L)).thenReturn(null);
+            when(estadoPedidoRepository.findById(1L)).thenReturn(Optional.empty());
 
-            assertThatThrownBy(() -> service.generarPedidoDesdeCarrito(5L, 1L))
-                    .isInstanceOf(RuntimeException.class)
-                    .hasMessageContaining("PENDIENTE");
+            assertThatThrownBy(() -> service.generarPedidoDesdeCarrito(5L, 1L, 100L))
+                    .isInstanceOf(NoExisteEnBdException.class)
+                    .hasMessageContaining("estado inicial");
         }
 
         @Test
-        @DisplayName("tolera fallo al vaciar carrito externo")
-        void toleraFalloAlVaciarCarrito() {
+        @DisplayName("obtiene direccion predeterminada si no se envía direccionEnvioId")
+        void direccionDesdeApiCuandoIdEsNull() {
             CarritoDTO carrito = carritoDto();
-            when(restTemplate.getForObject(anyString(), eq(CarritoDTO.class))).thenReturn(carrito);
-            when(estadoPedidoRepository.findByNombre("PENDIENTE")).thenReturn(Optional.of(estado("PENDIENTE")));
+            when(registroUsuariosClient.obtenerUsuario(5L)).thenReturn(new PerfilUsuarioDTO());
+            when(carritoCompraClient.obtenerCarrito(5L)).thenReturn(carrito);
+            when(catalogoInventarioClient.obtenerProducto(100L)).thenReturn(null);
+            when(estadoPedidoRepository.findById(1L)).thenReturn(Optional.of(estado("PENDIENTE")));
             when(pedidoRepository.save(any())).thenAnswer(inv -> {
                 Pedido p = inv.getArgument(0);
                 p.setId(1L);
                 return p;
             });
-            doThrow(new RuntimeException("Connection refused")).when(restTemplate).delete(anyString());
+            when(restTemplate.getForObject(anyString(), eq(Map.class)))
+                    .thenReturn(Map.of("id", 200));
 
-            assertThatNoException().isThrownBy(() -> service.generarPedidoDesdeCarrito(5L, 1L));
+            Pedido resultado = service.generarPedidoDesdeCarrito(5L, 1L, null);
+
+            assertThat(resultado.getDireccionEnvioId()).isEqualTo(200L);
+            verify(restTemplate).getForObject(anyString(), eq(Map.class));
         }
 
         @Test
-        @DisplayName("tolera fallo al enviar log de analítica")
-        void toleraFalloAlEnviarLog() {
-            CarritoDTO carrito = carritoDto();
-            when(restTemplate.getForObject(anyString(), eq(CarritoDTO.class))).thenReturn(carrito);
-            when(estadoPedidoRepository.findByNombre("PENDIENTE")).thenReturn(Optional.of(estado("PENDIENTE")));
-            when(pedidoRepository.save(any())).thenAnswer(inv -> {
-                Pedido p = inv.getArgument(0);
-                p.setId(1L);
-                return p;
-            });
-            when(itemPedidoRepository.saveAll(any())).thenReturn(List.of());
-            doThrow(new RuntimeException("Log service down")).when(restTemplate).postForEntity(anyString(), any(), eq(String.class));
+        @DisplayName("lanza excepción si la dirección predeterminada no tiene id")
+        void direccionPredeterminadaSinId() {
+            when(registroUsuariosClient.obtenerUsuario(5L)).thenReturn(new PerfilUsuarioDTO());
+            when(carritoCompraClient.obtenerCarrito(5L)).thenReturn(carritoDto());
+            when(restTemplate.getForObject(anyString(), eq(Map.class)))
+                    .thenReturn(Map.of());
 
-            assertThatNoException().isThrownBy(() -> service.generarPedidoDesdeCarrito(5L, 1L));
+            assertThatThrownBy(() -> service.generarPedidoDesdeCarrito(5L, 1L, null))
+                    .isInstanceOf(NoExisteEnBdException.class)
+                    .hasMessageContaining("dirección predeterminada");
+        }
+
+        @Test
+        @DisplayName("lanza excepción si falla la obtención de dirección predeterminada")
+        void falloAlObtenerDireccionPredeterminada() {
+            when(registroUsuariosClient.obtenerUsuario(5L)).thenReturn(new PerfilUsuarioDTO());
+            when(carritoCompraClient.obtenerCarrito(5L)).thenReturn(carritoDto());
+            when(restTemplate.getForObject(anyString(), eq(Map.class)))
+                    .thenThrow(new RuntimeException("Timeout"));
+
+            assertThatThrownBy(() -> service.generarPedidoDesdeCarrito(5L, 1L, null))
+                    .isInstanceOf(NoExisteEnBdException.class)
+                    .hasMessageContaining("dirección predeterminada");
+        }
+
+        @Test
+        @DisplayName("lanza excepción si la API de direcciones retorna null")
+        void direccionApiRetornaNull() {
+            when(registroUsuariosClient.obtenerUsuario(5L)).thenReturn(new PerfilUsuarioDTO());
+            when(carritoCompraClient.obtenerCarrito(5L)).thenReturn(carritoDto());
+            when(restTemplate.getForObject(anyString(), eq(Map.class)))
+                    .thenReturn(null);
+
+            assertThatThrownBy(() -> service.generarPedidoDesdeCarrito(5L, 1L, null))
+                    .isInstanceOf(NoExisteEnBdException.class)
+                    .hasMessageContaining("dirección predeterminada");
         }
     }
 
@@ -192,7 +241,7 @@ class PedidoServiceTest {
             when(pedidoRepository.findById(99L)).thenReturn(Optional.empty());
 
             assertThatThrownBy(() -> service.actualizarEstado(99L, 1L))
-                    .isInstanceOf(RuntimeException.class)
+                    .isInstanceOf(NoExisteEnBdException.class)
                     .hasMessageContaining("99");
         }
 
@@ -203,8 +252,85 @@ class PedidoServiceTest {
             when(estadoPedidoRepository.findById(99L)).thenReturn(Optional.empty());
 
             assertThatThrownBy(() -> service.actualizarEstado(1L, 99L))
-                    .isInstanceOf(RuntimeException.class)
-                    .hasMessageContaining("Estado no encontrado");
+                    .isInstanceOf(NoExisteEnBdException.class)
+                    .hasMessageContaining("Estado de pedido no encontrado");
+        }
+
+        @Test
+        @DisplayName("dispara creación de envío cuando estadoId es 4")
+        void disparaCreacionEnvio() {
+            Pedido pedido = pedidoPendiente(1L);
+            pedido.setDireccionEnvioId(100L);
+            when(pedidoRepository.findById(1L)).thenReturn(Optional.of(pedido));
+            when(estadoPedidoRepository.findById(4L)).thenReturn(Optional.of(estado("ENVIADO")));
+            when(pedidoRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+            service.actualizarEstado(1L, 4L);
+
+            verify(restTemplate).postForEntity(contains("/envios/auto/1"), isNull(), eq(String.class));
+        }
+
+        @Test
+        @DisplayName("tolera error al disparar creación de envío")
+        void toleraErrorAlDispararEnvio() {
+            Pedido pedido = pedidoPendiente(1L);
+            pedido.setDireccionEnvioId(100L);
+            when(pedidoRepository.findById(1L)).thenReturn(Optional.of(pedido));
+            when(estadoPedidoRepository.findById(4L)).thenReturn(Optional.of(estado("ENVIADO")));
+            when(pedidoRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+            doThrow(new RuntimeException("Logistics down")).when(restTemplate).postForEntity(anyString(), any(), eq(String.class));
+
+            assertThatNoException().isThrownBy(() -> service.actualizarEstado(1L, 4L));
+        }
+    }
+
+    @Nested
+    @DisplayName("actualizarEstadoPorNombre")
+    class ActualizarEstadoPorNombre {
+
+        @Test
+        @DisplayName("cambia el estado del pedido por nombre")
+        void actualizaPorNombre() {
+            when(pedidoRepository.findById(1L)).thenReturn(Optional.of(pedidoPendiente(1L)));
+            when(estadoPedidoRepository.findByNombre("CONFIRMADO")).thenReturn(Optional.of(estado("CONFIRMADO")));
+            when(pedidoRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+            Pedido resultado = service.actualizarEstadoPorNombre(1L, "CONFIRMADO");
+
+            assertThat(resultado.getEstado().getNombre()).isEqualTo("CONFIRMADO");
+        }
+
+        @Test
+        @DisplayName("lanza excepción si el pedido no existe")
+        void pedidoNoExiste() {
+            when(pedidoRepository.findById(99L)).thenReturn(Optional.empty());
+
+            assertThatThrownBy(() -> service.actualizarEstadoPorNombre(99L, "CONFIRMADO"))
+                    .isInstanceOf(NoExisteEnBdException.class)
+                    .hasMessageContaining("99");
+        }
+
+        @Test
+        @DisplayName("lanza excepción si el nombre de estado no existe")
+        void nombreEstadoNoExiste() {
+            when(pedidoRepository.findById(1L)).thenReturn(Optional.of(pedidoPendiente(1L)));
+            when(estadoPedidoRepository.findByNombre("INEXISTENTE")).thenReturn(Optional.empty());
+
+            assertThatThrownBy(() -> service.actualizarEstadoPorNombre(1L, "INEXISTENTE"))
+                    .isInstanceOf(NoExisteEnBdException.class)
+                    .hasMessageContaining("Estado de pedido no encontrado con nombre");
+        }
+
+        @Test
+        @DisplayName("dispara creación de envío cuando nombre es ENVIADO")
+        void disparaCreacionEnvio() {
+            when(pedidoRepository.findById(1L)).thenReturn(Optional.of(pedidoPendiente(1L)));
+            when(estadoPedidoRepository.findByNombre("ENVIADO")).thenReturn(Optional.of(estado("ENVIADO")));
+            when(pedidoRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+            service.actualizarEstadoPorNombre(1L, "ENVIADO");
+
+            verify(restTemplate).postForEntity(contains("/envios/auto/1"), isNull(), eq(String.class));
         }
     }
 
@@ -254,7 +380,7 @@ class PedidoServiceTest {
             when(pedidoRepository.findById(99L)).thenReturn(Optional.empty());
 
             assertThatThrownBy(() -> service.buscarPorId(99L))
-                    .isInstanceOf(RuntimeException.class)
+                    .isInstanceOf(NoExisteEnBdException.class)
                     .hasMessageContaining("99");
         }
     }
