@@ -14,8 +14,10 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.ecomarket.catalogoinventarioservice.model.Producto;
+import com.ecomarket.catalogoinventarioservice.dto.ProductoRequestDTO;
 import com.ecomarket.catalogoinventarioservice.service.CatalogoService;
 
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
 @RestController
@@ -50,14 +52,14 @@ public class ProductoController {
 
     // Crea y guarda un nuevo producto en la base de datos
     @PostMapping
-    public ResponseEntity<Producto> agregarProducto(@RequestBody Producto producto) {
-        return ResponseEntity.ok(catalogoService.agregarProducto(producto));
+    public ResponseEntity<Producto> agregarProducto(@Valid @RequestBody ProductoRequestDTO dto) {
+        return ResponseEntity.ok(catalogoService.agregarProducto(dto));
     }
 
     // Actualiza los datos de un producto existente por su ID
     @PutMapping("/{id}")
-    public ResponseEntity<Producto> editarProducto(@PathVariable Long id, @RequestBody Producto producto) {
-        return ResponseEntity.ok(catalogoService.editarProducto(id, producto));
+    public ResponseEntity<Producto> editarProducto(@PathVariable Long id, @Valid @RequestBody ProductoRequestDTO dto) {
+        return ResponseEntity.ok(catalogoService.editarProducto(id, dto));
     }
 
     // Elimina un producto de la base de datos por su ID

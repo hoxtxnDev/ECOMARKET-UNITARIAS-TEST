@@ -6,6 +6,7 @@ import java.util.List;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 
+import com.ecomarket.catalogoinventarioservice.dto.ProductoRequestDTO;
 import com.ecomarket.catalogoinventarioservice.exception.NoExisteEnBdException;
 import com.ecomarket.catalogoinventarioservice.exception.YaExisteEnBdException;
 import com.ecomarket.catalogoinventarioservice.model.CategoriaProducto;
@@ -46,42 +47,46 @@ public class CatalogoService {
                 .orElseThrow(() -> new NoExisteEnBdException("Producto no encontrado: " + productoId));
     }
 
-    public Producto agregarProducto(Producto nuevoProducto) {
-        if (nuevoProducto.getCategoria() != null && nuevoProducto.getCategoria().getId() != null) {
-            CategoriaProducto cat = categoriaRepository.findById(nuevoProducto.getCategoria().getId())
-                    .orElseThrow(() -> new NoExisteEnBdException("Categoría no encontrada: " + nuevoProducto.getCategoria().getId()));
-            nuevoProducto.setCategoria(cat);
-        }
-        if (nuevoProducto.getEstado() != null && nuevoProducto.getEstado().getId() != null) {
-            EstadoDisponibilidad est = estadoRepository.findById(nuevoProducto.getEstado().getId())
-                    .orElseThrow(() -> new NoExisteEnBdException("Estado no encontrado: " + nuevoProducto.getEstado().getId()));
-            nuevoProducto.setEstado(est);
-        }
-        nuevoProducto.setFechaCreacion(LocalDateTime.now());
+    public Producto agregarProducto(ProductoRequestDTO dto) {
+        Producto producto = new Producto();
+        producto.setSku(dto.getSku());
+        producto.setNombre(dto.getNombre());
+        producto.setDescripcion(dto.getDescripcion());
+        producto.setPrecioBase(dto.getPrecioBase());
+        producto.setImagenUrl(dto.getImagenUrl());
+
+        CategoriaProducto cat = categoriaRepository.findById(dto.getCategoriaId())
+                .orElseThrow(() -> new NoExisteEnBdException("Categoría no encontrada: " + dto.getCategoriaId()));
+        producto.setCategoria(cat);
+
+        EstadoDisponibilidad est = estadoRepository.findById(dto.getEstadoId())
+                .orElseThrow(() -> new NoExisteEnBdException("Estado no encontrado: " + dto.getEstadoId()));
+        producto.setEstado(est);
+
+        producto.setFechaCreacion(LocalDateTime.now());
         try {
-            return productoRepository.save(nuevoProducto);
+            return productoRepository.save(producto);
         } catch (DataIntegrityViolationException e) {
-            throw new YaExisteEnBdException("El producto con SKU '" + nuevoProducto.getSku() + "' ya existe.");
+            throw new YaExisteEnBdException("El producto con SKU '" + producto.getSku() + "' ya existe.");
         }
     }
 
-    public Producto editarProducto(Long productoId, Producto nuevosDatos) {
+    public Producto editarProducto(Long productoId, ProductoRequestDTO dto) {
         Producto existente = consultarDetalles(productoId);
-        existente.setSku(nuevosDatos.getSku());
-        existente.setNombre(nuevosDatos.getNombre());
-        existente.setDescripcion(nuevosDatos.getDescripcion());
-        existente.setPrecioBase(nuevosDatos.getPrecioBase());
-        if (nuevosDatos.getCategoria() != null && nuevosDatos.getCategoria().getId() != null) {
-            CategoriaProducto cat = categoriaRepository.findById(nuevosDatos.getCategoria().getId())
-                    .orElseThrow(() -> new NoExisteEnBdException("Categoría no encontrada: " + nuevosDatos.getCategoria().getId()));
-            existente.setCategoria(cat);
-        }
-        if (nuevosDatos.getEstado() != null && nuevosDatos.getEstado().getId() != null) {
-            EstadoDisponibilidad est = estadoRepository.findById(nuevosDatos.getEstado().getId())
-                    .orElseThrow(() -> new NoExisteEnBdException("Estado no encontrado: " + nuevosDatos.getEstado().getId()));
-            existente.setEstado(est);
-        }
-        existente.setImagenUrl(nuevosDatos.getImagenUrl());
+        existente.setSku(dto.getSku());
+        existente.setNombre(dto.getNombre());
+        existente.setDescripcion(dto.getDescripcion());
+        existente.setPrecioBase(dto.getPrecioBase());
+        existente.setImagenUrl(dto.getImagenUrl());
+
+        CategoriaProducto cat = categoriaRepository.findById(dto.getCategoriaId())
+                .orElseThrow(() -> new NoExisteEnBdException("Categoría no encontrada: " + dto.getCategoriaId()));
+        existente.setCategoria(cat);
+
+        EstadoDisponibilidad est = estadoRepository.findById(dto.getEstadoId())
+                .orElseThrow(() -> new NoExisteEnBdException("Estado no encontrado: " + dto.getEstadoId()));
+        existente.setEstado(est);
+
         return productoRepository.save(existente);
     }
 

@@ -15,6 +15,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
+import com.ecomarket.catalogoinventarioservice.dto.ProductoRequestDTO;
 import com.ecomarket.catalogoinventarioservice.model.CategoriaProducto;
 import com.ecomarket.catalogoinventarioservice.model.EstadoDisponibilidad;
 import com.ecomarket.catalogoinventarioservice.model.Producto;
@@ -72,12 +73,12 @@ class ProductoControllerTest {
 
     @Test
     void agregarProductoCreatesAndReturns() throws Exception {
-        when(catalogoService.agregarProducto(any(Producto.class))).thenReturn(producto());
+        when(catalogoService.agregarProducto(any(ProductoRequestDTO.class))).thenReturn(producto());
 
         mockMvc.perform(post("/api/catalogo")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                                {"sku":"SKU-001","nombre":"Laptop","descripcion":"Laptop Gamer","precioBase":1500.0}
+                                {"sku":"SKU-001","nombre":"Laptop","descripcion":"Laptop Gamer","precioBase":1500.0,"categoriaId":1,"estadoId":1}
                                 """))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.sku").value("SKU-001"));
@@ -85,12 +86,12 @@ class ProductoControllerTest {
 
     @Test
     void editarProductoUpdatesAndReturns() throws Exception {
-        when(catalogoService.editarProducto(any(Long.class), any(Producto.class))).thenReturn(producto());
+        when(catalogoService.editarProducto(any(Long.class), any(ProductoRequestDTO.class))).thenReturn(producto());
 
         mockMvc.perform(put("/api/catalogo/1")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                                {"sku":"SKU-001","nombre":"Laptop","precioBase":1500.0}
+                                {"sku":"SKU-001","nombre":"Laptop","precioBase":1500.0,"categoriaId":1,"estadoId":1}
                                 """))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.sku").value("SKU-001"));

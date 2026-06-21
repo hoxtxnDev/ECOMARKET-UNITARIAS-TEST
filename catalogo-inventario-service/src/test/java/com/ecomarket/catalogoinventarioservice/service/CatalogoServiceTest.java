@@ -16,6 +16,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.dao.DataIntegrityViolationException;
 
+import com.ecomarket.catalogoinventarioservice.dto.ProductoRequestDTO;
 import com.ecomarket.catalogoinventarioservice.exception.NoExisteEnBdException;
 import com.ecomarket.catalogoinventarioservice.exception.YaExisteEnBdException;
 import com.ecomarket.catalogoinventarioservice.model.CategoriaProducto;
@@ -46,6 +47,17 @@ class CatalogoServiceTest {
         categoria = new CategoriaProducto(1L, "Electronica");
         estado = new EstadoDisponibilidad(1L, "Disponible");
         producto = new Producto(1L, "SKU-001", "Laptop", "Laptop Gamer", 1500.0, categoria, estado, "img.jpg", LocalDateTime.now());
+    }
+
+    private ProductoRequestDTO dtoConCategoriaYEstado() {
+        return ProductoRequestDTO.builder()
+                .sku("SKU-002")
+                .nombre("Mouse")
+                .descripcion("Mouse inalambrico")
+                .precioBase(50.0)
+                .categoriaId(1L)
+                .estadoId(1L)
+                .build();
     }
 
     @Test
@@ -94,41 +106,89 @@ class CatalogoServiceTest {
 
     @Test
     void agregarProductoSavesWithCategoryAndEstado() {
-        Producto nuevo = new Producto(null, "SKU-002", "Mouse", "Mouse inalambrico", 50.0, new CategoriaProducto(1L, null), new EstadoDisponibilidad(1L, null), null, null);
+        ProductoRequestDTO dto = dtoConCategoriaYEstado();
         when(categoriaRepository.findById(1L)).thenReturn(Optional.of(categoria));
         when(estadoRepository.findById(1L)).thenReturn(Optional.of(estado));
         when(productoRepository.save(any(Producto.class))).thenAnswer(i -> i.getArgument(0));
 
-        Producto result = catalogoService.agregarProducto(nuevo);
+        Producto result = catalogoService.agregarProducto(dto);
 
         assertNotNull(result);
         assertEquals(categoria, result.getCategoria());
         assertEquals(estado, result.getEstado());
+        assertEquals("Mouse", result.getNombre());
     }
 
     @Test
     void agregarProductoThrowsWhenDuplicateSku() {
+        ProductoRequestDTO dto = dtoConCategoriaYEstado();
         when(categoriaRepository.findById(1L)).thenReturn(Optional.of(categoria));
         when(estadoRepository.findById(1L)).thenReturn(Optional.of(estado));
         when(productoRepository.save(any(Producto.class))).thenThrow(DataIntegrityViolationException.class);
 
-        assertThrows(YaExisteEnBdException.class, () -> catalogoService.agregarProducto(producto));
+        assertThrows(YaExisteEnBdException.class, () -> catalogoService.agregarProducto(dto));
+    }
+
+    @Test
+    void agregarProducto_throwsWhenCategoriaNotFound() {
+        ProductoRequestDTO dto = ProductoRequestDTO.builder()
+                .sku("SKU-007").nombre("Test").precioBase(10.0)
+                .categoriaId(99L).estadoId(1L).build();
+        when(categoriaRepository.findById(99L)).thenReturn(Optional.empty());
+
+        assertThrows(NoExisteEnBdException.class, () -> catalogoService.agregarProducto(dto));
+    }
+
+    @Test
+    void agregarProducto_throwsWhenEstadoNotFound() {
+        ProductoRequestDTO dto = ProductoRequestDTO.builder()
+                .sku("SKU-008").nombre("Test").precioBase(10.0)
+                .categoriaId(1L).estadoId(99L).build();
+        when(categoriaRepository.findById(1L)).thenReturn(Optional.of(categoria));
+        when(estadoRepository.findById(99L)).thenReturn(Optional.empty());
+
+        assertThrows(NoExisteEnBdException.class, () -> catalogoService.agregarProducto(dto));
     }
 
     @Test
     void editarProductoUpdatesExistingProduct() {
-        Producto nuevosDatos = new Producto(null, "SKU-002", "Laptop Pro", "Nueva descripcion", 2000.0, new CategoriaProducto(1L, null), new EstadoDisponibilidad(1L, null), "new.jpg", null);
+        ProductoRequestDTO dto = ProductoRequestDTO.builder()
+                .sku("SKU-002").nombre("Laptop Pro").descripcion("Nueva descripcion")
+                .precioBase(2000.0).categoriaId(1L).estadoId(1L).imagenUrl("new.jpg").build();
         when(productoRepository.findById(1L)).thenReturn(Optional.of(producto));
         when(categoriaRepository.findById(1L)).thenReturn(Optional.of(categoria));
         when(estadoRepository.findById(1L)).thenReturn(Optional.of(estado));
         when(productoRepository.save(any(Producto.class))).thenAnswer(i -> i.getArgument(0));
 
-        Producto result = catalogoService.editarProducto(1L, nuevosDatos);
+        Producto result = catalogoService.editarProducto(1L, dto);
 
         assertEquals("SKU-002", result.getSku());
         assertEquals("Laptop Pro", result.getNombre());
         assertEquals("Nueva descripcion", result.getDescripcion());
         assertEquals(2000.0, result.getPrecioBase());
+    }
+
+    @Test
+    void editarProducto_throwsWhenCategoriaNotFound() {
+        ProductoRequestDTO dto = ProductoRequestDTO.builder()
+                .sku("SKU-011").nombre("Test").precioBase(10.0)
+                .categoriaId(99L).estadoId(1L).build();
+        when(productoRepository.findById(1L)).thenReturn(Optional.of(producto));
+        when(categoriaRepository.findById(99L)).thenReturn(Optional.empty());
+
+        assertThrows(NoExisteEnBdException.class, () -> catalogoService.editarProducto(1L, dto));
+    }
+
+    @Test
+    void editarProducto_throwsWhenEstadoNotFound() {
+        ProductoRequestDTO dto = ProductoRequestDTO.builder()
+                .sku("SKU-012").nombre("Test").precioBase(10.0)
+                .categoriaId(1L).estadoId(99L).build();
+        when(productoRepository.findById(1L)).thenReturn(Optional.of(producto));
+        when(categoriaRepository.findById(1L)).thenReturn(Optional.of(categoria));
+        when(estadoRepository.findById(99L)).thenReturn(Optional.empty());
+
+        assertThrows(NoExisteEnBdException.class, () -> catalogoService.editarProducto(1L, dto));
     }
 
     @Test
@@ -336,107 +396,4 @@ class CatalogoServiceTest {
 
         assertFalse(catalogoService.eliminarEspecificacion(99L));
     }
-
-    @Test
-    void agregarProducto_skipsCategoriaWhenCategoriaIdIsNull() {
-        Producto nuevo = new Producto(null, "SKU-005", "Test", null, 10.0, new CategoriaProducto(null, "SinID"), null, null, null);
-        when(productoRepository.save(any(Producto.class))).thenAnswer(i -> i.getArgument(0));
-
-        Producto result = catalogoService.agregarProducto(nuevo);
-
-        assertNull(result.getCategoria().getId());
-    }
-
-    @Test
-    void agregarProducto_skipsEstadoWhenEstadoIdIsNull() {
-        Producto nuevo = new Producto(null, "SKU-006", "Test", null, 10.0, null, new EstadoDisponibilidad(null, "SinID"), null, null);
-        when(productoRepository.save(any(Producto.class))).thenAnswer(i -> i.getArgument(0));
-
-        Producto result = catalogoService.agregarProducto(nuevo);
-
-        assertNull(result.getEstado().getId());
-    }
-
-    @Test
-    void agregarProducto_throwsWhenCategoriaNotFound() {
-        Producto nuevo = new Producto(null, "SKU-007", "Test", null, 10.0, new CategoriaProducto(99L, null), null, null, null);
-        when(categoriaRepository.findById(99L)).thenReturn(Optional.empty());
-
-        assertThrows(NoExisteEnBdException.class, () -> catalogoService.agregarProducto(nuevo));
-    }
-
-    @Test
-    void agregarProducto_throwsWhenEstadoNotFound() {
-        Producto nuevo = new Producto(null, "SKU-008", "Test", null, 10.0, null, new EstadoDisponibilidad(99L, null), null, null);
-        when(estadoRepository.findById(99L)).thenReturn(Optional.empty());
-
-        assertThrows(NoExisteEnBdException.class, () -> catalogoService.agregarProducto(nuevo));
-    }
-
-    @Test
-    void editarProducto_skipsCategoriaWhenCategoriaIdIsNull() {
-        Producto nuevosDatos = new Producto(null, "SKU-009", "Test", null, 10.0, new CategoriaProducto(null, "SinID"), null, null, null);
-        when(productoRepository.findById(1L)).thenReturn(Optional.of(producto));
-        when(productoRepository.save(any(Producto.class))).thenAnswer(i -> i.getArgument(0));
-
-        Producto result = catalogoService.editarProducto(1L, nuevosDatos);
-
-        assertEquals(categoria, result.getCategoria());
-    }
-
-    @Test
-    void editarProducto_skipsEstadoWhenEstadoIdIsNull() {
-        Producto nuevosDatos = new Producto(null, "SKU-010", "Test", null, 10.0, null, new EstadoDisponibilidad(null, "SinID"), null, null);
-        when(productoRepository.findById(1L)).thenReturn(Optional.of(producto));
-        when(productoRepository.save(any(Producto.class))).thenAnswer(i -> i.getArgument(0));
-
-        Producto result = catalogoService.editarProducto(1L, nuevosDatos);
-
-        assertEquals(estado, result.getEstado());
-    }
-
-    @Test
-    void editarProducto_throwsWhenCategoriaNotFound() {
-        Producto nuevosDatos = new Producto(null, "SKU-011", "Test", null, 10.0, new CategoriaProducto(99L, null), null, null, null);
-        when(productoRepository.findById(1L)).thenReturn(Optional.of(producto));
-        when(categoriaRepository.findById(99L)).thenReturn(Optional.empty());
-
-        assertThrows(NoExisteEnBdException.class, () -> catalogoService.editarProducto(1L, nuevosDatos));
-    }
-
-    @Test
-    void editarProducto_throwsWhenEstadoNotFound() {
-        Producto nuevosDatos = new Producto(null, "SKU-012", "Test", null, 10.0, null, new EstadoDisponibilidad(99L, null), null, null);
-        when(productoRepository.findById(1L)).thenReturn(Optional.of(producto));
-        when(estadoRepository.findById(99L)).thenReturn(Optional.empty());
-
-        assertThrows(NoExisteEnBdException.class, () -> catalogoService.editarProducto(1L, nuevosDatos));
-    }
-
-    @Test
-    void agregarProductoWithoutCategoryAndEstado() {
-        Producto nuevo = new Producto(null, "SKU-003", "Teclado", null, 80.0, null, null, null, null);
-        when(productoRepository.save(any(Producto.class))).thenAnswer(i -> i.getArgument(0));
-
-        Producto result = catalogoService.agregarProducto(nuevo);
-
-        assertNull(result.getCategoria());
-        assertNull(result.getEstado());
-        assertNotNull(result.getFechaCreacion());
-    }
-
-    @Test
-    void editarProductoWithoutCategoryAndEstadoUpdate() {
-        Producto nuevosDatos = new Producto(null, "SKU-004", "Laptop Basic", "Basica", 1200.0, null, null, null, null);
-        when(productoRepository.findById(1L)).thenReturn(Optional.of(producto));
-        when(productoRepository.save(any(Producto.class))).thenAnswer(i -> i.getArgument(0));
-
-        Producto result = catalogoService.editarProducto(1L, nuevosDatos);
-
-        assertEquals("SKU-004", result.getSku());
-        assertEquals("Laptop Basic", result.getNombre());
-        assertEquals(categoria, result.getCategoria());
-        assertEquals(estado, result.getEstado());
-    }
-
 }

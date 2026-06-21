@@ -1,5 +1,6 @@
 package com.ecomarket.catalogoinventarioservice.controller;
 
+import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -9,11 +10,13 @@ import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
+import com.ecomarket.catalogoinventarioservice.dto.MensajeDTO;
 import com.ecomarket.catalogoinventarioservice.model.InventarioStock;
-import com.ecomarket.catalogoinventarioservice.model.Producto;
+import com.ecomarket.catalogoinventarioservice.model.StockGlobal;
 import com.ecomarket.catalogoinventarioservice.service.InventarioService;
 
 @WebMvcTest(InventarioController.class)
@@ -26,8 +29,7 @@ class InventarioControllerTest {
     private InventarioStock stock() {
         InventarioStock s = new InventarioStock();
         s.setId(1L);
-        s.setProducto(new Producto());
-        s.getProducto().setId(1L);
+        s.setProductoId(1L);
         s.setSucursalId(10L);
         s.setCantidadDisponible(50);
         s.setCantidadReservada(10);
@@ -45,18 +47,18 @@ class InventarioControllerTest {
 
     @Test
     void verificarDisponibilidadReturnsTrue() throws Exception {
-        when(inventarioService.verificarDisponibilidad(1L, 10)).thenReturn(true);
+        when(inventarioService.verificarDisponibilidad(1L, 10L, 10)).thenReturn(true);
 
-        mockMvc.perform(get("/api/inventario/disponibilidad/1").param("cantidad", "10"))
+        mockMvc.perform(get("/api/inventario/disponibilidad/1/10/10"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$").value(true));
     }
 
     @Test
     void verificarDisponibilidadReturnsFalse() throws Exception {
-        when(inventarioService.verificarDisponibilidad(1L, 999)).thenReturn(false);
+        when(inventarioService.verificarDisponibilidad(1L, 10L, 999)).thenReturn(false);
 
-        mockMvc.perform(get("/api/inventario/disponibilidad/1").param("cantidad", "999"))
+        mockMvc.perform(get("/api/inventario/disponibilidad/1/10/999"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$").value(false));
     }
@@ -80,30 +82,74 @@ class InventarioControllerTest {
     }
 
     @Test
-    void reservarStockReturnsTrue() throws Exception {
-        when(inventarioService.reservarStock(1L, 5)).thenReturn(true);
+    void reservarStockReturnsOk() throws Exception {
+        doNothing().when(inventarioService).reservarStock(1L, 10L, 5);
 
-        mockMvc.perform(post("/api/inventario/reservar/1").param("cantidad", "5"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$").value(true));
+        mockMvc.perform(post("/api/inventario/reservar/1/10")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"cantidad\":5}"))
+                .andExpect(status().isOk());
     }
 
     @Test
-    void liberarStockReturnsTrue() throws Exception {
-        when(inventarioService.liberarStock(1L, 5)).thenReturn(true);
+    void liberarStockReturnsOk() throws Exception {
+        doNothing().when(inventarioService).liberarStock(1L, 10L, 5);
 
-        mockMvc.perform(post("/api/inventario/liberar/1").param("cantidad", "5"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$").value(true));
+        mockMvc.perform(post("/api/inventario/liberar/1/10")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"cantidad\":5}"))
+                .andExpect(status().isOk());
     }
 
     @Test
-    void ajustarStockUpdatesAndReturns() throws Exception {
-        when(inventarioService.ajustarStock(1L, 10L, 100)).thenReturn(stock());
+    void ajustarStockReturnsOk() throws Exception {
+        doNothing().when(inventarioService).ajustarStock(1L, 10L, 100);
 
-        mockMvc.perform(put("/api/inventario/ajustar/1/sucursal/10").param("nuevaCantidad", "100"))
+        mockMvc.perform(put("/api/inventario/ajustar/1/sucursal/10")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"cantidad\":100}"))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void consultarStockGlobalReturnsOk() throws Exception {
+        StockGlobal sg = new StockGlobal();
+        sg.setId(1L);
+        sg.setProductoId(1L);
+        sg.setCantidadDisponible(200);
+        when(inventarioService.consultarStockGlobal(1L)).thenReturn(sg);
+
+        mockMvc.perform(get("/api/inventario/stock-global/1"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.cantidadDisponible").value(50));
+                .andExpect(jsonPath("$.productoId").value(1))
+                .andExpect(jsonPath("$.cantidadDisponible").value(200));
+    }
+
+    @Test
+    void ingresarStockGlobalReturnsOk() throws Exception {
+        StockGlobal sg = new StockGlobal();
+        sg.setId(1L);
+        sg.setProductoId(1L);
+        sg.setCantidadDisponible(150);
+        when(inventarioService.ingresarStockGlobal(1L, 50)).thenReturn(sg);
+
+        mockMvc.perform(post("/api/inventario/ingresar")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"productoId\":1,\"cantidad\":50}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.cantidadDisponible").value(150));
+    }
+
+    @Test
+    void transferirStockDesdeGlobalReturnsOk() throws Exception {
+        MensajeDTO msg = new MensajeDTO("Transferencia completada");
+        when(inventarioService.transferirStockDesdeGlobal(1L, 10L, 50)).thenReturn(msg);
+
+        mockMvc.perform(post("/api/inventario/transferir")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"productoId\":1,\"sucursalId\":10,\"cantidad\":50}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.mensaje").value("Transferencia completada"));
     }
 
 }
