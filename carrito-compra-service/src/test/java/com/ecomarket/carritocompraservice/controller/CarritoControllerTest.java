@@ -1,6 +1,5 @@
 package com.ecomarket.carritocompraservice.controller;
 
-import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -54,7 +53,7 @@ class CarritoControllerTest {
         mockMvc.perform(post("/api/carrito")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                                {"clienteId":10,"productoId":100,"cantidad":2}
+                                {"usuarioId":10,"productoId":100,"cantidad":2}
                                 """))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(1));
@@ -69,10 +68,22 @@ class CarritoControllerTest {
     }
 
     @Test
-    void seleccionarEnvioReturnsOk() throws Exception {
-        when(carritoService.seleccionarTipoEnvio(10L, 2L)).thenReturn(new Carrito());
+    void seleccionarPagoReturnsOk() throws Exception {
+        when(carritoService.seleccionarMetodoPago(10L, 3L)).thenReturn(new Carrito());
 
-        mockMvc.perform(put("/api/carrito/10/envio?tipoEnvioId=2"))
+        mockMvc.perform(put("/api/carrito/10/pago")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"id\":3}"))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void seleccionarEnvioReturnsOk() throws Exception {
+        when(carritoService.seleccionarEnvio(10L, 2L)).thenReturn(new Carrito());
+
+        mockMvc.perform(put("/api/carrito/10/envio")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"id\":2}"))
                 .andExpect(status().isOk());
     }
 
@@ -92,5 +103,11 @@ class CarritoControllerTest {
         mockMvc.perform(post("/api/carrito/10/checkout"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$").value(1));
+    }
+
+    @Test
+    void cerrarCarritoReturnsOk() throws Exception {
+        mockMvc.perform(put("/api/carrito/10/cerrar"))
+                .andExpect(status().isOk());
     }
 }

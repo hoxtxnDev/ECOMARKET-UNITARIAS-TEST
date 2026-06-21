@@ -45,6 +45,17 @@ class GlobalExceptionHandlerTest {
     }
 
     @Test
+    void handleNoExisteEnBdExceptionReturnsNotFound() {
+        var ex = new NoExisteEnBdException("Usuario no encontrado");
+
+        ResponseEntity<ErrorResponseDTO> response = handler.handleNoExisteEnBdException(ex, request);
+
+        assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
+        assertNotNull(response.getBody());
+        assertEquals("Usuario no encontrado", response.getBody().getMessage());
+    }
+
+    @Test
     void handleDatabaseExceptionsReturnsConflict() {
         var ex = new DataIntegrityViolationException("Error BD");
 

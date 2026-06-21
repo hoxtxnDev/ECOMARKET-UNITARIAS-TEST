@@ -7,8 +7,7 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class AnadirProductoRequestDTO {
-    private Long usuarioId;
-    private Long productoId;
-    private Integer cantidad;
+public class MetodoEnvioDTO {
+    private Long id;
+    private String nombre;
 }

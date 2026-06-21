@@ -1,20 +1,19 @@
 package com.ecomarket.carritocompraservice.client;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
-
-import java.util.Map;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.http.ResponseEntity;
 import org.springframework.test.util.ReflectionTestUtils;
-import org.springframework.web.client.ResourceAccessException;
+import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
+
+import com.ecomarket.carritocompraservice.dto.MetodoPagoDTO;
+import com.ecomarket.carritocompraservice.exception.NoExisteEnBdException;
 
 @ExtendWith(MockitoExtension.class)
 class ProcesoPagoClientTest {
@@ -25,54 +24,38 @@ class ProcesoPagoClientTest {
 
     @BeforeEach
     void setUp() {
-        client = new ProcesoPagoClient();
-        ReflectionTestUtils.setField(client, "restTemplate", restTemplate);
+        client = new ProcesoPagoClient(restTemplate);
         ReflectionTestUtils.setField(client, "pagosUrl", "http://localhost:8088");
     }
 
     @Test
-    void iniciarPagoReturnsIdWhenSuccess() {
-        Map<String, Object> responseBody = Map.of("id", 99);
-        ResponseEntity<Map> responseEntity = ResponseEntity.ok(responseBody);
-        when(restTemplate.postForEntity(eq("http://localhost:8088/api/pagos/iniciar?pedidoId=1&clienteId=10&monto=500.0"), any(), eq(Map.class)))
-                .thenReturn(responseEntity);
+    void validarMetodoPagoReturnsMetodoPago() {
+        MetodoPagoDTO expected = new MetodoPagoDTO(1L, "Tarjeta Credito");
+        when(restTemplate.getForObject("http://localhost:8088/api/metodo-pago/1", MetodoPagoDTO.class))
+                .thenReturn(expected);
 
-        Long result = client.iniciarPago(1L, 10L, 500.0, 3L);
+        MetodoPagoDTO result = client.validarMetodoPago(1L);
 
-        assertEquals(99L, result);
+        assertEquals("Tarjeta Credito", result.getNombre());
     }
 
     @Test
-    void iniciarPagoReturnsNullWhenBodyIsNull() {
-        ResponseEntity<Map> responseEntity = ResponseEntity.ok(null);
-        when(restTemplate.postForEntity(eq("http://localhost:8088/api/pagos/iniciar?pedidoId=1&clienteId=10&monto=500.0"), any(), eq(Map.class)))
-                .thenReturn(responseEntity);
+    void validarMetodoPagoThrowsNoExisteEnBdWhen404() {
+        HttpClientErrorException notFound = mock(HttpClientErrorException.class);
+        when(notFound.getStatusCode()).thenReturn(org.springframework.http.HttpStatus.NOT_FOUND);
+        when(restTemplate.getForObject("http://localhost:8088/api/metodo-pago/99", MetodoPagoDTO.class))
+                .thenThrow(notFound);
 
-        assertNull(client.iniciarPago(1L, 10L, 500.0, 3L));
+        assertThrows(NoExisteEnBdException.class, () -> client.validarMetodoPago(99L));
     }
 
     @Test
-    void iniciarPagoReturnsNullWhenBodyHasNoId() {
-        ResponseEntity<Map> responseEntity = ResponseEntity.ok(Map.of());
-        when(restTemplate.postForEntity(eq("http://localhost:8088/api/pagos/iniciar?pedidoId=1&clienteId=10&monto=500.0"), any(), eq(Map.class)))
-                .thenReturn(responseEntity);
+    void validarMetodoPagoThrowsRuntimeOnOtherError() {
+        HttpClientErrorException badRequest = mock(HttpClientErrorException.class);
+        when(badRequest.getStatusCode()).thenReturn(org.springframework.http.HttpStatus.BAD_REQUEST);
+        when(restTemplate.getForObject("http://localhost:8088/api/metodo-pago/99", MetodoPagoDTO.class))
+                .thenThrow(badRequest);
 
-        assertNull(client.iniciarPago(1L, 10L, 500.0, 3L));
-    }
-
-    @Test
-    void iniciarPagoReturnsNullOnResourceAccessException() {
-        when(restTemplate.postForEntity(eq("http://localhost:8088/api/pagos/iniciar?pedidoId=1&clienteId=10&monto=500.0"), any(), eq(Map.class)))
-                .thenThrow(new ResourceAccessException("timeout"));
-
-        assertNull(client.iniciarPago(1L, 10L, 500.0, 3L));
-    }
-
-    @Test
-    void iniciarPagoReturnsNullOnGenericException() {
-        when(restTemplate.postForEntity(eq("http://localhost:8088/api/pagos/iniciar?pedidoId=1&clienteId=10&monto=500.0"), any(), eq(Map.class)))
-                .thenThrow(new RuntimeException("error"));
-
-        assertNull(client.iniciarPago(1L, 10L, 500.0, 3L));
+        assertThrows(RuntimeException.class, () -> client.validarMetodoPago(99L));
     }
 }

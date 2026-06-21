@@ -3,10 +3,12 @@ package com.ecomarket.carritocompraservice.service;
 import java.time.LocalDateTime;
 import java.util.List;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import com.ecomarket.carritocompraservice.client.CatalogoInventarioClient;
+import com.ecomarket.carritocompraservice.client.LogisticaEnvioClient;
+import com.ecomarket.carritocompraservice.client.ProcesoPagoClient;
+import com.ecomarket.carritocompraservice.client.RegistroUsuariosClient;
 import com.ecomarket.carritocompraservice.dto.ProductoClienteDTO;
 import com.ecomarket.carritocompraservice.model.Carrito;
 import com.ecomarket.carritocompraservice.model.ItemCarrito;
@@ -14,121 +16,134 @@ import com.ecomarket.carritocompraservice.repository.CarritoRepository;
 import com.ecomarket.carritocompraservice.repository.ItemCarritoRepository;
 
 import jakarta.transaction.Transactional;
+import lombok.RequiredArgsConstructor;
 
 @Service
 @Transactional
+@RequiredArgsConstructor
 public class CarritoService {
-    @Autowired
-    private CarritoRepository carritoRepository;
-
-    @Autowired
-    private ItemCarritoRepository itemCarritoRepository;
-
-    // NUEVO: Cliente HTTP hacia catalogo-inventario-service
-    @Autowired
-    private CatalogoInventarioClient catalogoClient;
+    private final CarritoRepository carritoRepository;
+    private final ItemCarritoRepository itemCarritoRepository;
+    private final CatalogoInventarioClient catalogoClient;
+    private final RegistroUsuariosClient registroUsuariosClient;
+    private final ProcesoPagoClient procesoPagoClient;
+    private final LogisticaEnvioClient logisticaEnvioClient;
 
     public Carrito obtenerCarritoActivo(Long clienteId) {
+        registroUsuariosClient.validarCliente(clienteId);
+        
+        // 1. Intentar obtener el carrito que ya está activo
         return carritoRepository.findByClienteIdAndActivoTrue(clienteId)
                 .orElseGet(() -> {
-                    Carrito nuevo = new Carrito();
-                    nuevo.setClienteId(clienteId);
-                    return carritoRepository.save(nuevo);
+                    // 2. Si no hay uno activo, buscar el último que NO haya sido cerrado definitivamente
+                    return carritoRepository.findFirstByClienteIdAndCerradoFalseOrderByIdDesc(clienteId)
+                            .orElseGet(() -> {
+                                // 3. Si no existe ningún carrito abierto en la historia, crear uno nuevo
+                                Carrito nuevo = new Carrito();
+                                nuevo.setClienteId(clienteId);
+                                nuevo.setActivo(false);
+                                nuevo.setCerrado(false);
+                                return carritoRepository.save(nuevo);
+                            });
                 });
     }
 
-    // CAMBIO: Obtiene precioUnitario desde catalogo-inventario-service
-    // Verifica disponibilidad de stock antes de agregar
     public Carrito anadirProducto(Long clienteId, Long productoId, Integer cantidad) {
-
-        // Verifica que el producto existe y obtiene su precio real
+        registroUsuariosClient.validarCliente(clienteId);
         ProductoClienteDTO producto = catalogoClient.obtenerProducto(productoId);
-        if (producto == null) {
-            throw new RuntimeException("Producto no encontrado: " + productoId);
-        }
-
-        // Verifica que haya stock disponible
-        boolean hayStock = catalogoClient.verificarDisponibilidad(productoId, cantidad);
-        if (!hayStock) {
-            throw new RuntimeException("Stock insuficiente para producto: " + productoId);
-        }
-
+        
         Carrito carrito = obtenerCarritoActivo(clienteId);
+        
+        // Reactivamos el carrito al agregar productos
+        carrito.setActivo(true);
 
         itemCarritoRepository.findByCarritoIdAndProductoId(carrito.getId(), productoId)
                 .ifPresentOrElse(
                         item -> {
                             item.setCantidad(item.getCantidad() + cantidad);
-                            itemCarritoRepository.save(item);
                         },
                         () -> {
                             ItemCarrito item = new ItemCarrito();
                             item.setCarrito(carrito);
                             item.setProductoId(productoId);
                             item.setCantidad(cantidad);
-                            // CAMBIADO: usa precioBase del catalogo en lugar del parámetro
                             item.setPrecioUnitarioAgregado(producto.getPrecioBase());
-                            itemCarritoRepository.save(item);
+                            item.setPosicion(carrito.getItems().size() + 1);
+                            carrito.getItems().add(item);
                         });
 
         carrito.setFechaUltimaModificacion(LocalDateTime.now());
+        carrito.setSubtotal(carrito.calcularTotal());
         return carritoRepository.save(carrito);
     }
 
     public Carrito removerProducto(Long clienteId, Long itemId) {
         Carrito carrito = obtenerCarritoActivo(clienteId);
-        itemCarritoRepository.deleteById(itemId);
+        
+        ItemCarrito itemABorrar = carrito.getItems().stream()
+                .filter(i -> i.getId().equals(itemId))
+                .findFirst()
+                .orElseThrow(() -> new RuntimeException("Item no encontrado en el carrito"));
+
+        int posicionBorrada = itemABorrar.getPosicion();
+        carrito.getItems().remove(itemABorrar);
+        
+        // Recalcular la posición de los items siguientes
+        carrito.getItems().stream()
+                .filter(i -> i.getPosicion() > posicionBorrada)
+                .forEach(i -> i.setPosicion(i.getPosicion() - 1));
+
+        if (carrito.getItems().isEmpty()) {
+            carrito.setActivo(false);
+        }
+
         carrito.setFechaUltimaModificacion(LocalDateTime.now());
+        carrito.setSubtotal(carrito.calcularTotal());
         return carritoRepository.save(carrito);
     }
 
     public Carrito seleccionarMetodoPago(Long clienteId, Long metodoPagoId) {
+        procesoPagoClient.validarMetodoPago(metodoPagoId);
         Carrito carrito = obtenerCarritoActivo(clienteId);
-        carrito.setMetodoPagoSeleccionadoId(metodoPagoId);
-        carrito.setFechaUltimaModificacion(LocalDateTime.now());
-        return carritoRepository.save(carrito);
-    }
-    
-    public Carrito seleccionarTipoEnvio(Long clienteId, Long tipoEnvioId) { // METODO DE PAGO ID
-        Carrito carrito = obtenerCarritoActivo(clienteId);
-        carrito.setTipoEnvioSeleccionadoId(tipoEnvioId);
+        carrito.setMetodoPagoId(metodoPagoId);
         carrito.setFechaUltimaModificacion(LocalDateTime.now());
         return carritoRepository.save(carrito);
     }
 
-    // CAMBIO: Libera el stock de cada ítem en catalogo-inventario-service antes de limpiar el carrito
+    public Carrito seleccionarEnvio(Long clienteId, Long metodoEnvioId) {
+        logisticaEnvioClient.validarMetodoEnvio(metodoEnvioId);
+        Carrito carrito = obtenerCarritoActivo(clienteId);
+        carrito.setMetodoEnvioId(metodoEnvioId);
+        carrito.setFechaUltimaModificacion(LocalDateTime.now());
+        return carritoRepository.save(carrito);
+    }
+
     public boolean vaciarCarrito(Long clienteId) {
         Carrito carrito = obtenerCarritoActivo(clienteId);
-
-        carrito.getItems().forEach(item ->
-            catalogoClient.liberarStock(item.getProductoId(), item.getCantidad())
-        );
-
         carrito.getItems().clear();
+        carrito.setActivo(false);
+        carrito.setSubtotal(0.0);
+        // Mantener la fecha como null si el carrito nunca se modificó, 
+        // pero al vaciarlo es una modificación.
         carrito.setFechaUltimaModificacion(LocalDateTime.now());
         carritoRepository.save(carrito);
         return true;
     }
 
-    // CAMBIO: reserva el stock de cada ítem en catalogo-inventario-service antes de cerrar el carrito
     public List<Carrito> listarTodos() {
         return carritoRepository.findAll();
     }
 
     public Long iniciarProcesoCompra(Long clienteId) {
         Carrito carrito = obtenerCarritoActivo(clienteId);
-
-        carrito.getItems().forEach(item -> {
-            boolean reservado = catalogoClient.reservarStock(
-                    item.getProductoId(), item.getCantidad());
-            if (!reservado) {
-                throw new RuntimeException(
-                    "No se pudo reservar stock para producto: " + item.getProductoId());
-            }
-        });
-
-        carrito.setActivo(false);
-        carritoRepository.save(carrito);
         return carrito.getId();
+    }
+
+    public void cerrarCarrito(Long clienteId) {
+        Carrito carrito = obtenerCarritoActivo(clienteId);
+        carrito.setActivo(false);
+        // Marcado como cerrado definitivamente (historial)
+        carrito.setCerrado(true);
+        carritoRepository.save(carrito);
     }
 }

@@ -25,8 +25,8 @@ class CarritoTest {
     @Test
     void calcularTotalSumsItemSubtTotals() {
         Carrito carrito = new Carrito();
-        ItemCarrito item1 = new ItemCarrito(1L, carrito, 100L, 2, 10.0);
-        ItemCarrito item2 = new ItemCarrito(2L, carrito, 200L, 3, 15.0);
+        ItemCarrito item1 = new ItemCarrito(1L, carrito, 100L, 2, 10.0, 1);
+        ItemCarrito item2 = new ItemCarrito(2L, carrito, 200L, 3, 15.0, 2);
         carrito.setItems(List.of(item1, item2));
         assertEquals(65.0, carrito.calcularTotal());
     }

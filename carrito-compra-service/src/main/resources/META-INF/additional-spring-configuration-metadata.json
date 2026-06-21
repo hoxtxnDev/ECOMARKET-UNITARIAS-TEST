@@ -1,0 +1,27 @@
+{"properties": [
+  {
+    "name": "microservicio.catalogo.url",
+    "type": "java.lang.String",
+    "description": "A description for 'microservicio.catalogo.url'"
+  },
+  {
+    "name": "microservicio.inventario.url",
+    "type": "java.lang.String",
+    "description": "A description for 'microservicio.inventario.url'"
+  },
+  {
+    "name": "microservicio.envios.url",
+    "type": "java.lang.String",
+    "description": "A description for 'microservicio.envios.url'"
+  },
+  {
+    "name": "microservicio.pagos.url",
+    "type": "java.lang.String",
+    "description": "A description for 'microservicio.pagos.url'"
+  },
+  {
+    "name": "app.services.registro-usuarios-url",
+    "type": "java.lang.String",
+    "description": "A description for 'app.services.registro-usuarios-url'"
+  }
+]}

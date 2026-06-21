@@ -7,9 +7,6 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class CompraRequestDTO {
-    private Long clienteId;
-    private Long metodoEnvioId;
-    private Long direccionId;
-    private Long metodoPagoId;
+public class SeleccionRequestDTO {
+    private Long id;
 }
