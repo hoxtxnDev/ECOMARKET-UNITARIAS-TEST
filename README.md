@@ -1,6 +1,7 @@
 <p align="center">
-  <h1 align="center">ECOMARKET</h1>
+  <h1 align="center">— ECOMMARKET —</h1>
   <p align="center">Plataforma de Comercio Electrónico · Arquitectura de Microservicios</p>
+  <br>
   <p align="center">
     <img src="https://img.shields.io/badge/Spring_Boot-3.4.1_%2F_4.0.6-6DB33F?logo=springboot" alt="Spring Boot">
     <img src="https://img.shields.io/badge/Java-21_%2F_25-ED8B00?logo=openjdk" alt="Java">
@@ -8,13 +9,16 @@
     <img src="https://img.shields.io/badge/coverage-100%25-brightgreen" alt="Coverage 100%">
     <img src="https://img.shields.io/badge/MySQL-8+-4479A1?logo=mysql" alt="MySQL">
     <img src="https://img.shields.io/badge/JWT-HS256-000000?logo=jsonwebtokens" alt="JWT">
+    <img src="https://img.shields.io/badge/JUnit_5-25.1-25A162?logo=junit5" alt="JUnit 5">
+    <img src="https://img.shields.io/badge/Maven-4.0-C71A36?logo=apachemaven" alt="Maven">
+    <img src="https://img.shields.io/badge/11_servicios-1060%2B_tests-blue" alt="11 servicios">
   </p>
 </p>
 
 <details open>
   <summary>Índice</summary>
 
-- [Reparto de Trabajo](#reparto-de-trabajo)
+- [Tecnologías](#tecnologías)
 - [Arquitectura](#arquitectura)
 - [Servicios](#servicios)
 - [Stack Tecnológico](#stack-tecnológico)
@@ -29,15 +33,23 @@
 
 ---
 
-## Reparto de Trabajo
+## Tecnologías
 
-El desarrollo se distribuyó entre dos integrantes:
-
-| Integrante | Servicios |
-|---|---|
-| **Hans** | `analica-service` · `logistica-envios-service` · `soporte-service` · `proceso-pago-service` · `pedido-service` |
-| **Horacio** | `registro-usuarios-service` (unificado con auth) · `gestion-tienda-service` · `carrito-compra-service` |
-| *(ambos)* | `api-gateway` · `catalogo-inventario-service` |
+| Categoría | Tecnología | Versión |
+|---|---|---|
+| **Lenguaje** | Java | 21 (api-gateway) / 25 (demás servicios) |
+| **Framework** | Spring Boot | 3.4.1 (api-gateway) / 4.0.6 (demás servicios) |
+| **Gateway** | Spring Cloud Gateway | 2024.0.0 |
+| **ORM** | Spring Data JPA + Hibernate | 7.x |
+| **Base de Datos** | MySQL | 8+ |
+| **Base de Datos (tests)** | H2 | En memoria |
+| **Autenticación** | JWT (HMAC-SHA256) | jjwt 0.12.5 |
+| **Documentación API** | SpringDoc OpenAPI | 2.6.0 |
+| **Pruebas** | JUnit 5 + Mockito + AssertJ + MockMvc | — |
+| **Cobertura** | JaCoCo | 0.8.14 |
+| **Build** | Apache Maven | — |
+| **Boilerplate** | Lombok | — |
+| **Validación** | Jakarta Validation | — |
 
 ---
 
@@ -342,17 +354,17 @@ mvn clean test
 | Servicio | Tests | JaCoCo |
 |---|---|---|
 | `api-gateway` | 11 | ✅ 100 % |
-| `analica-service` | 112 | ✅ 100 % |
-| `carrito-compra-service` | 75 | ✅ 100 % |
-| `catalogo-inventario-service` | 106 | ✅ 100 % |
-| `gestion-tienda-service` | 45 | ✅ 100 % |
-| `iniciosesion-service` | 91 | ✅ 100 % |
-| `pedido-service` | 29 | ✅ 100 % |
-| `proceso-pago-service` | 47 | ✅ 100 % |
-| `logistica-envios-service` | 133 | ✅ 100 % |
-| `registro-usuarios-service` | 140 | ✅ 100 % |
-| `soporte-service` | 195 | ✅ 100 % |
-| **Total** | **984** | — |
+| `analica-service` | 126 | ✅ 100 % |
+| `carrito-compra-service` | 54 | ✅ 100 % |
+| `catalogo-inventario-service` | 136 | ✅ 100 % |
+| `gestion-tienda-service` | 82 | ✅ 100 % |
+| `iniciosesion-service` | 104 | ✅ 100 % |
+| `pedido-service` | 36 | ✅ 100 % |
+| `proceso-pago-service` | 48 | ✅ 100 % |
+| `logistica-envios-service` | 142 | ✅ 100 % |
+| `registro-usuarios-service` | 145 | ✅ 100 % |
+| `soporte-service` | 204 | ✅ 100 % |
+| **Total** | **~1088** | — |
 
 > Todos los servicios tienen JaCoCo configurado y generan reporte de cobertura en `target/site/jacoco/index.html`.
 
@@ -466,7 +478,7 @@ Requiere `iniciosesion-service` corriendo en `localhost:8086` para la validació
 - **Lombok**: Declarado como `optional=true` y excluido del empaquetado del `spring-boot-maven-plugin`. El procesador de anotaciones se configura explícitamente en `maven-compiler-plugin`.
 - **OpenAPI/Swagger**: Solo disponible en `pedido-service` en la ruta `/doc/swagger-ui.html`.
 - **JaCoCo 0.8.14**: Configurado en todos los servicios con las fases `prepare-agent` (antes de tests) y `report` (después). Soporta Java 25.
-- **Efecto espejo (mirror effect)**: Cada clase en `src/main` tiene su correspondiente `*Test.java` en `src/test` bajo el mismo package. Auditoría completada en los 11 servicios; corregidos paquetes incorrectos (mayúsculas/minúsculas) en `soporte-service` y nombres de archivo en `soporte-service`, `proceso-pago-service`, `pedido-service` (`PedidoServiceImplTest` → `PedidoServiceTest`) y `registro-usuarios-service` (`RegistroUsuarioServiceImplTest` → `RegistroUsuarioServiceTest`).
+- **Efecto espejo (mirror effect)**: Cada clase en `src/main` tiene su correspondiente `*Test.java` en `src/test` bajo el mismo package. Auditoría completada en los 11 servicios, incluyendo los **80 DTOs** de todos los proyectos que ahora cuentan con su respectivo test unitario (constructor, builder o setters según la anotación de cada DTO).
 - **JWT secret externalizado**: La propiedad `jwt.secret` se lee de la variable de entorno `JWT_SECRET` (no hardcodeada). Ver `.env.example` en `registro-usuarios-service` e `iniciosesion-service` para la configuración local.
 - **api-gateway como repositorio propio**: El gateway se independizó de un submodule roto; ahora es un proyecto Maven estándar dentro del mismo repositorio.
 - **CI/CD**: GitHub Actions (`ci.yml`) ejecuta `mvn test` para los 11 servicios con `working-directory` por módulo, `fail-fast: false` para visibilidad completa, `JWT_SECRET` inyectado como `${{ secrets.JWT_SECRET }}`, y `java-version` configurado por servicio (21 para api-gateway, 25 para el resto).
