@@ -115,6 +115,7 @@ class GlobalExceptionHandlerTest {
         assertThat(response.getBody().getPath()).isEqualTo("/api/test");
     }
 
+    @SuppressWarnings({ "rawtypes", "unchecked" })
     @Test
     @DisplayName("handleTypeMismatch retorna 400 con tipo esperado")
     void typeMismatch() {

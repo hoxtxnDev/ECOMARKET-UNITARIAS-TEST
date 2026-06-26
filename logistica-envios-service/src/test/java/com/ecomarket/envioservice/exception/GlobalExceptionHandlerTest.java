@@ -25,7 +25,6 @@ import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
-import java.lang.reflect.Method;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -230,7 +229,7 @@ class GlobalExceptionHandlerTest {
 
         @Test
         @DisplayName("tipo de argumento incorrecto → 400")
-        @SuppressWarnings("unchecked")
+        
         void typeMismatchDevuelve400() {
             GlobalExceptionHandler handler = new GlobalExceptionHandler();
             MockHttpServletRequest request = new MockHttpServletRequest();
