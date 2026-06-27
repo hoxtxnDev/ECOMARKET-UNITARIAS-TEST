@@ -76,12 +76,11 @@ class PagoControllerTest {
         @Test
         @DisplayName("200 OK al iniciar pago con parámetros válidos")
         void exitoso() throws Exception {
-            when(pagoService.iniciarPago(eq(10L), eq(1L), eq("idem-123")))
+            when(pagoService.iniciarPago(eq(10L), eq("idem-123")))
                     .thenReturn(transaccion(1L));
 
             mvc.perform(post("/api/pagos/iniciar")
                             .param("pedidoId", "10")
-                            .param("metodoPagoId", "1")
                             .param("idempotencyKey", "idem-123"))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.id").value(1))
@@ -92,12 +91,11 @@ class PagoControllerTest {
         @Test
         @DisplayName("400 si el service lanza RuntimeException")
         void estadoNoExiste() throws Exception {
-            when(pagoService.iniciarPago(anyLong(), anyLong(), any()))
+            when(pagoService.iniciarPago(anyLong(), any()))
                     .thenThrow(new RuntimeException("Error"));
 
             mvc.perform(post("/api/pagos/iniciar")
-                            .param("pedidoId", "10")
-                            .param("metodoPagoId", "1"))
+                            .param("pedidoId", "10"))
                     .andExpect(status().isBadRequest());
         }
     }

@@ -21,7 +21,7 @@ public class LogisticaEnvioClient {
 
     public MetodoEnvioDTO validarMetodoEnvio(Long metodoEnvioId) {
         try {
-            String url = enviosUrl + "/api/v1/metodo-envio/" + metodoEnvioId;
+            String url = enviosUrl + "/api/v1/logistica-envios/metodo-envio/" + metodoEnvioId;
             return restTemplate.getForObject(url, MetodoEnvioDTO.class);
         } catch (HttpClientErrorException e) {
             if (e.getStatusCode().value() == 404) {

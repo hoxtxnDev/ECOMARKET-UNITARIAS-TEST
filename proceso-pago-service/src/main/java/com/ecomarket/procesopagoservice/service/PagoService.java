@@ -13,6 +13,8 @@ import org.springframework.web.client.RestTemplate;
 import java.time.LocalDateTime;
 import java.util.*;
 
+import jakarta.annotation.PostConstruct;
+
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -25,22 +27,30 @@ public class PagoService {
     private final MetodoPagoRepository metodoPagoRepository;
     private final RestTemplate restTemplate;
 
+    private static final Set<String> METODOS_MANUALES = Set.of(
+            "Transferencia Bancaria", "Pago en Efectivo", "Contra Entrega");
+
     @SuppressWarnings("unchecked")
     @Transactional
-    public TransaccionPago iniciarPago(Long pedidoId, Long metodoPagoId, String idempotencyKey) {
+    public TransaccionPago iniciarPago(Long pedidoId, String idempotencyKey) {
         if (idempotencyKey != null && !idempotencyKey.isBlank()) {
             Optional<TransaccionPago> existingByIdemKey = transaccionRepository.findByIdempotencyKey(idempotencyKey);
             if (existingByIdemKey.isPresent()) return existingByIdemKey.get();
         }
 
-        MetodoPagoTransaccion metodo = metodoPagoRepository.findById(metodoPagoId)
-                .orElseThrow(() -> new RecursoNoEncontradoException("Método de pago no encontrado con ID: " + metodoPagoId));
-
         Map<String, Object> pedidoData;
+        MetodoPagoTransaccion metodo;
         try {
             pedidoData = restTemplate.getForObject("http://localhost:8089/api/pedidos/" + pedidoId, Map.class);
             if (pedidoData == null) throw new RecursoNoEncontradoException("Pedido no encontrado con ID: " + pedidoId);
-            
+
+            Object metodoPagoObj = pedidoData.get("metodoPagoId");
+            if (metodoPagoObj == null) throw new RecursoNoEncontradoException("El pedido no tiene un método de pago asignado.");
+            Long metodoPagoId = Long.valueOf(metodoPagoObj.toString());
+
+            metodo = metodoPagoRepository.findById(metodoPagoId)
+                    .orElseThrow(() -> new RecursoNoEncontradoException("Método de pago no encontrado con ID: " + metodoPagoId));
+
             Object estadoObj = pedidoData.get("estado");
             String estadoPedido = "DESCONOCIDO";
             if (estadoObj instanceof Map) {
@@ -118,8 +128,11 @@ public class PagoService {
             transaccion.setFechaFin(LocalDateTime.now());
             transaccion.setFechaUltimaActualizacion(LocalDateTime.now());
 
-            actualizarEstadoPedido(transaccion.getPedidoId(), "CONFIRMADO");
-            actualizarEstadoPedido(transaccion.getPedidoId(), "EN PREPARACION");
+            boolean esManual = METODOS_MANUALES.contains(transaccion.getMetodoPago().getNombre());
+            if (!esManual) {
+                actualizarEstadoPedido(transaccion.getPedidoId(), "CONFIRMADO");
+                actualizarEstadoPedido(transaccion.getPedidoId(), "EN PREPARACION");
+            }
             ejecutarFlujoPostPago(transaccion);
 
         } catch (ProcesamientoPagoException e) {
@@ -221,6 +234,11 @@ public class PagoService {
         TransaccionPago transaccion = transaccionRepository.findById(transaccionId)
                 .orElseThrow(() -> new RecursoNoEncontradoException("Transacción no encontrada: " + transaccionId));
         
+        String estadoNombre = transaccion.getEstado().getNombre();
+        if ("APROBADO".equals(estadoNombre) || "RECHAZADO".equals(estadoNombre) || "REEMBOLSADO".equals(estadoNombre)) {
+            throw new EstadoTransaccionInvalidoException("No se puede aplicar cupón a una transacción en estado " + estadoNombre);
+        }
+
         CuponDescuento cupon = cuponRepository.findById(cuponId)
                 .orElseThrow(() -> new RecursoNoEncontradoException("Cupón no encontrado: " + cuponId));
 

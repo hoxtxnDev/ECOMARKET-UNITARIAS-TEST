@@ -46,7 +46,7 @@ public class PedidoService {
         Long finalDireccionId = direccionEnvioId;
         if (finalDireccionId == null) {
             try {
-                Map<String, Object> userDir = restTemplate.getForObject("http://localhost:8081/api/usuarios/" + clienteId + "/direccion-predeterminada", Map.class);
+                Map<String, Object> userDir = restTemplate.getForObject("http://localhost:8081/api/usuarios/direcciones/predeterminada/" + clienteId, Map.class);
                 if (userDir != null && userDir.get("id") != null) {
                     finalDireccionId = Long.valueOf(userDir.get("id").toString());
                 } else {
@@ -67,6 +67,7 @@ public class PedidoService {
         Pedido pedido = Pedido.builder()
                 .clienteId(clienteId)
                 .direccionEnvioId(finalDireccionId)
+                .metodoPagoId(carrito.getMetodoPagoId())
                 .subtotal(carrito.getSubtotal())
                 .total(carrito.getSubtotal())
                 .estado(estadoInicial)

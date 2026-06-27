@@ -31,6 +31,8 @@ public class Pedido {
 
     private Long direccionEnvioId;
 
+    private Long metodoPagoId;
+
     @ManyToOne
     @JoinColumn(name = "estado_pedido_id")
     private EstadoPedido estado;

@@ -31,7 +31,7 @@ class LogisticaEnvioClientTest {
     @Test
     void validarMetodoEnvioReturnsMetodoEnvio() {
         MetodoEnvioDTO expected = new MetodoEnvioDTO(1L, "Envio Express");
-        when(restTemplate.getForObject("http://localhost:8083/api/v1/metodo-envio/1", MetodoEnvioDTO.class))
+        when(restTemplate.getForObject("http://localhost:8083/api/v1/logistica-envios/metodo-envio/1", MetodoEnvioDTO.class))
                 .thenReturn(expected);
 
         MetodoEnvioDTO result = client.validarMetodoEnvio(1L);
@@ -43,7 +43,7 @@ class LogisticaEnvioClientTest {
     void validarMetodoEnvioThrowsNoExisteEnBdWhen404() {
         HttpClientErrorException notFound = mock(HttpClientErrorException.class);
         when(notFound.getStatusCode()).thenReturn(org.springframework.http.HttpStatus.NOT_FOUND);
-        when(restTemplate.getForObject("http://localhost:8083/api/v1/metodo-envio/99", MetodoEnvioDTO.class))
+        when(restTemplate.getForObject("http://localhost:8083/api/v1/logistica-envios/metodo-envio/99", MetodoEnvioDTO.class))
                 .thenThrow(notFound);
 
         assertThrows(NoExisteEnBdException.class, () -> client.validarMetodoEnvio(99L));
@@ -53,7 +53,7 @@ class LogisticaEnvioClientTest {
     void validarMetodoEnvioThrowsRuntimeOnOtherError() {
         HttpClientErrorException badRequest = mock(HttpClientErrorException.class);
         when(badRequest.getStatusCode()).thenReturn(org.springframework.http.HttpStatus.BAD_REQUEST);
-        when(restTemplate.getForObject("http://localhost:8083/api/v1/metodo-envio/99", MetodoEnvioDTO.class))
+        when(restTemplate.getForObject("http://localhost:8083/api/v1/logistica-envios/metodo-envio/99", MetodoEnvioDTO.class))
                 .thenThrow(badRequest);
 
         assertThrows(RuntimeException.class, () -> client.validarMetodoEnvio(99L));

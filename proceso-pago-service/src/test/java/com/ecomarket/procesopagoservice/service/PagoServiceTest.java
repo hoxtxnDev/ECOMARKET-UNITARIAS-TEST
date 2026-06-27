@@ -94,6 +94,7 @@ class PagoServiceTest {
         Map<String, Object> data = new HashMap<>();
         data.put("clienteId", 5);
         data.put("total", 50000.0);
+        data.put("metodoPagoId", 1);
         Map<String, Object> estado = new HashMap<>();
         estado.put("nombre", "PENDIENTE");
         data.put("estado", estado);
@@ -123,7 +124,7 @@ class PagoServiceTest {
         void creaTransaccionExitosa() {
             setupHappyPathMocks();
 
-            TransaccionPago resultado = service.iniciarPago(10L, 1L, "idem-456");
+            TransaccionPago resultado = service.iniciarPago(10L, "idem-456");
 
             assertThat(resultado.getId()).isEqualTo(1L);
             assertThat(resultado.getPedidoId()).isEqualTo(10L);
@@ -150,7 +151,7 @@ class PagoServiceTest {
                 return t;
             });
 
-            TransaccionPago resultado = service.iniciarPago(10L, 1L, "");
+            TransaccionPago resultado = service.iniciarPago(10L, "");
 
             assertThat(resultado.getId()).isEqualTo(1L);
             assertThat(resultado.getIdempotencyKey()).isNotNull();
@@ -163,7 +164,7 @@ class PagoServiceTest {
             TransaccionPago existente = transaccionCompleta(1L);
             when(transaccionRepository.findByIdempotencyKey("idem-dup")).thenReturn(Optional.of(existente));
 
-            TransaccionPago resultado = service.iniciarPago(10L, 1L, "idem-dup");
+            TransaccionPago resultado = service.iniciarPago(10L, "idem-dup");
 
             assertThat(resultado.getId()).isEqualTo(1L);
             verify(transaccionRepository, never()).save(any());
@@ -184,7 +185,7 @@ class PagoServiceTest {
                 return t;
             });
 
-            TransaccionPago resultado = service.iniciarPago(10L, 1L, null);
+            TransaccionPago resultado = service.iniciarPago(10L, null);
 
             assertThat(resultado.getId()).isEqualTo(1L);
             assertThat(resultado.getIdempotencyKey()).isNotNull();
@@ -194,9 +195,12 @@ class PagoServiceTest {
         @Test
         @DisplayName("lanza excepción si método de pago no existe")
         void metodoPagoNoExiste() {
+            Map<String, Object> data = pedidoData();
+            data.put("metodoPagoId", 99);
+            when(restTemplate.getForObject(anyString(), eq(Map.class))).thenReturn(data);
             when(metodoPagoRepository.findById(99L)).thenReturn(Optional.empty());
 
-            assertThatThrownBy(() -> service.iniciarPago(10L, 99L, "idem"))
+            assertThatThrownBy(() -> service.iniciarPago(10L, "idem"))
                     .isInstanceOf(RecursoNoEncontradoException.class)
                     .hasMessageContaining("99");
         }
@@ -204,10 +208,9 @@ class PagoServiceTest {
         @Test
         @DisplayName("lanza excepción si pedido no se encuentra (restTemplate retorna null)")
         void pedidoDataNulo() {
-            when(metodoPagoRepository.findById(1L)).thenReturn(Optional.of(metodo()));
             when(restTemplate.getForObject(anyString(), eq(Map.class))).thenReturn(null);
 
-            assertThatThrownBy(() -> service.iniciarPago(10L, 1L, "idem"))
+            assertThatThrownBy(() -> service.iniciarPago(10L, "idem"))
                     .isInstanceOf(RecursoNoEncontradoException.class)
                     .hasMessageContaining("Pedido no encontrado");
         }
@@ -222,7 +225,7 @@ class PagoServiceTest {
             data.put("estado", estado);
             when(restTemplate.getForObject(anyString(), eq(Map.class))).thenReturn(data);
 
-            assertThatThrownBy(() -> service.iniciarPago(10L, 1L, "idem"))
+            assertThatThrownBy(() -> service.iniciarPago(10L, "idem"))
                     .isInstanceOf(EstadoTransaccionInvalidoException.class)
                     .hasMessageContaining("procesado o enviado");
         }
@@ -232,10 +235,10 @@ class PagoServiceTest {
         void pedidoYaEnviado() {
             when(metodoPagoRepository.findById(1L)).thenReturn(Optional.of(metodo()));
             when(restTemplate.getForObject(anyString(), eq(Map.class))).thenReturn(Map.of(
-                    "clienteId", 5, "total", 50000.0, "estado", "ENVIADO"
+                    "clienteId", 5, "total", 50000.0, "metodoPagoId", 1, "estado", "ENVIADO"
             ));
 
-            assertThatThrownBy(() -> service.iniciarPago(10L, 1L, "idem"))
+            assertThatThrownBy(() -> service.iniciarPago(10L, "idem"))
                     .isInstanceOf(EstadoTransaccionInvalidoException.class)
                     .hasMessageContaining("procesado o enviado");
         }
@@ -243,11 +246,10 @@ class PagoServiceTest {
         @Test
         @DisplayName("lanza Http 404 al consultar pedido (NotFound)")
         void pedidoHttp404() {
-            when(metodoPagoRepository.findById(1L)).thenReturn(Optional.of(metodo()));
             when(restTemplate.getForObject(anyString(), eq(Map.class)))
                     .thenThrow(mock(HttpClientErrorException.NotFound.class));
 
-            assertThatThrownBy(() -> service.iniciarPago(10L, 1L, "idem"))
+            assertThatThrownBy(() -> service.iniciarPago(10L, "idem"))
                     .isInstanceOf(RecursoNoEncontradoException.class)
                     .hasMessageContaining("no existe en el servicio de pedidos");
         }
@@ -255,11 +257,10 @@ class PagoServiceTest {
         @Test
         @DisplayName("lanza RecursoNoEncontradoException si falla la comunicación con pedidos")
         void pedidoComunicacionFallida() {
-            when(metodoPagoRepository.findById(1L)).thenReturn(Optional.of(metodo()));
             when(restTemplate.getForObject(anyString(), eq(Map.class)))
                     .thenThrow(new RuntimeException("Connection refused"));
 
-            assertThatThrownBy(() -> service.iniciarPago(10L, 1L, "idem"))
+            assertThatThrownBy(() -> service.iniciarPago(10L, "idem"))
                     .isInstanceOf(RecursoNoEncontradoException.class)
                     .hasMessageContaining("Error interno");
         }
@@ -275,7 +276,7 @@ class PagoServiceTest {
             when(estadoPagoRepository.findByNombre("REEMBOLSADO")).thenReturn(Optional.of(estado("REEMBOLSADO")));
             when(transaccionRepository.findFirstByPedidoIdAndEstadoNotIn(eq(10L), anyList())).thenReturn(Optional.of(activa));
 
-            TransaccionPago resultado = service.iniciarPago(10L, 1L, "idem");
+            TransaccionPago resultado = service.iniciarPago(10L, "idem");
 
             assertThat(resultado.getId()).isEqualTo(2L);
             verify(transaccionRepository, never()).save(any());
@@ -286,7 +287,7 @@ class PagoServiceTest {
         void pedidoEstadoTipoDesconocido() {
             when(metodoPagoRepository.findById(1L)).thenReturn(Optional.of(metodo()));
             when(restTemplate.getForObject(anyString(), eq(Map.class))).thenReturn(Map.of(
-                    "clienteId", 5, "total", 50000.0, "estado", 999
+                    "clienteId", 5, "total", 50000.0, "metodoPagoId", 1, "estado", 999
             ));
             when(estadoPagoRepository.findByNombre("APROBADO")).thenReturn(Optional.of(estado("APROBADO")));
             when(estadoPagoRepository.findByNombre("RECHAZADO")).thenReturn(Optional.of(estado("RECHAZADO")));
@@ -298,7 +299,7 @@ class PagoServiceTest {
                 return t;
             });
 
-            TransaccionPago resultado = service.iniciarPago(10L, 1L, "idem");
+            TransaccionPago resultado = service.iniciarPago(10L, "idem");
 
             assertThat(resultado.getId()).isEqualTo(1L);
         }
@@ -313,7 +314,7 @@ class PagoServiceTest {
             when(estadoPagoRepository.findByNombre("REEMBOLSADO")).thenReturn(Optional.of(estado("REEMBOLSADO")));
             when(estadoPagoRepository.findByNombre("PENDIENTE")).thenReturn(Optional.empty());
 
-            assertThatThrownBy(() -> service.iniciarPago(10L, 1L, "idem"))
+            assertThatThrownBy(() -> service.iniciarPago(10L, "idem"))
                     .isInstanceOf(RecursoNoEncontradoException.class)
                     .hasMessageContaining("estado inicial");
         }

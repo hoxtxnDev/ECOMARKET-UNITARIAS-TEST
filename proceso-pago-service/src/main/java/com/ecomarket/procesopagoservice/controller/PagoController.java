@@ -17,9 +17,8 @@ public class PagoController {
     @PostMapping("/iniciar")
     public ResponseEntity<TransaccionPago> iniciarPago(
             @RequestParam Long pedidoId,
-            @RequestParam Long metodoPagoId,
             @RequestParam(required = false) String idempotencyKey) {
-        return ResponseEntity.ok(pagoService.iniciarPago(pedidoId, metodoPagoId, idempotencyKey));
+        return ResponseEntity.ok(pagoService.iniciarPago(pedidoId, idempotencyKey));
     }
 
     @GetMapping("/{transaccionId}")

@@ -11,5 +11,6 @@ public class CarritoDTO {
     private Long id;
     private Long clienteId;
     private Double subtotal;
+    private Long metodoPagoId;
     private List<ItemCarritoDTO> items;
 }
