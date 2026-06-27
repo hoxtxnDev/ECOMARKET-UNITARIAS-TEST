@@ -13,4 +13,5 @@ target/
 *~
 .DS_Store
 Thumbs.db
-*.md
+API-FLOW.md
+CATALOGOS-SEED.md
