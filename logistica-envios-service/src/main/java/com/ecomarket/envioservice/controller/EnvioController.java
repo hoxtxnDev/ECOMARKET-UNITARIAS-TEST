@@ -65,6 +65,11 @@ public class EnvioController {
         return envioService.obtenerEnvioPorId(id);
     }
 
+    @GetMapping("envios/pedido/{pedidoId}")
+    public List<Envio> obtenerEnviosPorPedido(@PathVariable Long pedidoId) {
+        return envioService.buscarEnviosPorPedidoId(pedidoId);
+    }
+
     @GetMapping("envios/{id}/estado")
     public EstadoEnvio consultarEstadoEnvio(@PathVariable Long id) {
         return envioService.consultarEstadoEnvio(id);

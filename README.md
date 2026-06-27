@@ -91,14 +91,14 @@
 
 | # | Servicio | Puerto | Propósito | Dueño |
 |---|----------|--------|-----------|-------|
-| 1 | `api-gateway` | `8080` | Punto de entrada único; enruta requests y valida JWT | — |
+| 1 | `api-gateway` | `8080` | Punto de entrada único; enruta requests y valida JWT | Hans |
 | 2 | `registro-usuarios-service` | `8081` | Registro de usuarios, perfiles, roles y permisos | Horacio |
-| 3 | `carrito-compra-service` | `8082` | Carrito de compras y orquestación de checkout | Horacio |
-| 4 | `logistica-envios-service` | `8083` | Logística de envíos, rutas, puntos de retiro, seguimiento | Hans |
+| 3 | `carrito-compra-service` | `8082` | Carrito de compras y orquestación de checkout | Hans |
+| 4 | `logistica-envios-service` | `8083` | Logística de envíos, rutas, puntos de retiro, seguimiento | Horacio |
 | 5 | `analica-service` | `8084` | Analíticas, reportes, métricas, respaldos, alertas | Hans |
 | 6 | `proceso-pago-service` | `8085` | Procesamiento de pagos, transacciones, facturas, cupones | Hans |
 | 7 | `iniciosesion-service` | `8086` | Autenticación, login, gestión de tokens JWT, recuperación de contraseña | Horacio |
-| 8 | `catalogo-inventario-service` | `8087` | Catálogo de productos, gestión de stock e inventario | — |
+| 8 | `catalogo-inventario-service` | `8087` | Catálogo de productos, gestión de stock e inventario | Horacio |
 | 9 | `soporte-service` | `8088` | Tickets de soporte, chat en vivo, notificaciones, reseñas | Hans |
 | 10 | `pedido-service` | `8089` | Gestión de pedidos: generación, estados, historial | Hans |
 | 11 | `gestion-tienda-service` | `8090` | Gestión de tiendas, sucursales, tareas de personal, horarios, normativas | Horacio |
@@ -259,6 +259,119 @@ CLIENTE                    API GATEWAY                  INICIOSESION-SERVICE
 
 ---
 
+## Flujo Principal de Compra
+
+El flujo completo de la plataforma abarca 7 microservicios y sigue esta secuencia:
+
+```
+               ┌──────────────┐
+               │  Cliente     │
+               │  (registro)  │
+               └──────┬───────┘
+                      │ 1. POST /api/usuarios/registro
+                      ▼
+               ┌──────────────┐
+               │  registro-   │───► iniciosesion → crea credencial
+               │  usuarios    │───► analitica    → log de auditoría
+               └──────┬───────┘
+                      │ 2. POST /api/sesion/login
+                      ▼
+               ┌──────────────┐
+               │  iniciosesion│───► Devuelve JWT
+               └──────┬───────┘
+                      │ 3. POST /api/usuarios/direcciones/{id}
+                      ▼
+               ┌──────────────┐
+               │  registro-   │───► Agrega dirección de despacho
+               │  usuarios    │
+               └──────────────┘
+```
+
+### Catálogo e Inventario
+
+```
+                      │ 4. POST /api/catalogo           (crear producto)
+                      │ 5. POST /api/inventario/ingresar (stock global)
+                      │ 6. POST /api/inventario/transferir (a sucursal)
+                      ▼
+               ┌──────────────┐
+               │  catalogo-   │───► gestion-tienda → valida sucursal
+               │  inventario  │
+               └──────────────┘
+```
+
+### Carrito y Pedido
+
+```
+                      │ 7. POST /api/carrito                    (agregar producto)
+                      │ 8. PUT  /api/carrito/{id}/envio         (método de envío)
+                      │ 9. PUT  /api/carrito/{id}/pago          (método de pago)
+                      │ 10. POST /api/carrito/{id}/checkout     (reservar stock, cerrar)
+                      │ 11. POST /api/pedidos/generar/{cli}/{carrito} (crear pedido)
+                      ▼
+               ┌──────────────┐
+               │  carrito-    │───► catalogo-inventario → verifica stock
+               │  compra      │───► pedido-service     → genera pedido
+               └──────┬───────┘
+                      │ 12. GET /api/pedidos/{id}
+                      ▼
+               ┌──────────────┐
+               │  pedido-     │
+               │  service     │
+               └──────┬───────┘
+```
+
+### Pago y Despacho
+
+```
+                      │ 13. POST /api/pagos/iniciar?pedidoId={id}  (crear transacción PENDIENTE)
+                      │ 14. POST /api/pagos/{txn}/cupon/{cuponId}  (aplicar descuento, opcional)
+                      │ 15. POST /api/pagos/{txn}/transbank?token=… (procesar pago)
+                      ▼
+               ┌──────────────┐
+               │  proceso-    │───► pedido-service → actualiza a CONFIRMADO
+               │  pago        │───► carrito-compra → vacía carrito
+               └──────┬───────┘───► analitica      → log de auditoría
+                      │ 16. PUT /api/pedidos/{id}/estado/{estadoId}
+                      ▼
+               ┌──────────────┐
+               │  pedido-     │───► logistica-envios → crea envío (si estado=ENVIADO)
+               │  service     │
+               └──────┬───────┘
+                      │ 17. GET /api/v1/logistica-envios/envios/pedido/{pedidoId}
+                      ▼
+               ┌──────────────┐
+               │  logistica-  │───► seguimiento del envío
+               │  envios      │
+               └──────────────┘
+```
+
+### Resumen de Pasos
+
+| # | Acción | Endpoint | Servicio | Puerto |
+|---|--------|----------|----------|--------|
+| 1 | Registrar usuario | `POST /api/usuarios/registro` | registro-usuarios | 8081 |
+| 2 | Iniciar sesión | `POST /api/sesion/login` | iniciosesion | 8086 |
+| 3 | Agregar dirección | `POST /api/usuarios/direcciones/{id}` | registro-usuarios | 8081 |
+| 4 | Crear producto | `POST /api/catalogo` | catalogo-inventario | 8087 |
+| 5 | Ingresar stock global | `POST /api/inventario/ingresar` | catalogo-inventario | 8087 |
+| 6 | Transferir stock a sucursal | `POST /api/inventario/transferir` | catalogo-inventario | 8087 |
+| 7 | Agregar producto al carrito | `POST /api/carrito` | carrito-compra | 8082 |
+| 8 | Seleccionar método de envío | `PUT /api/carrito/{id}/envio` | carrito-compra | 8082 |
+| 9 | Seleccionar método de pago | `PUT /api/carrito/{id}/pago` | carrito-compra | 8082 |
+| 10 | Cerrar carrito (checkout) | `POST /api/carrito/{id}/checkout` | carrito-compra | 8082 |
+| 11 | Generar pedido | `POST /api/pedidos/generar/{cli}/{carrito}` | pedido-service | 8089 |
+| 12 | Revisar pedido | `GET /api/pedidos/{id}` | pedido-service | 8089 |
+| 13 | Iniciar pago | `POST /api/pagos/iniciar?pedidoId={id}` | proceso-pago | 8085 |
+| 14 | Aplicar cupón | `POST /api/pagos/{txn}/cupon/{cuponId}` | proceso-pago | 8085 |
+| 15 | Confirmar pago Transbank | `POST /api/pagos/{txn}/transbank?token=...` | proceso-pago | 8085 |
+| 16 | Actualizar estado pedido | `PUT /api/pedidos/{id}/estado/{estadoId}` | pedido-service | 8089 |
+| 17 | Consultar envío por pedido | `GET /api/v1/logistica-envios/envios/pedido/{pedidoId}` | logistica-envios | 8083 |
+
+> Todos los endpoints (excepto login y registro) requieren autenticación JWT. El gateway (`api-gateway:8080`) funciona como proxy único; las peticiones deben dirigirse a `http://localhost:8080/api/...` y el gateway las redirige al servicio correspondiente. Los puertos directos mostrados en la tabla son solo para desarrollo o pruebas sin autenticación.
+
+---
+
 ## Estrategia de Pruebas
 
 ### Frameworks
@@ -353,18 +466,18 @@ mvn clean test
 
 | Servicio | Tests | JaCoCo |
 |---|---|---|
-| `api-gateway` | 11 | ✅ 100 % |
-| `analica-service` | 126 | ✅ 100 % |
+| `api-gateway` | 10 | ✅ 100 % |
+| `analica-service` | 127 | ✅ 100 % |
 | `carrito-compra-service` | 54 | ✅ 100 % |
 | `catalogo-inventario-service` | 136 | ✅ 100 % |
 | `gestion-tienda-service` | 82 | ✅ 100 % |
-| `iniciosesion-service` | 104 | ✅ 100 % |
-| `pedido-service` | 36 | ✅ 100 % |
-| `proceso-pago-service` | 48 | ✅ 100 % |
-| `logistica-envios-service` | 142 | ✅ 100 % |
-| `registro-usuarios-service` | 145 | ✅ 100 % |
-| `soporte-service` | 204 | ✅ 100 % |
-| **Total** | **~1088** | — |
+| `iniciosesion-service` | 106 | ✅ 100 % |
+| `pedido-service` | 67 | ✅ 100 % |
+| `proceso-pago-service` | 96 | ✅ 100 % |
+| `logistica-envios-service` | 152 | ✅ 100 % |
+| `registro-usuarios-service` | 101 | ✅ 100 % |
+| `soporte-service` | 208 | ✅ 100 % |
+| **Total** | **1139** | — |
 
 > Todos los servicios tienen JaCoCo configurado y generan reporte de cobertura en `target/site/jacoco/index.html`.
 

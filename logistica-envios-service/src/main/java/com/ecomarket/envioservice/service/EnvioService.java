@@ -234,6 +234,10 @@ public class EnvioService {
         return envioDomainService.findById(envioId);
     }
 
+    public List<Envio> buscarEnviosPorPedidoId(Long pedidoId) {
+        return envioDomainService.readByPedidoId(pedidoId);
+    }
+
     public List<HistorialEnvio> obtenerHistorialEnvio(Long envioId) {
         envioDomainService.findById(envioId);
         return historialEnvioService.findHistorialByEnvioId(envioId);

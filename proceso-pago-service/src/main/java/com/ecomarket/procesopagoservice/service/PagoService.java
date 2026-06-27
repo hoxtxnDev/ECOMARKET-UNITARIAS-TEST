@@ -106,13 +106,6 @@ public class PagoService {
         TransaccionPago transaccion = transaccionRepository.findById(transaccionId)
                 .orElseThrow(() -> new RecursoNoEncontradoException("Transacción no encontrada: " + transaccionId));
 
-        EstadoPago estadoProceso = estadoPagoRepository.findByNombre("PENDIENTE")
-                .orElseThrow(() -> new RecursoNoEncontradoException("No se encontró estado de proceso"));
-        
-        transaccion.setEstado(estadoProceso);
-        transaccion.setFechaUltimaActualizacion(LocalDateTime.now());
-        transaccionRepository.save(transaccion);
-
         try {
             if (token == null || token.isEmpty() || token.equals("error")) {
                 throw new ProcesamientoPagoException("Token de pago inválido o rechazado por el banco");
@@ -120,41 +113,49 @@ public class PagoService {
 
             EstadoPago estadoAprobado = estadoPagoRepository.findByNombre("APROBADO")
                     .orElseThrow(() -> new RecursoNoEncontradoException("Estado APROBADO no encontrado"));
-            
+
             transaccion.setEstado(estadoAprobado);
             transaccion.setCodigoAutorizacion("AUTH-" + UUID.randomUUID().toString().substring(0, 6).toUpperCase());
             transaccion.setFechaFin(LocalDateTime.now());
             transaccion.setFechaUltimaActualizacion(LocalDateTime.now());
 
+            transaccion = transaccionRepository.save(transaccion);
+
             boolean esManual = METODOS_MANUALES.contains(transaccion.getMetodoPago().getNombre());
             if (!esManual) {
                 actualizarEstadoPedido(transaccion.getPedidoId(), "CONFIRMADO");
-                actualizarEstadoPedido(transaccion.getPedidoId(), "EN PREPARACION");
             }
             ejecutarFlujoPostPago(transaccion);
+            return transaccion;
 
         } catch (ProcesamientoPagoException e) {
             EstadoPago estadoRechazado = estadoPagoRepository.findByNombre("RECHAZADO")
                     .orElseThrow(() -> new RecursoNoEncontradoException("Estado RECHAZADO no encontrado"));
-            
+
             transaccion.setEstado(estadoRechazado);
             transaccion.setMensajeError(e.getMessage());
             transaccion.setFechaFin(LocalDateTime.now());
             transaccion.setFechaUltimaActualizacion(LocalDateTime.now());
+
+            transaccion = transaccionRepository.save(transaccion);
+
             actualizarEstadoPedido(transaccion.getPedidoId(), "CANCELADO");
             log.error("Rechazo en procesamiento de pago {}: {}", transaccionId, e.getMessage());
+            return transaccion;
         } catch (Exception e) {
             EstadoPago estadoRechazado = estadoPagoRepository.findByNombre("RECHAZADO")
                     .orElseThrow(() -> new RecursoNoEncontradoException("Estado RECHAZADO no encontrado"));
-            
+
             transaccion.setEstado(estadoRechazado);
             transaccion.setMensajeError("Error interno: " + e.getMessage());
             transaccion.setFechaFin(LocalDateTime.now());
             transaccion.setFechaUltimaActualizacion(LocalDateTime.now());
-            log.error("Fallo técnico en procesamiento de pago {}: {}", transaccionId, e.getMessage());
-        }
 
-        return transaccionRepository.save(transaccion);
+            transaccion = transaccionRepository.save(transaccion);
+
+            log.error("Fallo técnico en procesamiento de pago {}: {}", transaccionId, e.getMessage());
+            return transaccion;
+        }
     }
 
     private void actualizarEstadoPedido(Long pedidoId, String nuevoEstado) {

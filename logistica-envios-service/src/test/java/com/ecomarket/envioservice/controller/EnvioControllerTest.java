@@ -145,6 +145,21 @@ class EnvioControllerTest {
     }
 
     @Nested
+    @DisplayName("GET /api/v1/logistica-envios/envios/pedido/{pedidoId}")
+    class ObtenerEnviosPorPedido {
+
+        @Test
+        @DisplayName("200 OK retorna lista de envios del pedido")
+        void exitoso() throws Exception {
+            when(envioService.buscarEnviosPorPedidoId(4L)).thenReturn(List.of(envio));
+
+            mvc.perform(get("/api/v1/logistica-envios/envios/pedido/4"))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$[0].id").value(10));
+        }
+    }
+
+    @Nested
     @DisplayName("GET /api/v1/logistica-envios/envios/{id}/estado")
     class ConsultarEstado {
 

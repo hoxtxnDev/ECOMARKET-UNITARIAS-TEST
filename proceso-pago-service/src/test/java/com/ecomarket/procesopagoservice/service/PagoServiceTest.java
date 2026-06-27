@@ -427,7 +427,6 @@ class PagoServiceTest {
     class ProcesarTransbank {
 
         private void setupMockParaProcesar() {
-            when(estadoPagoRepository.findByNombre("PENDIENTE")).thenReturn(Optional.of(estado("PENDIENTE")));
             when(estadoPagoRepository.findByNombre("APROBADO")).thenReturn(Optional.of(estado("APROBADO")));
             when(transaccionRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
         }
@@ -461,7 +460,6 @@ class PagoServiceTest {
         void tokenNulo() {
             TransaccionPago t = transaccion(1L, 50000.0);
             when(transaccionRepository.findById(1L)).thenReturn(Optional.of(t));
-            when(estadoPagoRepository.findByNombre("PENDIENTE")).thenReturn(Optional.of(estado("PENDIENTE")));
             when(estadoPagoRepository.findByNombre("RECHAZADO")).thenReturn(Optional.of(estado("RECHAZADO")));
             when(transaccionRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
@@ -476,7 +474,6 @@ class PagoServiceTest {
         void tokenVacio() {
             TransaccionPago t = transaccion(1L, 50000.0);
             when(transaccionRepository.findById(1L)).thenReturn(Optional.of(t));
-            when(estadoPagoRepository.findByNombre("PENDIENTE")).thenReturn(Optional.of(estado("PENDIENTE")));
             when(estadoPagoRepository.findByNombre("RECHAZADO")).thenReturn(Optional.of(estado("RECHAZADO")));
             when(transaccionRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
@@ -491,7 +488,6 @@ class PagoServiceTest {
         void tokenError() {
             TransaccionPago t = transaccion(1L, 50000.0);
             when(transaccionRepository.findById(1L)).thenReturn(Optional.of(t));
-            when(estadoPagoRepository.findByNombre("PENDIENTE")).thenReturn(Optional.of(estado("PENDIENTE")));
             when(estadoPagoRepository.findByNombre("RECHAZADO")).thenReturn(Optional.of(estado("RECHAZADO")));
             when(transaccionRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
@@ -501,22 +497,10 @@ class PagoServiceTest {
         }
 
         @Test
-        @DisplayName("PENDIENTE no encontrado → lanza excepción")
-        void pendienteNoDisponibleEnProcesar() {
-            when(transaccionRepository.findById(1L)).thenReturn(Optional.of(transaccion(1L, 50000.0)));
-            when(estadoPagoRepository.findByNombre("PENDIENTE")).thenReturn(Optional.empty());
-
-            assertThatThrownBy(() -> service.procesarConTransbank(1L, "TOKEN"))
-                    .isInstanceOf(RecursoNoEncontradoException.class)
-                    .hasMessageContaining("estado de proceso");
-        }
-
-        @Test
         @DisplayName("token inválido + RECHAZADO no encontrado → lanza excepción")
         void tokenErrorConRechazadoNoDisponible() {
             TransaccionPago t = transaccion(1L, 50000.0);
             when(transaccionRepository.findById(1L)).thenReturn(Optional.of(t));
-            when(estadoPagoRepository.findByNombre("PENDIENTE")).thenReturn(Optional.of(estado("PENDIENTE")));
             when(estadoPagoRepository.findByNombre("RECHAZADO")).thenReturn(Optional.empty());
 
             assertThatThrownBy(() -> service.procesarConTransbank(1L, "error"))
@@ -529,7 +513,6 @@ class PagoServiceTest {
         void errorGenericoConRechazadoNoDisponible() {
             TransaccionPago t = transaccion(1L, 50000.0);
             when(transaccionRepository.findById(1L)).thenReturn(Optional.of(t));
-            when(estadoPagoRepository.findByNombre("PENDIENTE")).thenReturn(Optional.of(estado("PENDIENTE")));
             when(estadoPagoRepository.findByNombre("APROBADO")).thenThrow(new RuntimeException("BD caída"));
             when(estadoPagoRepository.findByNombre("RECHAZADO")).thenReturn(Optional.empty());
 
@@ -543,7 +526,6 @@ class PagoServiceTest {
         void errorGenerico() {
             TransaccionPago t = transaccion(1L, 50000.0);
             when(transaccionRepository.findById(1L)).thenReturn(Optional.of(t));
-            when(estadoPagoRepository.findByNombre("PENDIENTE")).thenReturn(Optional.of(estado("PENDIENTE")));
             when(estadoPagoRepository.findByNombre("RECHAZADO")).thenReturn(Optional.of(estado("RECHAZADO")));
             when(estadoPagoRepository.findByNombre("APROBADO")).thenThrow(new RuntimeException("BD caída"));
             when(transaccionRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
@@ -559,7 +541,6 @@ class PagoServiceTest {
         void toleraFalloAlActualizarPedido() {
             TransaccionPago t = transaccion(1L, 50000.0);
             when(transaccionRepository.findById(1L)).thenReturn(Optional.of(t));
-            when(estadoPagoRepository.findByNombre("PENDIENTE")).thenReturn(Optional.of(estado("PENDIENTE")));
             when(estadoPagoRepository.findByNombre("APROBADO")).thenReturn(Optional.of(estado("APROBADO")));
             doThrow(new RuntimeException("Pedidos service down")).when(restTemplate).put(anyString(), any());
             when(transaccionRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
@@ -572,7 +553,6 @@ class PagoServiceTest {
         void toleraFalloDeCarrito() {
             TransaccionPago t = transaccion(1L, 50000.0);
             when(transaccionRepository.findById(1L)).thenReturn(Optional.of(t));
-            when(estadoPagoRepository.findByNombre("PENDIENTE")).thenReturn(Optional.of(estado("PENDIENTE")));
             when(estadoPagoRepository.findByNombre("APROBADO")).thenReturn(Optional.of(estado("APROBADO")));
             doThrow(new RuntimeException("Carrito down")).when(restTemplate).delete(anyString());
             when(transaccionRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
@@ -585,7 +565,6 @@ class PagoServiceTest {
         void toleraFalloAlEnviarLog() {
             TransaccionPago t = transaccion(1L, 50000.0);
             when(transaccionRepository.findById(1L)).thenReturn(Optional.of(t));
-            when(estadoPagoRepository.findByNombre("PENDIENTE")).thenReturn(Optional.of(estado("PENDIENTE")));
             when(estadoPagoRepository.findByNombre("APROBADO")).thenReturn(Optional.of(estado("APROBADO")));
             when(restTemplate.postForEntity(anyString(), any(), eq(String.class)))
                     .thenThrow(new RuntimeException("Analítica caída"));
@@ -599,7 +578,6 @@ class PagoServiceTest {
         void estadoAprobadoNoEncontrado() {
             TransaccionPago t = transaccion(1L, 50000.0);
             when(transaccionRepository.findById(1L)).thenReturn(Optional.of(t));
-            when(estadoPagoRepository.findByNombre("PENDIENTE")).thenReturn(Optional.of(estado("PENDIENTE")));
             when(estadoPagoRepository.findByNombre("RECHAZADO")).thenReturn(Optional.of(estado("RECHAZADO")));
             when(estadoPagoRepository.findByNombre("APROBADO")).thenReturn(Optional.empty());
             when(transaccionRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
