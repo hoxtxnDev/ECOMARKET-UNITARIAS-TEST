@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <groupId>com.ecomarket</groupId>
+    <artifactId>ecomarket-unitarias-test</artifactId>
+    <version>0.0.1-SNAPSHOT</version>
+    <packaging>pom</packaging>
+
+    <modules>
+        <module>registro-usuarios-service</module>
+        <module>iniciosesion-service</module>
+        <module>pedido-service</module>
+        <module>carrito-compra-service</module>
+        <module>catalogo-inventario-service</module>
+        <module>gestion-tienda-service</module>
+        <module>logistica-envios-service</module>
+        <module>proceso-pago-service</module>
+        <module>analica-service</module>
+        <module>soporte-service</module>
+        <module>api-gateway</module>
+    </modules>
+</project>
