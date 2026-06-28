@@ -1,0 +1,670 @@
+{
+  "info": {
+    "_postman_id": "4f6ed577-4586-4607-bf7c-1d37303eabf1",
+    "name": "flujo principal",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "53537636",
+    "_collection_link": "https://go.postman.co/collection/53537636-4f6ed577-4586-4607-bf7c-1d37303eabf1?source=collection_link"
+  },
+  "item": [
+    {
+      "name": "Registrar Usuario",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "{\r\n  \"nombre\": \"Juan Pérez\",\r\n  \"correo\": \"juan@example.com\",\r\n  \"contrasenaInicial\": \"MiPassword123\",\r\n  \"telefono\": \"+56912345678\",\r\n  \"rolId\": 2,\r\n  \"estadoPerfilId\": 1\r\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrlGateway}}/api/usuarios/registro",
+          "host": [
+            "{{baseUrlGateway}}"
+          ],
+          "path": [
+            "api",
+            "usuarios",
+            "registro"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Logear Usuario",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "// 1. Validamos que el request haya sido exitoso (por ejemplo, código 200)\r",
+              "if (pm.response.code === 200) {\r",
+              "    // 2. Parseamos la respuesta JSON devuelta por tu API\r",
+              "    var jsonData = pm.response.json();\r",
+              "    \r",
+              "    // 3. Extraemos el token y lo guardamos en una variable global llamada \"token\"\r",
+              "    // Nota: Cambia \"jsonData.token\" por la propiedad exacta que devuelva tu DTO o respuesta \r",
+              "    // (por ejemplo: jsonData.access_token o jsonData.jwt)\r",
+              "    pm.globals.set(\"token\", jsonData.token);\r",
+              "    \r",
+              "    console.log(\"Token guardado exitosamente en variable global.\");\r",
+              "} else {\r",
+              "    console.log(\"El login falló, no se guardó el token.\");\r",
+              "}"
+            ],
+            "type": "text/javascript",
+            "packages": {},
+            "requests": {}
+          }
+        }
+      ],
+      "request": {
+        "auth": {
+          "type": "noauth"
+        },
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "{\r\n  \"correo\": \"juan@example.com\",\r\n  \"contrasena\": \"MiPassword123\"\r\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrlGateway}}/api/sesion/login",
+          "host": [
+            "{{baseUrlGateway}}"
+          ],
+          "path": [
+            "api",
+            "sesion",
+            "login"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Recuperar contrasena (opcional)",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "{\r\n  \"correo\": \"juan@example.com\"\r\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrlGateway}}/api/sesion/recuperar",
+          "host": [
+            "{{baseUrlGateway}}"
+          ],
+          "path": [
+            "api",
+            "sesion",
+            "recuperar"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Crear producto",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "{\r\n  \"sku\": \"PROD-001\",\r\n  \"nombre\": \"Notebook Gamer X100\",\r\n  \"descripcion\": \"Notebook de alto rendimiento para gaming\",\r\n  \"precioBase\": 899990.0,\r\n  \"categoriaId\": 2,\r\n  \"estadoId\": 1,\r\n  \"imagenUrl\": \"https://ejemplo.com/notebook.jpg\"\r\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrlGateway}}/api/catalogo",
+          "host": [
+            "{{baseUrlGateway}}"
+          ],
+          "path": [
+            "api",
+            "catalogo"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Asignar stock tienda online",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "// Stock global que pueden tomar las sucursales\r\n{\r\n  \"productoId\": 1,\r\n  \"cantidad\": 500\r\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrlGateway}}/api/inventario/ingresar",
+          "host": [
+            "{{baseUrlGateway}}"
+          ],
+          "path": [
+            "api",
+            "inventario",
+            "ingresar"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Asignar stock a sucursal",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "{\r\n  \"productoId\": 1,\r\n  \"sucursalId\": 1,\r\n  \"cantidad\": 20\r\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrlGateway}}/api/inventario/transferir",
+          "host": [
+            "{{baseUrlGateway}}"
+          ],
+          "path": [
+            "api",
+            "inventario",
+            "transferir"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Agregar producto a carrito",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "{\r\n  \"usuarioId\": 1,\r\n  \"productoId\": 1,\r\n  \"cantidad\": 2\r\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrlGateway}}/api/carrito",
+          "host": [
+            "{{baseUrlGateway}}"
+          ],
+          "path": [
+            "api",
+            "carrito"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Agregar direccion usuario",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "{\r\n  \"usuarioId\": 1,\r\n  \"calle\": \"Av. Providencia\",\r\n  \"numero\": \"1234\",\r\n  \"departamento\": \"Depto 501\",\r\n  \"ciudad\": \"Santiago\",\r\n  \"region\": \"Región Metropolitana\",\r\n  \"codigoPostal\": \"7500000\",\r\n  \"destinatario\": \"Juan Pérez\",\r\n  \"esPredeterminada\": true\r\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrlGateway}}/api/usuarios/direcciones/1",
+          "host": [
+            "{{baseUrlGateway}}"
+          ],
+          "path": [
+            "api",
+            "usuarios",
+            "direcciones",
+            "1"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Seleccionar metodo envio",
+      "request": {
+        "method": "PUT",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "// EL ID DE ARRIBA ES DEL USUARIO, POR EL CUAL SE HACE LA DETECCION DEL CARRITO\r\n// ID DEL METODO ENVIO PROVENIENTE DEL MICROSERVICIO DE LOGISTICA ENVIOS\r\n\r\n{\r\n  \"id\": 1\r\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrlGateway}}/api/carrito/1/envio",
+          "host": [
+            "{{baseUrlGateway}}"
+          ],
+          "path": [
+            "api",
+            "carrito",
+            "1",
+            "envio"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Seleccionar metodo pago",
+      "request": {
+        "method": "PUT",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "// EL ID DE ARRIBA ES DEL USUARIO, POR EL CUAL SE HACE LA DETECCION DEL CARRITO\r\n// ID PROVENIENTE DE LOS METODOS DE PAGOS DEL MICROSERVICIO PROCESO PAGO SERVICE\r\n\r\n{\r\n  \"id\": 1\r\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrlGateway}}/api/carrito/1/pago",
+          "host": [
+            "{{baseUrlGateway}}"
+          ],
+          "path": [
+            "api",
+            "carrito",
+            "1",
+            "pago"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "cerrar carrito",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "// ARRIBA ID DEL CLIENTE PARA CERRAR EL CARRITO Y RETORNA EL ID DEL CARRITO PARA POSTERIORMENTE GENERAR EL PEDIDO REFERENCIANDO A LOS ITEMS DEL CARRITO.\r\n\r\n// RETORNA CARRITO ID",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrlGateway}}/api/carrito/1/checkout",
+          "host": [
+            "{{baseUrlGateway}}"
+          ],
+          "path": [
+            "api",
+            "carrito",
+            "1",
+            "checkout"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Genera pedido (mediante carrito)",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "//clienteId = 1, carritoId = 1\r\n\r\n// UTILIZA LA DIRECCION PREDETERMINADA\r\n//{{baseUrlGateway}}/api/pedidos/generar/1/1\r\n\r\n// SIRVE PARA ELEGIR UNA DIRECCION QUE NO SEA LA PREDETERMINADA\r\n//query param {{baseUrlGateway}}/api/pedidos/generar/1/1?direccionEnvioId=1\r\n\r\n//EL METODO DE PAGO SE AGREGA AUTOMATICAMENTE DEL QUE ASIGNAMOS ANTERIORMENTE AL CARRITO",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrlGateway}}/api/pedidos/generar/1/1",
+          "host": [
+            "{{baseUrlGateway}}"
+          ],
+          "path": [
+            "api",
+            "pedidos",
+            "generar",
+            "1",
+            "1"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Revisar pedido",
+      "protocolProfileBehavior": {
+        "disableBodyPruning": true
+      },
+      "request": {
+        "method": "GET",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "// CAMBIAR ESTADO DE PEDIDO A ENVIADO\r\n// AL CAMBIAR EL ESTADO SE REFLEJA EN ENVIO SERVICE",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrlGateway}}/api/pedidos/4",
+          "host": [
+            "{{baseUrlGateway}}"
+          ],
+          "path": [
+            "api",
+            "pedidos",
+            "4"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Iniciar pago por pedido",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "//INICIA EL PAGO SEGUN EL ID DEL PEDIDO",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrlGateway}}/api/pagos/iniciar?pedidoId=1",
+          "host": [
+            "{{baseUrlGateway}}"
+          ],
+          "path": [
+            "api",
+            "pagos",
+            "iniciar"
+          ],
+          "query": [
+            {
+              "key": "pedidoId",
+              "value": "1"
+            }
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Aplicar descuento (opcional)",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "// transaccionId=1, cuponId=1",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrlGateway}}/api/pagos/1/cupon/1",
+          "host": [
+            "{{baseUrlGateway}}"
+          ],
+          "path": [
+            "api",
+            "pagos",
+            "1",
+            "cupon",
+            "1"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Confirmar pago (Transbank)",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "// TRANSACCION ID // CODIGO TRANSBANK",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrlGateway}}/api/pagos/8/transbank?token=TB-87A44603",
+          "host": [
+            "{{baseUrlGateway}}"
+          ],
+          "path": [
+            "api",
+            "pagos",
+            "8",
+            "transbank"
+          ],
+          "query": [
+            {
+              "key": "token",
+              "value": "TB-87A44603"
+            }
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Revisar pedido",
+      "protocolProfileBehavior": {
+        "disableBodyPruning": true
+      },
+      "request": {
+        "method": "GET",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "// CAMBIAR ESTADO DE PEDIDO A ENVIADO\r\n// AL CAMBIAR EL ESTADO SE REFLEJA EN ENVIO SERVICE",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrlGateway}}/api/pedidos/4",
+          "host": [
+            "{{baseUrlGateway}}"
+          ],
+          "path": [
+            "api",
+            "pedidos",
+            "4"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Actualizar estado",
+      "request": {
+        "method": "PUT",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "// CAMBIAR ESTADO DE PEDIDO A ENVIADO\r\n// AL CAMBIAR EL ESTADO SE REFLEJA EN ENVIO SERVICE\r\n\r\n// ID PEDIDO // ID ESTADO PEDIDO",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrlGateway}}/api/pedidos/4/estado/4",
+          "host": [
+            "{{baseUrlGateway}}"
+          ],
+          "path": [
+            "api",
+            "pedidos",
+            "4",
+            "estado",
+            "4"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Revisar pedido",
+      "protocolProfileBehavior": {
+        "disableBodyPruning": true
+      },
+      "request": {
+        "method": "GET",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "// CAMBIAR ESTADO DE PEDIDO A ENVIADO\r\n// AL CAMBIAR EL ESTADO SE REFLEJA EN ENVIO SERVICE",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrlGateway}}/api/pedidos/4",
+          "host": [
+            "{{baseUrlGateway}}"
+          ],
+          "path": [
+            "api",
+            "pedidos",
+            "4"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Consultar envio por id (pedido)",
+      "protocolProfileBehavior": {
+        "disableBodyPruning": true
+      },
+      "request": {
+        "method": "GET",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrlGateway}}/api/v1/logistica-envios/envios/pedido/4",
+          "host": [
+            "{{baseUrlGateway}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "logistica-envios",
+            "envios",
+            "pedido",
+            "4"
+          ]
+        }
+      },
+      "response": []
+    }
+  ],
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "packages": {},
+        "requests": {},
+        "exec": [
+          ""
+        ]
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "packages": {},
+        "requests": {},
+        "exec": [
+          ""
+        ]
+      }
+    }
+  ]
+}
