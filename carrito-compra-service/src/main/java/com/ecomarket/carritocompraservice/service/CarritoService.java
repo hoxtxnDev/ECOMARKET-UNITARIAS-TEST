@@ -134,11 +134,6 @@ public class CarritoService {
         return carritoRepository.findAll();
     }
 
-    public Long iniciarProcesoCompra(Long clienteId) {
-        Carrito carrito = obtenerCarritoActivo(clienteId);
-        return carrito.getId();
-    }
-
     public void cerrarCarrito(Long clienteId) {
         Carrito carrito = obtenerCarritoActivo(clienteId);
         carrito.setActivo(false);

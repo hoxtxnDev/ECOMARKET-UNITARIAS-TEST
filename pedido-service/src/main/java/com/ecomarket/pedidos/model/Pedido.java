@@ -21,6 +21,8 @@ public class Pedido {
     @Column(nullable = false)
     private Long clienteId;
 
+    private Long carritoId;
+
     @NotNull
     @PositiveOrZero
     private Double subtotal;

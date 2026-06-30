@@ -153,7 +153,7 @@ class SoporteControllerTest {
 
         private SoporteTicketRequestDTO dto() {
             SoporteTicketRequestDTO d = new SoporteTicketRequestDTO();
-            d.setClienteId(5L); d.setCategoriaId(1L);
+            d.setCategoriaId(1L);
             d.setAsunto("Problema con entrega"); d.setPedidoId(10L);
             return d;
         }
@@ -163,6 +163,7 @@ class SoporteControllerTest {
         void exitoso() throws Exception {
             when(soporteService.ingresarTicket(5L, 1L, "Problema con entrega", 10L)).thenReturn(ticket(1L));
             mvc.perform(post("/api/v1/soporte/ingresar-ticket")
+                            .header("X-User-Id", "5")
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(mapper.writeValueAsString(dto())))
                     .andExpect(status().isOk())
@@ -173,8 +174,8 @@ class SoporteControllerTest {
         @DisplayName("400 al faltar campos obligatorios")
         void invalido() throws Exception {
             SoporteTicketRequestDTO d = new SoporteTicketRequestDTO();
-            d.setClienteId(5L);
             mvc.perform(post("/api/v1/soporte/ingresar-ticket")
+                            .header("X-User-Id", "5")
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(mapper.writeValueAsString(d)))
                     .andExpect(status().isBadRequest());
@@ -186,6 +187,7 @@ class SoporteControllerTest {
             when(soporteService.ingresarTicket(anyLong(), anyLong(), anyString(), anyLong()))
                     .thenThrow(new NoExisteEnBdException("Cliente no existe."));
             mvc.perform(post("/api/v1/soporte/ingresar-ticket")
+                            .header("X-User-Id", "5")
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(mapper.writeValueAsString(dto())))
                     .andExpect(status().isNotFound());
@@ -197,6 +199,7 @@ class SoporteControllerTest {
             when(soporteService.ingresarTicket(anyLong(), anyLong(), anyString(), anyLong()))
                     .thenThrow(new PedidoClienteIncompatibleException("Pedido no compatible."));
             mvc.perform(post("/api/v1/soporte/ingresar-ticket")
+                            .header("X-User-Id", "5")
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(mapper.writeValueAsString(dto())))
                     .andExpect(status().isConflict());
@@ -316,9 +319,11 @@ class SoporteControllerTest {
             EstadoTicket resuelto = new EstadoTicket(); resuelto.setId(4L); resuelto.setNombre("RESUELTO");
             t.setEstado(resuelto); t.setFechaCierre(LocalDateTime.now());
 
-            when(soporteService.solucionarTicket(1L, "\"Se reenvió el paquete.\"")).thenReturn(t);
+            when(soporteService.solucionarTicket(1L, 7L, "\"Se reenvió el paquete.\"", true)).thenReturn(t);
 
             mvc.perform(patch("/api/v1/soporte/tickets/1/solucionar")
+                            .header("X-User-Id", 7L)
+                            .header("X-User-Roles", "ROLE_ADMIN")
                             .contentType(MediaType.APPLICATION_JSON)
                             .content("\"Se reenvió el paquete.\""))
                     .andExpect(status().isOk());
@@ -327,9 +332,11 @@ class SoporteControllerTest {
         @Test
         @DisplayName("PATCH ticket inexistente → 404")
         void ticketNoExiste() throws Exception {
-            when(soporteService.solucionarTicket(eq(99L), anyString()))
+            when(soporteService.solucionarTicket(eq(99L), anyLong(), anyString(), anyBoolean()))
                     .thenThrow(new NoExisteEnBdException("99 no existe."));
             mvc.perform(patch("/api/v1/soporte/tickets/99/solucionar")
+                            .header("X-User-Id", 7L)
+                            .header("X-User-Roles", "ROLE_ADMIN")
                             .contentType(MediaType.APPLICATION_JSON)
                             .content("\"Solución\""))
                     .andExpect(status().isNotFound());
@@ -359,14 +366,31 @@ class SoporteControllerTest {
     }
 
     @Nested
+    @DisplayName("cerrarTicket")
+    class CerrarTicket {
+
+        @Test
+        @DisplayName("PATCH /tickets/1/cerrar → 200")
+        void exitoso() throws Exception {
+            when(soporteService.cerrarTicket(1L, 5L, true, false)).thenReturn(ticket(1L));
+
+            mvc.perform(patch("/api/v1/soporte/tickets/1/cerrar")
+                            .header("X-User-Id", "5")
+                            .header("X-User-Roles", "ROLE_CLIENTE"))
+                    .andExpect(status().isOk());
+        }
+    }
+
+    @Nested
     @DisplayName("obtenerHistorialChat")
     class HistorialChat {
 
         @Test
         @DisplayName("GET /tickets/1/mensajes → 200 historial")
         void exitoso() throws Exception {
-            when(soporteService.obtenerHistorialChat(1L)).thenReturn(List.of(mensaje(1L), mensaje(2L)));
-            mvc.perform(get("/api/v1/soporte/tickets/1/mensajes"))
+            when(soporteService.obtenerHistorialChat(1L, false)).thenReturn(List.of(mensaje(1L), mensaje(2L)));
+            mvc.perform(get("/api/v1/soporte/tickets/1/mensajes")
+                            .header("X-User-Roles", "ROLE_SOPORTE"))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.length()").value(2));
         }
@@ -374,8 +398,9 @@ class SoporteControllerTest {
         @Test
         @DisplayName("GET /tickets/99/mensajes ticket inexistente → 404")
         void ticketNoExiste() throws Exception {
-            when(soporteService.obtenerHistorialChat(99L)).thenThrow(new NoExisteEnBdException("99 no existe."));
-            mvc.perform(get("/api/v1/soporte/tickets/99/mensajes"))
+            when(soporteService.obtenerHistorialChat(99L, false)).thenThrow(new NoExisteEnBdException("99 no existe."));
+            mvc.perform(get("/api/v1/soporte/tickets/99/mensajes")
+                            .header("X-User-Roles", "ROLE_SOPORTE"))
                     .andExpect(status().isNotFound());
         }
     }
@@ -386,16 +411,17 @@ class SoporteControllerTest {
 
         private MensajeChatRequestDTO dto() {
             MensajeChatRequestDTO d = new MensajeChatRequestDTO();
-            d.setTicketId(1L); d.setRemitenteId(5L);
-            d.setEsCliente(true); d.setContenido("Hola");
+            d.setTicketId(1L); d.setContenido("Hola");
             return d;
         }
 
         @Test
         @DisplayName("POST /enviar-mensaje-chat → 201")
         void exitoso() throws Exception {
-            when(soporteService.enviarMensajeChat(1L, 5L, true, "Hola")).thenReturn(mensaje(1L));
+            when(soporteService.enviarMensajeChat(1L, 5L, true, "Hola", false)).thenReturn(mensaje(1L));
             mvc.perform(post("/api/v1/soporte/enviar-mensaje-chat")
+                            .header("X-User-Id", "5")
+                            .header("X-User-Roles", "ROLE_CLIENTE")
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(mapper.writeValueAsString(dto())))
                     .andExpect(status().isCreated())
@@ -406,8 +432,10 @@ class SoporteControllerTest {
         @DisplayName("POST contenido vacío → 400")
         void invalido() throws Exception {
             MensajeChatRequestDTO d = new MensajeChatRequestDTO();
-            d.setTicketId(1L); d.setRemitenteId(5L); d.setEsCliente(true); d.setContenido("");
+            d.setTicketId(1L); d.setContenido("");
             mvc.perform(post("/api/v1/soporte/enviar-mensaje-chat")
+                            .header("X-User-Id", "5")
+                            .header("X-User-Roles", "ROLE_CLIENTE")
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(mapper.writeValueAsString(d)))
                     .andExpect(status().isBadRequest());

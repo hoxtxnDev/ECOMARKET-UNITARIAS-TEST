@@ -11,5 +11,7 @@ public interface MensajeChatRepository extends JpaRepository<MensajeChat, Long>{
     List<MensajeChat> findByTicketIdOrderByFechaEnvioAsc(Long ticketId);
 
     List<MensajeChat> findByRemitenteId(Long remitenteId);
+
+    List<MensajeChat> findByTicketIdAndEsClienteAndLeido(Long ticketId, Boolean esCliente, Boolean leido);
     
 }

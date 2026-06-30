@@ -14,7 +14,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.ecomarket.envioservice.dto.ActualizarEstadoRequestDTO;
 import com.ecomarket.envioservice.dto.CrearEnvioRequestDTO;
 import com.ecomarket.envioservice.dto.PlanificarRutaRequestDTO;
 import com.ecomarket.envioservice.dto.RegistrarRecepcionRequestDTO;
@@ -75,11 +74,11 @@ public class EnvioController {
         return envioService.consultarEstadoEnvio(id);
     }
 
-    @PatchMapping("envios/{id}/estado")
+    @PatchMapping("envios/{envioId}/estado/{estadoId}")
     public ResponseEntity<HistorialEnvio> actualizarEstado(
-            @PathVariable Long id,
-            @Valid @RequestBody ActualizarEstadoRequestDTO dto) {
-        HistorialEnvio historial = envioService.actualizarEstado(id, dto.getNuevoEstadoId(), dto.getObservacion());
+            @PathVariable Long envioId,
+            @PathVariable Long estadoId) {
+        HistorialEnvio historial = envioService.actualizarEstado(envioId, estadoId, null);
         return ResponseEntity.ok(historial);
     }
 

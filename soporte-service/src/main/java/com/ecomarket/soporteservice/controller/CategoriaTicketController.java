@@ -20,7 +20,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 
 
 @RestController
-@RequestMapping("api/v1/categoria-ticket")
+@RequestMapping("/api/v1/categoria-ticket")
 @RequiredArgsConstructor
 public class CategoriaTicketController {
      

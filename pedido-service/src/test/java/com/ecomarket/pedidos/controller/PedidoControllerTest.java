@@ -60,15 +60,16 @@ class PedidoControllerTest {
     }
 
     @Nested
-    @DisplayName("POST /generar/{clienteId}/{carritoId}")
+    @DisplayName("POST /generar")
     class GenerarPedido {
 
         @Test
-        @DisplayName("200 OK al generar pedido")
+        @DisplayName("200 OK al generar pedido sin dirección específica")
         void exitoso() throws Exception {
-            when(pedidoService.generarPedidoDesdeCarrito(eq(5L), eq(1L), any())).thenReturn(pedido(1L));
+            when(pedidoService.generarPedidoDesdeCarrito(eq(5L), isNull())).thenReturn(pedido(1L));
 
-            mvc.perform(post("/api/pedidos/generar/5/1"))
+            mvc.perform(post("/api/pedidos/generar")
+                    .header("X-User-Id", "5"))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.id").value(1))
                     .andExpect(jsonPath("$.clienteId").value(5))
@@ -76,12 +77,24 @@ class PedidoControllerTest {
         }
 
         @Test
+        @DisplayName("200 OK al generar pedido con dirección específica")
+        void exitosoConDireccion() throws Exception {
+            when(pedidoService.generarPedidoDesdeCarrito(eq(5L), eq(10L))).thenReturn(pedido(1L));
+
+            mvc.perform(post("/api/pedidos/generar/10")
+                    .header("X-User-Id", "5"))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.id").value(1));
+        }
+
+        @Test
         @DisplayName("400 si el carrito está vacío")
         void carritoVacio() throws Exception {
-            when(pedidoService.generarPedidoDesdeCarrito(eq(5L), eq(1L), any()))
+            when(pedidoService.generarPedidoDesdeCarrito(eq(5L), isNull()))
                     .thenThrow(new RuntimeException("El carrito está vacío o no existe."));
 
-            mvc.perform(post("/api/pedidos/generar/5/1"))
+            mvc.perform(post("/api/pedidos/generar")
+                    .header("X-User-Id", "5"))
                     .andExpect(status().isBadRequest());
         }
     }
@@ -153,7 +166,8 @@ class PedidoControllerTest {
         void exitoso() throws Exception {
             when(pedidoService.obtenerHistorialCliente(5L)).thenReturn(List.of(pedido(1L)));
 
-            mvc.perform(get("/api/pedidos/cliente/5"))
+            mvc.perform(get("/api/pedidos/cliente/5")
+                    .header("X-User-Id", "5"))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$[0].id").value(1))
                     .andExpect(jsonPath("$[0].clienteId").value(5));
@@ -164,7 +178,8 @@ class PedidoControllerTest {
         void sinPedidos() throws Exception {
             when(pedidoService.obtenerHistorialCliente(99L)).thenReturn(List.of());
 
-            mvc.perform(get("/api/pedidos/cliente/99"))
+            mvc.perform(get("/api/pedidos/cliente/99")
+                    .header("X-User-Id", "99"))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$").isEmpty());
         }

@@ -35,12 +35,18 @@ public class PedidoService {
 
     @SuppressWarnings("unchecked")
     @Transactional
-    public Pedido generarPedidoDesdeCarrito(Long clienteId, Long carritoId, Long direccionEnvioId) {
+    public Pedido generarPedidoDesdeCarrito(Long clienteId, Long direccionEnvioId) {
         registroUsuariosClient.obtenerUsuario(clienteId);
 
         CarritoDTO carrito = carritoCompraClient.obtenerCarrito(clienteId);
         if (carrito == null || carrito.getItems() == null || carrito.getItems().isEmpty()) {
             throw new NoExisteEnBdException("El carrito del cliente " + clienteId + " está vacío.");
+        }
+        if (carrito.getMetodoPagoId() == null) {
+            throw new NoExisteEnBdException("Debe seleccionar un método de pago antes de generar el pedido.");
+        }
+        if (carrito.getMetodoEnvioId() == null) {
+            throw new NoExisteEnBdException("Debe seleccionar un método de envío antes de generar el pedido.");
         }
 
         Long finalDireccionId = direccionEnvioId;
@@ -66,6 +72,7 @@ public class PedidoService {
 
         Pedido pedido = Pedido.builder()
                 .clienteId(clienteId)
+                .carritoId(carrito.getId())
                 .direccionEnvioId(finalDireccionId)
                 .metodoPagoId(carrito.getMetodoPagoId())
                 .subtotal(carrito.getSubtotal())
@@ -145,5 +152,17 @@ public class PedidoService {
         
         pedido.setEstado(estado);
         return pedidoRepository.save(pedido);
+    }
+
+    @Transactional
+    public void actualizarEstadoPorEnvio(Long pedidoId, String estadoEnvioNombre) {
+        String estadoPedidoNombre = switch (estadoEnvioNombre.toLowerCase().replace("ó", "o")) {
+            case "en_transito", "en_tránsito" -> "EN_TRANSITO";
+            case "entregado" -> "ENTREGADO";
+            default -> null;
+        };
+        if (estadoPedidoNombre != null) {
+            actualizarEstadoPorNombre(pedidoId, estadoPedidoNombre);
+        }
     }
 }

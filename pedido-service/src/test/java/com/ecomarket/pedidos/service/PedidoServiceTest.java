@@ -57,6 +57,8 @@ class PedidoServiceTest {
                 .id(1L)
                 .clienteId(5L)
                 .subtotal(50000.0)
+                .metodoPagoId(1L)
+                .metodoEnvioId(1L)
                 .items(List.of(item))
                 .build();
     }
@@ -65,6 +67,7 @@ class PedidoServiceTest {
         return Pedido.builder()
                 .id(id)
                 .clienteId(5L)
+                .carritoId(1L)
                 .direccionEnvioId(100L)
                 .subtotal(50000.0)
                 .total(50000.0)
@@ -91,10 +94,11 @@ class PedidoServiceTest {
                 return p;
             });
 
-            Pedido resultado = service.generarPedidoDesdeCarrito(5L, 1L, 100L);
+            Pedido resultado = service.generarPedidoDesdeCarrito(5L, 100L);
 
             assertThat(resultado.getId()).isEqualTo(1L);
             assertThat(resultado.getClienteId()).isEqualTo(5L);
+            assertThat(resultado.getCarritoId()).isEqualTo(1L);
             assertThat(resultado.getDireccionEnvioId()).isEqualTo(100L);
             assertThat(resultado.getSubtotal()).isEqualTo(50000.0);
             assertThat(resultado.getEstado().getNombre()).isEqualTo("PENDIENTE");
@@ -116,7 +120,7 @@ class PedidoServiceTest {
             CarritoDTO vacio = CarritoDTO.builder().items(List.of()).build();
             when(carritoCompraClient.obtenerCarrito(5L)).thenReturn(vacio);
 
-            assertThatThrownBy(() -> service.generarPedidoDesdeCarrito(5L, 1L, 100L))
+            assertThatThrownBy(() -> service.generarPedidoDesdeCarrito(5L, 100L))
                     .isInstanceOf(NoExisteEnBdException.class)
                     .hasMessageContaining("vacío");
         }
@@ -127,7 +131,7 @@ class PedidoServiceTest {
             when(registroUsuariosClient.obtenerUsuario(5L)).thenReturn(new PerfilUsuarioDTO());
             when(carritoCompraClient.obtenerCarrito(5L)).thenReturn(null);
 
-            assertThatThrownBy(() -> service.generarPedidoDesdeCarrito(5L, 1L, 100L))
+            assertThatThrownBy(() -> service.generarPedidoDesdeCarrito(5L, 100L))
                     .isInstanceOf(NoExisteEnBdException.class)
                     .hasMessageContaining("vacío");
         }
@@ -139,9 +143,43 @@ class PedidoServiceTest {
             CarritoDTO carrito = CarritoDTO.builder().items(null).build();
             when(carritoCompraClient.obtenerCarrito(5L)).thenReturn(carrito);
 
-            assertThatThrownBy(() -> service.generarPedidoDesdeCarrito(5L, 1L, 100L))
+            assertThatThrownBy(() -> service.generarPedidoDesdeCarrito(5L, 100L))
                     .isInstanceOf(NoExisteEnBdException.class)
                     .hasMessageContaining("vacío");
+        }
+
+        @Test
+        @DisplayName("lanza excepción si el carrito no tiene método de pago")
+        void carritoSinMetodoPago() {
+            when(registroUsuariosClient.obtenerUsuario(5L)).thenReturn(new PerfilUsuarioDTO());
+            CarritoDTO sinPago = CarritoDTO.builder()
+                    .id(1L)
+                    .clienteId(5L)
+                    .items(List.of(ItemCarritoDTO.builder().productoId(100L).cantidad(1).precioUnitarioAgregado(1000.0).build()))
+                    .metodoEnvioId(1L)
+                    .build();
+            when(carritoCompraClient.obtenerCarrito(5L)).thenReturn(sinPago);
+
+            assertThatThrownBy(() -> service.generarPedidoDesdeCarrito(5L, 100L))
+                    .isInstanceOf(NoExisteEnBdException.class)
+                    .hasMessageContaining("método de pago");
+        }
+
+        @Test
+        @DisplayName("lanza excepción si el carrito no tiene método de envío")
+        void carritoSinMetodoEnvio() {
+            when(registroUsuariosClient.obtenerUsuario(5L)).thenReturn(new PerfilUsuarioDTO());
+            CarritoDTO sinEnvio = CarritoDTO.builder()
+                    .id(1L)
+                    .clienteId(5L)
+                    .items(List.of(ItemCarritoDTO.builder().productoId(100L).cantidad(1).precioUnitarioAgregado(1000.0).build()))
+                    .metodoPagoId(1L)
+                    .build();
+            when(carritoCompraClient.obtenerCarrito(5L)).thenReturn(sinEnvio);
+
+            assertThatThrownBy(() -> service.generarPedidoDesdeCarrito(5L, 100L))
+                    .isInstanceOf(NoExisteEnBdException.class)
+                    .hasMessageContaining("método de envío");
         }
 
         @Test
@@ -152,7 +190,7 @@ class PedidoServiceTest {
             when(catalogoInventarioClient.obtenerProducto(100L)).thenReturn(null);
             when(estadoPedidoRepository.findById(1L)).thenReturn(Optional.empty());
 
-            assertThatThrownBy(() -> service.generarPedidoDesdeCarrito(5L, 1L, 100L))
+            assertThatThrownBy(() -> service.generarPedidoDesdeCarrito(5L, 100L))
                     .isInstanceOf(NoExisteEnBdException.class)
                     .hasMessageContaining("estado inicial");
         }
@@ -173,7 +211,7 @@ class PedidoServiceTest {
             when(restTemplate.getForObject(anyString(), eq(Map.class)))
                     .thenReturn(Map.of("id", 200));
 
-            Pedido resultado = service.generarPedidoDesdeCarrito(5L, 1L, null);
+            Pedido resultado = service.generarPedidoDesdeCarrito(5L, null);
 
             assertThat(resultado.getDireccionEnvioId()).isEqualTo(200L);
             verify(restTemplate).getForObject(anyString(), eq(Map.class));
@@ -187,7 +225,7 @@ class PedidoServiceTest {
             when(restTemplate.getForObject(anyString(), eq(Map.class)))
                     .thenReturn(Map.of());
 
-            assertThatThrownBy(() -> service.generarPedidoDesdeCarrito(5L, 1L, null))
+            assertThatThrownBy(() -> service.generarPedidoDesdeCarrito(5L, null))
                     .isInstanceOf(NoExisteEnBdException.class)
                     .hasMessageContaining("dirección predeterminada");
         }
@@ -200,7 +238,7 @@ class PedidoServiceTest {
             when(restTemplate.getForObject(anyString(), eq(Map.class)))
                     .thenThrow(new RuntimeException("Timeout"));
 
-            assertThatThrownBy(() -> service.generarPedidoDesdeCarrito(5L, 1L, null))
+            assertThatThrownBy(() -> service.generarPedidoDesdeCarrito(5L, null))
                     .isInstanceOf(NoExisteEnBdException.class)
                     .hasMessageContaining("dirección predeterminada");
         }
@@ -213,7 +251,7 @@ class PedidoServiceTest {
             when(restTemplate.getForObject(anyString(), eq(Map.class)))
                     .thenReturn(null);
 
-            assertThatThrownBy(() -> service.generarPedidoDesdeCarrito(5L, 1L, null))
+            assertThatThrownBy(() -> service.generarPedidoDesdeCarrito(5L, null))
                     .isInstanceOf(NoExisteEnBdException.class)
                     .hasMessageContaining("dirección predeterminada");
         }

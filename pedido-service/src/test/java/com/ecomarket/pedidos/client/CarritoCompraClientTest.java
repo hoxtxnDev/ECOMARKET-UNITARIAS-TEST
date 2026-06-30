@@ -10,6 +10,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.web.client.HttpClientErrorException;
@@ -46,7 +48,11 @@ class CarritoCompraClientTest {
                     .id(1L).clienteId(5L).subtotal(50000.0)
                     .items(List.of(ItemCarritoDTO.builder().productoId(100L).cantidad(2).precioUnitarioAgregado(25000.0).build()))
                     .build();
-            when(restTemplate.getForEntity("http://localhost:8082/api/carrito/5", CarritoDTO.class))
+            when(restTemplate.exchange(
+                    eq("http://localhost:8082/api/carrito/activo"),
+                    eq(HttpMethod.GET),
+                    any(HttpEntity.class),
+                    eq(CarritoDTO.class)))
                     .thenReturn(ResponseEntity.ok(expected));
 
             CarritoDTO result = client.obtenerCarrito(5L);
@@ -58,7 +64,11 @@ class CarritoCompraClientTest {
         @Test
         @DisplayName("lanza NoExisteEnBdException cuando falla la llamada")
         void cuandoFalla() {
-            when(restTemplate.getForEntity("http://localhost:8082/api/carrito/999", CarritoDTO.class))
+            when(restTemplate.exchange(
+                    eq("http://localhost:8082/api/carrito/activo"),
+                    eq(HttpMethod.GET),
+                    any(HttpEntity.class),
+                    eq(CarritoDTO.class)))
                     .thenThrow(mock(HttpClientErrorException.class));
 
             assertThrows(NoExisteEnBdException.class, () -> client.obtenerCarrito(999L));
@@ -74,7 +84,11 @@ class CarritoCompraClientTest {
         void exitoso() {
             client.vaciarCarrito(5L);
 
-            verify(restTemplate).delete("http://localhost:8082/api/carrito/5/vaciar");
+            verify(restTemplate).exchange(
+                    eq("http://localhost:8082/api/carrito/vaciar"),
+                    eq(HttpMethod.DELETE),
+                    any(HttpEntity.class),
+                    eq(Void.class));
         }
     }
 
@@ -87,13 +101,23 @@ class CarritoCompraClientTest {
         void exitoso() {
             client.cerrarCarrito(5L);
 
-            verify(restTemplate).put("http://localhost:8082/api/carrito/5/cerrar", null);
+            verify(restTemplate).exchange(
+                    eq("http://localhost:8082/api/carrito/cerrar"),
+                    eq(HttpMethod.PUT),
+                    any(HttpEntity.class),
+                    eq(Void.class));
         }
 
         @Test
         @DisplayName("tolera error y no lanza excepción")
         void toleraError() {
-            doThrow(new RuntimeException("Connection refused")).when(restTemplate).put(anyString(), any());
+            doThrow(new RuntimeException("Connection refused"))
+                    .when(restTemplate)
+                    .exchange(
+                            eq("http://localhost:8082/api/carrito/cerrar"),
+                            eq(HttpMethod.PUT),
+                            any(HttpEntity.class),
+                            eq(Void.class));
 
             assertDoesNotThrow(() -> client.cerrarCarrito(5L));
         }

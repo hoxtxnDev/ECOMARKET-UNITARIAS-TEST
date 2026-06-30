@@ -1,5 +1,6 @@
 package com.ecomarket.carritocompraservice.dto;
 
+import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -8,7 +9,10 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class AnadirProductoRequestDTO {
-    private Long usuarioId;
+
+    @NotNull
     private Long productoId;
+
+    @NotNull
     private Integer cantidad;
 }

@@ -15,6 +15,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -190,13 +192,13 @@ class SoporteServiceTest {
         @Test
         @DisplayName("delega y retorna el mensaje enviado")
         void delegaCorrectamente() {
-            when(mensajeChatService.enviarMensajeChat(1L, 5L, true, "Hola")).thenReturn(mensaje());
+            when(mensajeChatService.enviarMensajeChat(1L, 5L, true, "Hola", false)).thenReturn(mensaje());
 
-            MensajeChat resultado = service.enviarMensajeChat(1L, 5L, true, "Hola");
+            MensajeChat resultado = service.enviarMensajeChat(1L, 5L, true, "Hola", false);
 
             assertThat(resultado.getContenido()).isEqualTo("Hola");
             assertThat(resultado.getLeido()).isFalse();
-            verify(mensajeChatService).enviarMensajeChat(1L, 5L, true, "Hola");
+            verify(mensajeChatService).enviarMensajeChat(1L, 5L, true, "Hola", false);
         }
     }
 
@@ -209,21 +211,21 @@ class SoporteServiceTest {
     class HistorialChat {
 
         @Test
-        @DisplayName("delega y retorna el historial del ticket")
+        @DisplayName("delega y retorna el historial del ticket (visto por soporte)")
         void delegaCorrectamente() {
-            when(mensajeChatService.obtenerHistorialChat(1L)).thenReturn(List.of(mensaje()));
+            when(mensajeChatService.obtenerHistorialChat(1L, false)).thenReturn(List.of(mensaje()));
 
-            List<MensajeChat> resultado = service.obtenerHistorialChat(1L);
+            List<MensajeChat> resultado = service.obtenerHistorialChat(1L, false);
 
             assertThat(resultado).hasSize(1);
-            verify(mensajeChatService).obtenerHistorialChat(1L);
+            verify(mensajeChatService).obtenerHistorialChat(1L, false);
         }
 
         @Test
-        @DisplayName("retorna lista vacía si no hay mensajes")
+        @DisplayName("retorna lista vacía si no hay mensajes (visto por cliente)")
         void retornaVacio() {
-            when(mensajeChatService.obtenerHistorialChat(99L)).thenReturn(List.of());
-            assertThat(service.obtenerHistorialChat(99L)).isEmpty();
+            when(mensajeChatService.obtenerHistorialChat(99L, true)).thenReturn(List.of());
+            assertThat(service.obtenerHistorialChat(99L, true)).isEmpty();
         }
     }
 
@@ -236,22 +238,146 @@ class SoporteServiceTest {
     class SolucionarTicket {
 
         @Test
-        @DisplayName("delega y retorna el ticket con solución y estado RESUELTO")
-        void delegaCorrectamente() {
+        @DisplayName("delega y retorna el ticket con solución, mensaje y estado RESUELTO (admin)")
+        void delegaCorrectamenteAdmin() {
             TicketSoporte t = ticket();
+            t.setEmpleadoAsignadoId(7L);
             EstadoTicket resuelto = new EstadoTicket(); resuelto.setId(4L); resuelto.setNombre("RESUELTO");
             t.setEstado(resuelto);
             t.setSolucionResumen("Se reenvió el paquete.");
             t.setFechaCierre(LocalDateTime.now());
+            MensajeChat m = mensaje();
+            m.setContenido("Se reenvió el paquete.");
 
+            when(ticketSoporteService.findTicketById(1L)).thenReturn(t);
             when(ticketSoporteService.solucionarTicket(1L, "Se reenvió el paquete.")).thenReturn(t);
+            when(mensajeChatService.enviarMensajeChat(1L, 7L, false, "Se reenvió el paquete.", true)).thenReturn(m);
 
-            TicketSoporte resultado = service.solucionarTicket(1L, "Se reenvió el paquete.");
+            TicketSoporte resultado = service.solucionarTicket(1L, 7L, "Se reenvió el paquete.", true);
 
             assertThat(resultado.getSolucionResumen()).isEqualTo("Se reenvió el paquete.");
             assertThat(resultado.getEstado().getNombre()).isEqualTo("RESUELTO");
             assertThat(resultado.getFechaCierre()).isNotNull();
+            verify(ticketSoporteService).findTicketById(1L);
             verify(ticketSoporteService).solucionarTicket(1L, "Se reenvió el paquete.");
+            verify(mensajeChatService).enviarMensajeChat(1L, 7L, false, "Se reenvió el paquete.", true);
+        }
+
+        @Test
+        @DisplayName("delega y retorna cuando el empleado asignado resuelve su ticket")
+        void delegaCorrectamenteEmpleadoAsignado() {
+            TicketSoporte t = ticket();
+            t.setEmpleadoAsignadoId(7L);
+            EstadoTicket resuelto = new EstadoTicket(); resuelto.setId(4L); resuelto.setNombre("RESUELTO");
+            t.setEstado(resuelto);
+            t.setSolucionResumen("Listo.");
+            t.setFechaCierre(LocalDateTime.now());
+            MensajeChat m = mensaje();
+            m.setContenido("Listo.");
+
+            when(ticketSoporteService.findTicketById(1L)).thenReturn(t);
+            when(ticketSoporteService.solucionarTicket(1L, "Listo.")).thenReturn(t);
+            when(mensajeChatService.enviarMensajeChat(1L, 7L, false, "Listo.", true)).thenReturn(m);
+
+            TicketSoporte resultado = service.solucionarTicket(1L, 7L, "Listo.", false);
+
+            assertThat(resultado.getSolucionResumen()).isEqualTo("Listo.");
+            verify(ticketSoporteService).findTicketById(1L);
+            verify(ticketSoporteService).solucionarTicket(1L, "Listo.");
+        }
+
+        @Test
+        @DisplayName("lanza 403 cuando soporte no asignado intenta resolver")
+        void lanzaExcepcionNoAsignado() {
+            TicketSoporte t = ticket();
+            t.setEmpleadoAsignadoId(99L);
+
+            when(ticketSoporteService.findTicketById(1L)).thenReturn(t);
+
+            assertThatThrownBy(() -> service.solucionarTicket(1L, 7L, "Solución", false))
+                    .isInstanceOf(ResponseStatusException.class)
+                    .hasFieldOrPropertyWithValue("status", HttpStatus.FORBIDDEN);
+
+            verify(ticketSoporteService, never()).solucionarTicket(anyLong(), anyString());
+            verify(mensajeChatService, never()).enviarMensajeChat(anyLong(), anyLong(), anyBoolean(), anyString(), anyBoolean());
+        }
+    }
+
+    // ═════════════════════════════════════════════════════════════════════════
+    // cerrarTicket
+    // ═════════════════════════════════════════════════════════════════════════
+
+    @Nested
+    @DisplayName("cerrarTicket")
+    class CerrarTicket {
+
+        @Test
+        @DisplayName("cierra ticket cuando el cliente es dueno")
+        void cierraTicketClienteDueno() {
+            TicketSoporte t = ticket();
+            t.setEmpleadoAsignadoId(7L);
+            when(ticketSoporteService.findTicketById(1L)).thenReturn(t);
+            when(ticketSoporteService.cerrarTicket(1L)).thenReturn(t);
+
+            TicketSoporte resultado = service.cerrarTicket(1L, 5L, true, false);
+
+            assertThat(resultado).isNotNull();
+            verify(ticketSoporteService).findTicketById(1L);
+            verify(ticketSoporteService).cerrarTicket(1L);
+        }
+
+        @Test
+        @DisplayName("lanza 403 cuando cliente intenta cerrar ticket ajeno")
+        void lanzaExcepcionClienteAjeno() {
+            TicketSoporte t = ticket();
+            when(ticketSoporteService.findTicketById(1L)).thenReturn(t);
+
+            assertThatThrownBy(() -> service.cerrarTicket(1L, 99L, true, false))
+                    .isInstanceOf(ResponseStatusException.class)
+                    .hasFieldOrPropertyWithValue("status", HttpStatus.FORBIDDEN);
+
+            verify(ticketSoporteService, never()).cerrarTicket(anyLong());
+        }
+
+        @Test
+        @DisplayName("empleado asignado puede cerrar ticket")
+        void empleadoAsignadoCierraTicket() {
+            TicketSoporte t = ticket();
+            t.setEmpleadoAsignadoId(7L);
+            when(ticketSoporteService.findTicketById(1L)).thenReturn(t);
+            when(ticketSoporteService.cerrarTicket(1L)).thenReturn(t);
+
+            TicketSoporte resultado = service.cerrarTicket(1L, 7L, false, false);
+
+            assertThat(resultado).isNotNull();
+            verify(ticketSoporteService).cerrarTicket(1L);
+        }
+
+        @Test
+        @DisplayName("lanza 403 cuando soporte no asignado intenta cerrar")
+        void lanzaExcepcionNoAsignado() {
+            TicketSoporte t = ticket();
+            t.setEmpleadoAsignadoId(99L);
+            when(ticketSoporteService.findTicketById(1L)).thenReturn(t);
+
+            assertThatThrownBy(() -> service.cerrarTicket(1L, 7L, false, false))
+                    .isInstanceOf(ResponseStatusException.class)
+                    .hasFieldOrPropertyWithValue("status", HttpStatus.FORBIDDEN);
+
+            verify(ticketSoporteService, never()).cerrarTicket(anyLong());
+        }
+
+        @Test
+        @DisplayName("admin puede cerrar cualquier ticket")
+        void adminCierraCualquierTicket() {
+            TicketSoporte t = ticket();
+            when(ticketSoporteService.findTicketById(1L)).thenReturn(t);
+            when(ticketSoporteService.cerrarTicket(1L)).thenReturn(t);
+
+            TicketSoporte resultado = service.cerrarTicket(1L, 7L, false, true);
+
+            assertThat(resultado).isNotNull();
+            verify(ticketSoporteService).cerrarTicket(1L);
         }
     }
 

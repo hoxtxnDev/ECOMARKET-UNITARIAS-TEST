@@ -1,6 +1,7 @@
 package com.horacio.ecomarket.usuarios.controller;
 
 import tools.jackson.databind.ObjectMapper;
+import com.horacio.ecomarket.usuarios.dto.CrearDireccionRequest;
 import com.horacio.ecomarket.usuarios.exception.RecursoNoEncontradoException;
 import com.horacio.ecomarket.usuarios.model.Direccion;
 import com.horacio.ecomarket.usuarios.service.DireccionService;
@@ -62,14 +63,39 @@ class DireccionControllerTest {
     @DisplayName("agregar")
     class Agregar {
 
+        private CrearDireccionRequest crearRequest() {
+            CrearDireccionRequest req = new CrearDireccionRequest();
+            req.setCalle("Av. Principal");
+            req.setNumero("123");
+            req.setCiudad("Santiago");
+            req.setRegion("Metropolitana");
+            req.setDestinatario("Juan Pérez");
+            req.setEsPredeterminada(false);
+            return req;
+        }
+
         @Test
-        @DisplayName("201 CREATED al agregar dirección con datos válidos")
+        @DisplayName("200 OK al agregar dirección desde X-User-Id header")
         void agregarExitoso() throws Exception {
+            when(direccionService.agregarDireccion(eq(10L), any(Direccion.class))).thenReturn(direccionBase);
+
+            mockMvc.perform(post("/api/usuarios/direcciones")
+                    .header("X-User-Id", "10")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(json(crearRequest())))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.id").value(1))
+                    .andExpect(jsonPath("$.calle").value("Av. Principal"));
+        }
+
+        @Test
+        @DisplayName("200 OK al agregar dirección como admin con path userId")
+        void agregarAdminExitoso() throws Exception {
             when(direccionService.agregarDireccion(eq(10L), any(Direccion.class))).thenReturn(direccionBase);
 
             mockMvc.perform(post("/api/usuarios/direcciones/10")
                     .contentType(MediaType.APPLICATION_JSON)
-                    .content(json(direccionBase)))
+                    .content(json(crearRequest())))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.id").value(1))
                     .andExpect(jsonPath("$.calle").value("Av. Principal"));

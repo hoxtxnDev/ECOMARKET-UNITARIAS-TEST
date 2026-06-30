@@ -10,9 +10,11 @@ import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+
 
 import com.ecomarket.soporteservice.dto.MensajeChatRequestDTO;
 import com.ecomarket.soporteservice.dto.NotificacionRequestDTO;
@@ -50,9 +52,11 @@ public class SoporteController {
     }
 
     @PostMapping("ingresar-ticket")
-    public ResponseEntity<TicketSoporte> ingresarTicket(@Valid @RequestBody SoporteTicketRequestDTO dto) throws Exception {
+    public ResponseEntity<TicketSoporte> ingresarTicket(
+            @RequestHeader("X-User-Id") Long clienteId,
+            @Valid @RequestBody SoporteTicketRequestDTO dto) throws Exception {
         TicketSoporte ticket = soporteService.ingresarTicket(
-            dto.getClienteId(), dto.getCategoriaId(), dto.getAsunto(), dto.getPedidoId());
+            clienteId, dto.getCategoriaId(), dto.getAsunto(), dto.getPedidoId());
         return ResponseEntity.ok(ticket);
     }
 
@@ -90,8 +94,12 @@ public class SoporteController {
 
     @PatchMapping("tickets/{id}/solucionar")
     public ResponseEntity<TicketSoporte> solucionarTicket(
-            @PathVariable Long id, @RequestBody String solucionResumen) {
-        TicketSoporte ticket = soporteService.solucionarTicket(id, solucionResumen);
+            @PathVariable Long id,
+            @RequestHeader("X-User-Id") Long remitenteId,
+            @RequestHeader("X-User-Roles") String roles,
+            @RequestBody String solucionResumen) {
+        boolean esAdmin = roles.contains("ROLE_ADMIN");
+        TicketSoporte ticket = soporteService.solucionarTicket(id, remitenteId, solucionResumen, esAdmin);
         return ResponseEntity.ok(ticket);
     }
 
@@ -101,15 +109,34 @@ public class SoporteController {
         return ResponseEntity.ok("El ticket con id " + id + " ha sido eliminado con exito.");
     }
 
+    @PatchMapping("tickets/{id}/cerrar")
+    public ResponseEntity<TicketSoporte> cerrarTicket(
+            @PathVariable Long id,
+            @RequestHeader("X-User-Id") Long remitenteId,
+            @RequestHeader("X-User-Roles") String roles) {
+        boolean esCliente = roles.contains("ROLE_CLIENTE");
+        boolean esAdmin = roles.contains("ROLE_ADMIN");
+        TicketSoporte ticket = soporteService.cerrarTicket(id, remitenteId, esCliente, esAdmin);
+        return ResponseEntity.ok(ticket);
+    }
+
     @GetMapping("tickets/{id}/mensajes")
-    public List<MensajeChat> obtenerHistorialChat(@PathVariable Long id) {
-        return soporteService.obtenerHistorialChat(id);
+    public List<MensajeChat> obtenerHistorialChat(
+            @PathVariable Long id,
+            @RequestHeader("X-User-Roles") String roles) {
+        boolean viewerEsCliente = roles.contains("ROLE_CLIENTE");
+        return soporteService.obtenerHistorialChat(id, viewerEsCliente);
     }
 
     @PostMapping("enviar-mensaje-chat")
-    public ResponseEntity<MensajeChat> enviarMensajeChat(@Valid @RequestBody MensajeChatRequestDTO dto) {
+    public ResponseEntity<MensajeChat> enviarMensajeChat(
+            @RequestHeader("X-User-Id") Long remitenteId,
+            @RequestHeader("X-User-Roles") String roles,
+            @Valid @RequestBody MensajeChatRequestDTO dto) {
+        boolean esCliente = roles.contains("ROLE_CLIENTE");
+        boolean esAdmin = roles.contains("ROLE_ADMIN");
         MensajeChat mensaje = soporteService.enviarMensajeChat(
-            dto.getTicketId(), dto.getRemitenteId(), dto.getEsCliente(), dto.getContenido());
+            dto.getTicketId(), remitenteId, esCliente, dto.getContenido(), esAdmin);
         return ResponseEntity.status(201).body(mensaje);
     }
 

@@ -14,7 +14,7 @@
         "header": [],
         "body": {
           "mode": "raw",
-          "raw": "{\r\n  \"nombre\": \"Juan Pérez\",\r\n  \"correo\": \"juan@example.com\",\r\n  \"contrasenaInicial\": \"MiPassword123\",\r\n  \"telefono\": \"+56912345678\",\r\n  \"rolId\": 2,\r\n  \"estadoPerfilId\": 1\r\n}",
+          "raw": "{\r\n  \"nombre\": \"pendejo\",\r\n  \"correo\": \"pendejo@example.com\",\r\n  \"contrasenaInicial\": \"MiPassword123\",\r\n  \"telefono\": \"+56931771971\",\r\n  \"rolId\": 1,\r\n  \"estadoPerfilId\": 1\r\n}",
           "options": {
             "raw": {
               "language": "json"
@@ -71,7 +71,7 @@
         "header": [],
         "body": {
           "mode": "raw",
-          "raw": "{\r\n  \"correo\": \"juan@example.com\",\r\n  \"contrasena\": \"MiPassword123\"\r\n}",
+          "raw": "{\r\n  \"correo\": \"admin@example.com\",\r\n  \"contrasena\": \"MiPassword123\"\r\n}",
           "options": {
             "raw": {
               "language": "json"
@@ -121,7 +121,7 @@
       "response": []
     },
     {
-      "name": "Crear producto",
+      "name": "Crear producto (admin)",
       "request": {
         "method": "POST",
         "header": [],
@@ -148,7 +148,7 @@
       "response": []
     },
     {
-      "name": "Asignar stock tienda online",
+      "name": "Asignar stock tienda online (admin)",
       "request": {
         "method": "POST",
         "header": [],
@@ -176,7 +176,7 @@
       "response": []
     },
     {
-      "name": "Asignar stock a sucursal",
+      "name": "Asignar stock a sucursal  (admin)",
       "request": {
         "method": "POST",
         "header": [],
@@ -204,13 +204,41 @@
       "response": []
     },
     {
+      "name": "Agregar direccion usuario",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "// ADMIN: {{baseUrlGateway}}/api/usuarios/direcciones/{usuarioId}\r\n// CLIENTE: {{baseUrlGateway}}/api/usuarios/direcciones \r\n{\r\n  \"calle\": \"Av. Providencia\",\r\n  \"numero\": \"1234\",\r\n  \"departamento\": \"Depto 501\",\r\n  \"ciudad\": \"Santiago\",\r\n  \"region\": \"Región Metropolitana\",\r\n  \"codigoPostal\": \"7500000\",\r\n  \"destinatario\": \"Juan Pérez\",\r\n  \"esPredeterminada\": true\r\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrlGateway}}/api/usuarios/direcciones",
+          "host": [
+            "{{baseUrlGateway}}"
+          ],
+          "path": [
+            "api",
+            "usuarios",
+            "direcciones"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
       "name": "Agregar producto a carrito",
       "request": {
         "method": "POST",
         "header": [],
         "body": {
           "mode": "raw",
-          "raw": "{\r\n  \"usuarioId\": 1,\r\n  \"productoId\": 1,\r\n  \"cantidad\": 2\r\n}",
+          "raw": "{\r\n  \"productoId\": 1,\r\n  \"cantidad\": 2\r\n}",
           "options": {
             "raw": {
               "language": "json"
@@ -225,35 +253,6 @@
           "path": [
             "api",
             "carrito"
-          ]
-        }
-      },
-      "response": []
-    },
-    {
-      "name": "Agregar direccion usuario",
-      "request": {
-        "method": "POST",
-        "header": [],
-        "body": {
-          "mode": "raw",
-          "raw": "{\r\n  \"usuarioId\": 1,\r\n  \"calle\": \"Av. Providencia\",\r\n  \"numero\": \"1234\",\r\n  \"departamento\": \"Depto 501\",\r\n  \"ciudad\": \"Santiago\",\r\n  \"region\": \"Región Metropolitana\",\r\n  \"codigoPostal\": \"7500000\",\r\n  \"destinatario\": \"Juan Pérez\",\r\n  \"esPredeterminada\": true\r\n}",
-          "options": {
-            "raw": {
-              "language": "json"
-            }
-          }
-        },
-        "url": {
-          "raw": "{{baseUrlGateway}}/api/usuarios/direcciones/1",
-          "host": [
-            "{{baseUrlGateway}}"
-          ],
-          "path": [
-            "api",
-            "usuarios",
-            "direcciones",
-            "1"
           ]
         }
       },
@@ -303,14 +302,13 @@
           }
         },
         "url": {
-          "raw": "{{baseUrlGateway}}/api/carrito/1/pago",
+          "raw": "{{baseUrlGateway}}/api/carrito/pago",
           "host": [
             "{{baseUrlGateway}}"
           ],
           "path": [
             "api",
             "carrito",
-            "1",
             "pago"
           ]
         }
@@ -318,13 +316,13 @@
       "response": []
     },
     {
-      "name": "cerrar carrito",
+      "name": "Verifica carrito y Genera pedido",
       "request": {
         "method": "POST",
         "header": [],
         "body": {
           "mode": "raw",
-          "raw": "// ARRIBA ID DEL CLIENTE PARA CERRAR EL CARRITO Y RETORNA EL ID DEL CARRITO PARA POSTERIORMENTE GENERAR EL PEDIDO REFERENCIANDO A LOS ITEMS DEL CARRITO.\r\n\r\n// RETORNA CARRITO ID",
+          "raw": "// Con un header toma el id del usuario y con ello el id del carrito por detras. A si que no se pone\r\n\r\n// VALIDA SI SE SELECCIONO UN METODO DE ENVIO, METODO DE PAGO, SI EL CARRO ESTA VACIO Y SI TIENE DIRECCION PREDETERMINADA.\r\n\r\n// DIRECCION PREDETERMINADA\r\n//{{baseUrlGateway}}/api/pedidos/generar\r\n\r\n// SIRVE PARA ELEGIR UNA DIRECCION QUE NO SEA LA PREDETERMINADA\r\n//{{baseUrlGateway}}/api/pedidos/generar/{direccionId}\r\n",
           "options": {
             "raw": {
               "language": "json"
@@ -332,45 +330,14 @@
           }
         },
         "url": {
-          "raw": "{{baseUrlGateway}}/api/carrito/1/checkout",
-          "host": [
-            "{{baseUrlGateway}}"
-          ],
-          "path": [
-            "api",
-            "carrito",
-            "1",
-            "checkout"
-          ]
-        }
-      },
-      "response": []
-    },
-    {
-      "name": "Genera pedido (mediante carrito)",
-      "request": {
-        "method": "POST",
-        "header": [],
-        "body": {
-          "mode": "raw",
-          "raw": "//clienteId = 1, carritoId = 1\r\n\r\n// UTILIZA LA DIRECCION PREDETERMINADA\r\n//{{baseUrlGateway}}/api/pedidos/generar/1/1\r\n\r\n// SIRVE PARA ELEGIR UNA DIRECCION QUE NO SEA LA PREDETERMINADA\r\n//query param {{baseUrlGateway}}/api/pedidos/generar/1/1?direccionEnvioId=1\r\n\r\n//EL METODO DE PAGO SE AGREGA AUTOMATICAMENTE DEL QUE ASIGNAMOS ANTERIORMENTE AL CARRITO",
-          "options": {
-            "raw": {
-              "language": "json"
-            }
-          }
-        },
-        "url": {
-          "raw": "{{baseUrlGateway}}/api/pedidos/generar/1/1",
+          "raw": "{{baseUrlGateway}}/api/pedidos/generar",
           "host": [
             "{{baseUrlGateway}}"
           ],
           "path": [
             "api",
             "pedidos",
-            "generar",
-            "1",
-            "1"
+            "generar"
           ]
         }
       },
@@ -386,7 +353,7 @@
         "header": [],
         "body": {
           "mode": "raw",
-          "raw": "// CAMBIAR ESTADO DE PEDIDO A ENVIADO\r\n// AL CAMBIAR EL ESTADO SE REFLEJA EN ENVIO SERVICE",
+          "raw": "// VER ESTADO INICIAL PEDIDO",
           "options": {
             "raw": {
               "language": "json"
@@ -394,14 +361,14 @@
           }
         },
         "url": {
-          "raw": "{{baseUrlGateway}}/api/pedidos/4",
+          "raw": "{{baseUrlGateway}}/api/pedidos/1",
           "host": [
             "{{baseUrlGateway}}"
           ],
           "path": [
             "api",
             "pedidos",
-            "4"
+            "1"
           ]
         }
       },
@@ -538,7 +505,7 @@
       "response": []
     },
     {
-      "name": "Actualizar estado",
+      "name": "Actualizar estado pedido (admin, repartidor)",
       "request": {
         "method": "PUT",
         "header": [],
@@ -599,7 +566,7 @@
       "response": []
     },
     {
-      "name": "Consultar envio por id (pedido)",
+      "name": "Consultar envio por id de pedido",
       "protocolProfileBehavior": {
         "disableBodyPruning": true
       },
@@ -627,6 +594,237 @@
             "envios",
             "pedido",
             "4"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Actualizar estado envio (admin, repartidor)",
+      "request": {
+        "method": "PATCH",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "// Afecta al estado de pedido",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrlGateway}}/api/v1/logistica-envios/envios/3/estado/5",
+          "host": [
+            "{{baseUrlGateway}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "logistica-envios",
+            "envios",
+            "3",
+            "estado",
+            "5"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Revisar pedido",
+      "protocolProfileBehavior": {
+        "disableBodyPruning": true
+      },
+      "request": {
+        "method": "GET",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrlGateway}}/api/pedidos/1",
+          "host": [
+            "{{baseUrlGateway}}"
+          ],
+          "path": [
+            "api",
+            "pedidos",
+            "1"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Revisar pedidos (lista propios)",
+      "request": {
+        "method": "GET",
+        "header": []
+      },
+      "response": []
+    },
+    {
+      "name": "Ingresar ticket (cliente)",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "{\r\n    \"clienteId\": 2, \r\n    \"categoriaId\": 1, \r\n    \"asunto\": \"Mensaje de pruebas ticket\", \r\n    \"pedidoId\": 3 \r\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrlGateway}}/api/v1/soporte/ingresar-ticket",
+          "host": [
+            "{{baseUrlGateway}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "soporte",
+            "ingresar-ticket"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Asignar ticket (admin, soporte)",
+      "request": {
+        "method": "PATCH",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrlGateway}}/api/v1/soporte/tickets/2/asignar/2",
+          "host": [
+            "{{baseUrlGateway}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "soporte",
+            "tickets",
+            "2",
+            "asignar",
+            "2"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Mensaje ticket (admin, soporte, cliente)",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "{\r\n    \"ticketId\": 1,\r\n    \"contenido\": \"Hola, necesito ayuda con mi pedido\"\r\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrlGateway}}/api/v1/soporte/enviar-mensaje-chat",
+          "host": [
+            "{{baseUrlGateway}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "soporte",
+            "enviar-mensaje-chat"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Ver y Marcar como leido msg ticket (admin, soporte, cliente)",
+      "request": {
+        "method": "GET",
+        "header": []
+      },
+      "response": []
+    },
+    {
+      "name": "Solucionar ticket (admin, soporte)",
+      "request": {
+        "method": "PATCH",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "{\r\n    \"solucionResumen\": \"Ejemplo se llego a una resolucion\"\r\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrlGateway}}/api/v1/soporte/tickets/1/solucionar",
+          "host": [
+            "{{baseUrlGateway}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "soporte",
+            "tickets",
+            "1",
+            "solucionar"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Cerrar ticket (admin, soporte, cliente)",
+      "request": {
+        "method": "PATCH",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrlGateway}}/api/v1/soporte/tickets/1/cerrar",
+          "host": [
+            "{{baseUrlGateway}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "soporte",
+            "tickets",
+            "1",
+            "cerrar"
           ]
         }
       },
