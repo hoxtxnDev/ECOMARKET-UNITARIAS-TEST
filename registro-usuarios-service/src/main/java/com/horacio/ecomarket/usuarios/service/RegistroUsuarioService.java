@@ -2,6 +2,7 @@ package com.horacio.ecomarket.usuarios.service;
 
 import com.horacio.ecomarket.usuarios.exception.CorreoDuplicadoException;
 import com.horacio.ecomarket.usuarios.exception.RecursoNoEncontradoException;
+import com.horacio.ecomarket.usuarios.exception.TelefonoDuplicadoException;
 import com.horacio.ecomarket.usuarios.model.Permiso;
 import com.horacio.ecomarket.usuarios.model.PerfilUsuario;
 import com.horacio.ecomarket.usuarios.model.Rol;
@@ -32,6 +33,10 @@ public class RegistroUsuarioService {
                     throw new CorreoDuplicadoException("El correo ya está registrado: " + perfilUsuario.getCorreo());
                 });
 
+        if (perfilUsuario.getTelefono() != null && !perfilUsuario.getTelefono().isBlank()) {
+            validarTelefonoNoDuplicado(perfilUsuario.getTelefono(), null);
+        }
+
         perfilUsuario.setFechaCreacion(LocalDateTime.now());
         PerfilUsuario guardado = repository.save(perfilUsuario);
 
@@ -59,6 +64,11 @@ public class RegistroUsuarioService {
     @Transactional
     public PerfilUsuario modificarDatosUsuario(Long id, PerfilUsuario datosNuevos) {
         PerfilUsuario existente = buscarPorId(id);
+
+        if (datosNuevos.getTelefono() != null && !datosNuevos.getTelefono().isBlank()
+                && !datosNuevos.getTelefono().equals(existente.getTelefono())) {
+            validarTelefonoNoDuplicado(datosNuevos.getTelefono(), id);
+        }
 
         existente.setNombre(datosNuevos.getNombre());
         existente.setTelefono(datosNuevos.getTelefono());
@@ -119,6 +129,30 @@ public class RegistroUsuarioService {
         repository.delete(usuario);
         registrarLog(usuarioId, "ELIMINACION_USUARIO", "Usuario eliminado con ID: " + usuarioId);
         return true;
+    }
+
+    private String normalizarTelefono(String telefono) {
+        if (telefono == null) return null;
+        String soloDigitos = telefono.replaceAll("\\D", "");
+        if (soloDigitos.startsWith("56") && soloDigitos.length() > 2) {
+            soloDigitos = soloDigitos.substring(2);
+        }
+        return soloDigitos;
+    }
+
+    private void validarTelefonoNoDuplicado(String telefono, Long excluirId) {
+        String normalizado = normalizarTelefono(telefono);
+        if (normalizado == null) return;
+
+        List<PerfilUsuario> todos = repository.findAll();
+        boolean duplicado = todos.stream()
+                .filter(u -> excluirId == null || !u.getId().equals(excluirId))
+                .anyMatch(u -> u.getTelefono() != null
+                        && normalizado.equals(normalizarTelefono(u.getTelefono())));
+
+        if (duplicado) {
+            throw new TelefonoDuplicadoException("El teléfono ya está registrado por otro usuario.");
+        }
     }
 
     private void registrarLog(Long usuarioId, String accion, String detalles) {

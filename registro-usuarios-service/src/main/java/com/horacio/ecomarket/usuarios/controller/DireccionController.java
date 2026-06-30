@@ -1,5 +1,6 @@
 package com.horacio.ecomarket.usuarios.controller;
 
+import com.horacio.ecomarket.usuarios.dto.CrearDireccionRequest;
 import com.horacio.ecomarket.usuarios.model.Direccion;
 import com.horacio.ecomarket.usuarios.service.DireccionService;
 import lombok.RequiredArgsConstructor;
@@ -15,8 +16,37 @@ public class DireccionController {
 
     private final DireccionService direccionService;
 
+    @PostMapping
+    public ResponseEntity<Direccion> agregar(
+            @RequestHeader("X-User-Id") Long usuarioId,
+            @RequestBody CrearDireccionRequest request) {
+        Direccion direccion = Direccion.builder()
+                .calle(request.getCalle())
+                .numero(request.getNumero())
+                .departamento(request.getDepartamento())
+                .ciudad(request.getCiudad())
+                .region(request.getRegion())
+                .codigoPostal(request.getCodigoPostal())
+                .destinatario(request.getDestinatario())
+                .esPredeterminada(request.getEsPredeterminada())
+                .build();
+        return ResponseEntity.ok(direccionService.agregarDireccion(usuarioId, direccion));
+    }
+
     @PostMapping("/{usuarioId}")
-    public ResponseEntity<Direccion> agregar(@PathVariable Long usuarioId, @RequestBody Direccion direccion) {
+    public ResponseEntity<Direccion> agregarAdmin(
+            @PathVariable Long usuarioId,
+            @RequestBody CrearDireccionRequest request) {
+        Direccion direccion = Direccion.builder()
+                .calle(request.getCalle())
+                .numero(request.getNumero())
+                .departamento(request.getDepartamento())
+                .ciudad(request.getCiudad())
+                .region(request.getRegion())
+                .codigoPostal(request.getCodigoPostal())
+                .destinatario(request.getDestinatario())
+                .esPredeterminada(request.getEsPredeterminada())
+                .build();
         return ResponseEntity.ok(direccionService.agregarDireccion(usuarioId, direccion));
     }
 

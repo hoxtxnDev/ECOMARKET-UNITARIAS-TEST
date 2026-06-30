@@ -150,7 +150,21 @@ public class EnvioService {
         historial.setObservacion(observacion != null ? observacion : "Estado actualizado a: " + nuevoEstado.getNombre());
         HistorialEnvio saved = historialEnvioService.save(historial);
         analiticaMetricaClient.registrarMetrica("envios.estado.cambiado", 1.0, "Envio #" + envioId + " cambio a estado: " + nuevoEstado.getNombre());
+        notificarPedidoService(envio.getPedidoId(), nuevoEstado.getNombre());
         return saved;
+    }
+
+    private void notificarPedidoService(Long pedidoId, String estadoEnvioNombre) {
+        try {
+            String url = pedidosUrl + "/api/pedidos/internal/actualizar-por-envio";
+            var body = new java.util.HashMap<String, Object>();
+            body.put("pedidoId", pedidoId);
+            body.put("estadoEnvioNombre", estadoEnvioNombre);
+            restTemplate.postForEntity(url, body, String.class);
+            log.info("Pedido {} notificado del cambio a estado de envío: {}", pedidoId, estadoEnvioNombre);
+        } catch (Exception e) {
+            log.error("Error al notificar a pedido-service sobre cambio de estado de envío: {}", e.getMessage());
+        }
     }
 
     public Boolean cancelarEnvio(Long envioId) {

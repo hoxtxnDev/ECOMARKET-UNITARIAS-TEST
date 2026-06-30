@@ -175,7 +175,7 @@ class EnvioControllerTest {
     }
 
     @Nested
-    @DisplayName("PATCH /api/v1/logistica-envios/envios/{id}/estado")
+    @DisplayName("PATCH /api/v1/logistica-envios/envios/{envioId}/estado/{estadoId}")
     class ActualizarEstado {
 
         @Test
@@ -184,17 +184,11 @@ class EnvioControllerTest {
             HistorialEnvio historial = new HistorialEnvio();
             historial.setId(1L);
             historial.setEnvioId(10L);
-            historial.setObservacion("Cambio a CONFIRMADO");
+            historial.setObservacion("Estado actualizado a: EN_TRANSITO");
 
-            ActualizarEstadoRequestDTO dto = new ActualizarEstadoRequestDTO();
-            dto.setNuevoEstadoId(2L);
-            dto.setObservacion("Cambio a CONFIRMADO");
+            when(envioService.actualizarEstado(10L, 2L, null)).thenReturn(historial);
 
-            when(envioService.actualizarEstado(10L, 2L, "Cambio a CONFIRMADO")).thenReturn(historial);
-
-            mvc.perform(patch("/api/v1/logistica-envios/envios/10/estado")
-                            .contentType(MediaType.APPLICATION_JSON)
-                            .content(mapper.writeValueAsString(dto)))
+            mvc.perform(patch("/api/v1/logistica-envios/envios/10/estado/2"))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.id").value(1));
         }

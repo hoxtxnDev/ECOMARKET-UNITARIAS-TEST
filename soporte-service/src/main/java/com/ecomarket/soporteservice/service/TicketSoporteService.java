@@ -14,6 +14,7 @@ import org.springframework.web.client.RestTemplate;
 import com.ecomarket.soporteservice.client.AnaliticaMetricaClient;
 import com.ecomarket.soporteservice.dto.ClienteDTO;
 import com.ecomarket.soporteservice.dto.PedidoDTO;
+import com.ecomarket.soporteservice.exception.EmpleadoNoValidoException;
 import com.ecomarket.soporteservice.exception.NoExisteEnBdException;
 import com.ecomarket.soporteservice.exception.PedidoClienteIncompatibleException;
 import com.ecomarket.soporteservice.model.entity.TicketSoporte;
@@ -82,27 +83,29 @@ public class TicketSoporteService {
             throw new NoExisteEnBdException("No se pudo validar el cliente debido a que el servicio de usuarios no esta disponible.");
         }
 
-        // verificar existencia de pedido en carritocompraservice
-        String urlPedido = pedidosUrl + "/api/pedido/" + pedidoId;
+        // verificar existencia de pedido solo si se proporciona pedidoId
+        if (pedidoId != null) {
+            String urlPedido = pedidosUrl + "/api/pedidos/" + pedidoId;
 
-        try {
-            PedidoDTO pedido = restTemplate.getForObject(urlPedido, PedidoDTO.class);
+            try {
+                PedidoDTO pedido = restTemplate.getForObject(urlPedido, PedidoDTO.class);
 
-            if(pedido != null && !pedido.getClienteId().equals(clienteId)) {
-                throw new PedidoClienteIncompatibleException("No se puede ingresar el ticket debido a que el ID del pedido no es compatible con el cliente asignado a ese pedido.");
+                if(pedido != null && !pedido.getClienteId().equals(clienteId)) {
+                    throw new PedidoClienteIncompatibleException("No se puede ingresar el ticket debido a que el ID del pedido no es compatible con el cliente asignado a ese pedido.");
+                }
+
+            } catch (HttpClientErrorException ex) {
+
+                if(ex.getStatusCode() == HttpStatus.NOT_FOUND) {
+                    throw new NoExisteEnBdException("No se puede ingresar el ticket debido a que el id del pedido ingresado no existe en DB.");
+                }
+
+                log.error("Error HTTP inesperado al validar pedido {}: {}", pedidoId, ex.getStatusCode());
+                throw new Exception();
+            } catch (ResourceAccessException e) {
+                log.warn("Servicio de pedidos no disponible al validar pedido {}: {}", pedidoId, e.getMessage());
+                throw new NoExisteEnBdException("No se pudo validar el pedido debido a que el servicio de pedidos no esta disponible.");
             }
-
-        } catch (HttpClientErrorException ex) {
-
-            if(ex.getStatusCode() == HttpStatus.NOT_FOUND) {
-                throw new NoExisteEnBdException("No se puede ingresar el ticket debido a que el id del pedido ingresado no existe en DB.");
-            }
-
-            log.error("Error HTTP inesperado al validar pedido {}: {}", pedidoId, ex.getStatusCode());
-            throw new Exception();
-        } catch (ResourceAccessException e) {
-            log.warn("Servicio de pedidos no disponible al validar pedido {}: {}", pedidoId, e.getMessage());
-            throw new NoExisteEnBdException("No se pudo validar el pedido debido a que el servicio de pedidos no esta disponible.");
         }
 
         TicketSoporte ticket = new TicketSoporte();
@@ -132,13 +135,53 @@ public class TicketSoporteService {
     public TicketSoporte asignarTicketEmpleado(Long ticketId, Long empleadoId) {
         TicketSoporte ticket = ticketSoporteRepository.findById(ticketId)
             .orElseThrow(() -> new NoExisteEnBdException("El ticket con id " + ticketId + " no existe en la DB."));
+
+        if (ticket.getEstado().getId() == 4L || ticket.getEstado().getId() == 5L) {
+            throw new NoExisteEnBdException("No se puede reasignar un ticket que ya esta resuelto o cerrado.");
+        }
+
+        // Validar que el empleado existe y tiene rol de soporte
+        String urlEmpleado = usuariosUrl + "/api/usuarios/" + empleadoId;
+        try {
+            ClienteDTO empleado = restTemplate.getForObject(urlEmpleado, ClienteDTO.class);
+            if (empleado == null || empleado.getRolUsuario() == null) {
+                throw new NoExisteEnBdException("No se puede asignar el ticket: el empleado con id " + empleadoId + " no existe en DB.");
+            }
+            String rolNombre = empleado.getRolUsuario().getNombre();
+            if (!"SOPORTE".equalsIgnoreCase(rolNombre) && !"ADMIN".equalsIgnoreCase(rolNombre)) {
+                throw new EmpleadoNoValidoException("No se puede asignar el ticket: el usuario con id " + empleadoId
+                    + " tiene rol '" + rolNombre + "'. Solo se puede asignar a usuarios con rol SOPORTE o ADMIN.");
+            }
+        } catch (HttpClientErrorException.NotFound exNotFound) {
+            throw new NoExisteEnBdException("No se puede asignar el ticket: el empleado con id " + empleadoId + " no existe en DB.");
+        } catch (ResourceAccessException e) {
+            log.warn("Servicio de usuarios no disponible al validar empleado {}: {}", empleadoId, e.getMessage());
+            throw new NoExisteEnBdException("No se pudo validar el empleado debido a que el servicio de usuarios no esta disponible.");
+        }
+
+        boolean esPrimeraAsignacion = ticket.getEmpleadoAsignadoId() == null;
         ticket.setEmpleadoAsignadoId(empleadoId);
+        if (esPrimeraAsignacion) {
+            // Primera asignacion → EN_PROCESO
+            ticket.setEstado(estadoTicketService.findEstadoTicketById(2L));
+        } else {
+            // Reasignacion → PENDIENTE
+            ticket.setEstado(estadoTicketService.findEstadoTicketById(3L));
+        }
         return ticketSoporteRepository.save(ticket);
     }
 
     public TicketSoporte solucionarTicket(Long ticketId, String solucionResumen) {
         TicketSoporte ticket = ticketSoporteRepository.findById(ticketId)
             .orElseThrow(() -> new NoExisteEnBdException("El ticket con id " + ticketId + " no existe en la DB."));
+
+        if (ticket.getEstado().getId() == 4L) {
+            throw new NoExisteEnBdException("El ticket con id " + ticketId + " ya se encuentra resuelto.");
+        }
+        if (ticket.getEstado().getId() == 5L) {
+            throw new NoExisteEnBdException("El ticket con id " + ticketId + " ya se encuentra cerrado.");
+        }
+
         EstadoTicket estadoResuelto = estadoTicketService.findEstadoTicketById(4L);
         ticket.setEstado(estadoResuelto);
         ticket.setSolucionResumen(solucionResumen);
@@ -150,6 +193,20 @@ public class TicketSoporteService {
                 "Ticket #" + ticketId + " resuelto: " + solucionResumen);
 
         return saved;
+    }
+
+    public TicketSoporte cerrarTicket(Long ticketId) {
+        TicketSoporte ticket = ticketSoporteRepository.findById(ticketId)
+            .orElseThrow(() -> new NoExisteEnBdException("El ticket con id " + ticketId + " no existe en la DB."));
+
+        if (ticket.getEstado().getId() == 5L) {
+            throw new NoExisteEnBdException("El ticket con id " + ticketId + " ya se encuentra cerrado.");
+        }
+
+        EstadoTicket estadoCerrado = estadoTicketService.findEstadoTicketById(5L);
+        ticket.setEstado(estadoCerrado);
+        ticket.setFechaCierre(LocalDateTime.now());
+        return ticketSoporteRepository.save(ticket);
     }
 
     public void deleteTicketById(Long id) {

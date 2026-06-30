@@ -38,8 +38,7 @@ public class TicketSoporte {
     @Column(nullable = true)
     private Long empleadoAsignadoId;
 
-    @NotNull(message = "El ID del pedido relacionado es obligatorio.")
-    @Column(nullable = false)
+    @Column(nullable = true)
     private Long pedidoRelacionadoId;
 
     @NotNull(message = "La categoria es obligatoria.")

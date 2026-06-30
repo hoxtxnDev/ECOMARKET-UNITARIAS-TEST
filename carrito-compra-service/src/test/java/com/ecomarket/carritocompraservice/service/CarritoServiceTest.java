@@ -299,23 +299,6 @@ class CarritoServiceTest {
     }
 
     @Nested
-    @DisplayName("iniciarProcesoCompra")
-    class IniciarProcesoCompra {
-
-        @Test
-        @DisplayName("retorna el id del carrito activo")
-        void retornaIdCarrito() {
-            Carrito carrito = carritoActivo(1L, 10L);
-
-            when(carritoRepository.findByClienteIdAndActivoTrue(10L)).thenReturn(Optional.of(carrito));
-
-            Long carritoId = service.iniciarProcesoCompra(10L);
-
-            assertThat(carritoId).isEqualTo(1L);
-        }
-    }
-
-    @Nested
     @DisplayName("listarTodos")
     class ListarTodos {
 

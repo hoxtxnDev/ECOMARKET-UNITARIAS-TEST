@@ -1,7 +1,9 @@
 package com.ecomarket.pedidos.controller;
 
+import com.ecomarket.pedidos.dto.ActualizarEstadoPorEnvioRequest;
 import com.ecomarket.pedidos.model.Pedido;
 import com.ecomarket.pedidos.service.PedidoService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -15,12 +17,11 @@ public class PedidoController {
 
     private final PedidoService pedidoService;
 
-    @PostMapping("/generar/{clienteId}/{carritoId}")
+    @PostMapping({"/generar", "/generar/{direccionEnvioId}"})
     public ResponseEntity<Pedido> generarPedido(
-            @PathVariable Long clienteId,
-            @PathVariable Long carritoId,
-            @RequestParam(required = false) Long direccionEnvioId) {
-        return ResponseEntity.ok(pedidoService.generarPedidoDesdeCarrito(clienteId, carritoId, direccionEnvioId));
+            @RequestHeader("X-User-Id") Long clienteId,
+            @PathVariable(required = false) Long direccionEnvioId) {
+        return ResponseEntity.ok(pedidoService.generarPedidoDesdeCarrito(clienteId, direccionEnvioId));
     }
 
     @PutMapping("/{pedidoId}/estado/{estadoId}")
@@ -33,13 +34,20 @@ public class PedidoController {
         return ResponseEntity.ok(pedidoService.actualizarEstadoPorNombre(pedidoId, nombreEstado));
     }
 
-    @GetMapping("/cliente/{clienteId}")
-    public ResponseEntity<List<Pedido>> obtenerHistorial(@PathVariable Long clienteId) {
+    @GetMapping("/cliente")
+    public ResponseEntity<List<Pedido>> obtenerHistorial(
+            @RequestHeader("X-User-Id") Long clienteId) {
         return ResponseEntity.ok(pedidoService.obtenerHistorialCliente(clienteId));
     }
 
     @GetMapping("/{pedidoId}")
     public ResponseEntity<Pedido> obtenerPedido(@PathVariable Long pedidoId) {
         return ResponseEntity.ok(pedidoService.buscarPorId(pedidoId));
+    }
+
+    @PostMapping("/internal/actualizar-por-envio")
+    public ResponseEntity<Void> actualizarPorEnvio(@Valid @RequestBody ActualizarEstadoPorEnvioRequest request) {
+        pedidoService.actualizarEstadoPorEnvio(request.getPedidoId(), request.getEstadoEnvioNombre());
+        return ResponseEntity.ok().build();
     }
 }

@@ -28,6 +28,9 @@ public class RouteConfiguration {
                 .route("soporte-service", r -> r.path("/api/v1/soporte/**").filters(f -> f.filter(jwtFilter.apply(new JwtAuthenticationFilter.Config()))).uri("http://localhost:8088"))
                 .route("analitica-service", r -> r.path("/api/analitica/**").filters(f -> f.filter(jwtFilter.apply(new JwtAuthenticationFilter.Config()))).uri("http://localhost:8084"))
                 .route("pedido-service", r -> r.path("/api/pedidos/**").filters(f -> f.filter(jwtFilter.apply(new JwtAuthenticationFilter.Config()))).uri("http://localhost:8089"))
+                .route("inventario-service", r -> r.path("/api/inventario/**").filters(f -> f.filter(jwtFilter.apply(new JwtAuthenticationFilter.Config()))).uri("http://localhost:8087"))
+                .route("catalogo-admin-service", r -> r.path("/api/catalogo-admin/**").filters(f -> f.filter(jwtFilter.apply(new JwtAuthenticationFilter.Config()))).uri("http://localhost:8087"))
+                .route("tiendas-service", r -> r.path("/api/tiendas/**").filters(f -> f.filter(jwtFilter.apply(new JwtAuthenticationFilter.Config()))).uri("http://localhost:8090"))
                 .build();
     }
 }

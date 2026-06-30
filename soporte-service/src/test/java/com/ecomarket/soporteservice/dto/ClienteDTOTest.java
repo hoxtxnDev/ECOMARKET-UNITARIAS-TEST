@@ -16,13 +16,11 @@ class ClienteDTOTest {
         dto.setClienteId(1L);
         dto.setCorreo("cliente@email.com");
         dto.setNombre("Juan");
-        dto.setApellido("Pérez");
         dto.setRolUsuario(rol);
 
         assertEquals(1L, dto.getClienteId());
         assertEquals("cliente@email.com", dto.getCorreo());
         assertEquals("Juan", dto.getNombre());
-        assertEquals("Pérez", dto.getApellido());
         assertNotNull(dto.getRolUsuario());
         assertEquals("CLIENTE", dto.getRolUsuario().getNombre());
     }

@@ -53,28 +53,17 @@ class MensajeChatControllerTest {
     private MensajeChatRequestDTO dto() {
         MensajeChatRequestDTO d = new MensajeChatRequestDTO();
         d.setTicketId(1L);
-        d.setRemitenteId(5L);
-        d.setEsCliente(true);
         d.setContenido("Hola, necesito ayuda");
         return d;
     }
 
     @Test
-    @DisplayName("GET /api/v1/mensajes-chat sin param → 200 lista completa")
-    void getAllSinParam() throws Exception {
+    @DisplayName("GET /api/v1/mensajes-chat → 200 lista completa")
+    void getAll() throws Exception {
         when(service.readAllMensajes()).thenReturn(List.of(mensaje(1L), mensaje(2L)));
         mvc.perform(get("/api/v1/mensajes-chat"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(2));
-    }
-
-    @Test
-    @DisplayName("GET /api/v1/mensajes-chat?ticketId=1 → 200 historial del ticket")
-    void getAllConTicketId() throws Exception {
-        when(service.obtenerHistorialChat(1L)).thenReturn(List.of(mensaje(1L)));
-        mvc.perform(get("/api/v1/mensajes-chat").param("ticketId", "1"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.length()").value(1));
     }
 
     @Test
@@ -97,8 +86,10 @@ class MensajeChatControllerTest {
     @Test
     @DisplayName("POST /api/v1/mensajes-chat → 201 mensaje enviado")
     void enviarMensaje() throws Exception {
-        when(service.enviarMensajeChat(1L, 5L, true, "Hola, necesito ayuda")).thenReturn(mensaje(1L));
+        when(service.enviarMensajeChat(1L, 5L, true, "Hola, necesito ayuda", false)).thenReturn(mensaje(1L));
         mvc.perform(post("/api/v1/mensajes-chat")
+                        .header("X-User-Id", "5")
+                        .header("X-User-Roles", "ROLE_CLIENTE")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(mapper.writeValueAsString(dto())))
                 .andExpect(status().isCreated())
@@ -110,10 +101,10 @@ class MensajeChatControllerTest {
     void enviarMensajeInvalido() throws Exception {
         MensajeChatRequestDTO invalido = new MensajeChatRequestDTO();
         invalido.setTicketId(1L);
-        invalido.setRemitenteId(5L);
-        invalido.setEsCliente(true);
         invalido.setContenido("");
         mvc.perform(post("/api/v1/mensajes-chat")
+                        .header("X-User-Id", "5")
+                        .header("X-User-Roles", "ROLE_CLIENTE")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(mapper.writeValueAsString(invalido)))
                 .andExpect(status().isBadRequest());

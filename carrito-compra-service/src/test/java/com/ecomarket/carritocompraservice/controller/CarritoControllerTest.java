@@ -33,13 +33,14 @@ class CarritoControllerTest {
     }
 
     @Test
-    void obtenerCarritoReturnsOk() throws Exception {
+    void obtenerCarritoActivoReturnsOk() throws Exception {
         Carrito carrito = new Carrito();
         carrito.setId(1L);
         carrito.setClienteId(10L);
         when(carritoService.obtenerCarritoActivo(10L)).thenReturn(carrito);
 
-        mockMvc.perform(get("/api/carrito/10"))
+        mockMvc.perform(get("/api/carrito/activo")
+                        .header("X-User-Id", "10"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.clienteId").value(10));
     }
@@ -51,9 +52,10 @@ class CarritoControllerTest {
         when(carritoService.anadirProducto(10L, 100L, 2)).thenReturn(carrito);
 
         mockMvc.perform(post("/api/carrito")
+                        .header("X-User-Id", "10")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                                {"usuarioId":10,"productoId":100,"cantidad":2}
+                                {"productoId":100,"cantidad":2}
                                 """))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(1));
@@ -63,7 +65,8 @@ class CarritoControllerTest {
     void removerProductoReturnsOk() throws Exception {
         when(carritoService.removerProducto(10L, 5L)).thenReturn(new Carrito());
 
-        mockMvc.perform(delete("/api/carrito/10/item/5"))
+        mockMvc.perform(delete("/api/carrito/item/5")
+                        .header("X-User-Id", "10"))
                 .andExpect(status().isOk());
     }
 
@@ -71,7 +74,8 @@ class CarritoControllerTest {
     void seleccionarPagoReturnsOk() throws Exception {
         when(carritoService.seleccionarMetodoPago(10L, 3L)).thenReturn(new Carrito());
 
-        mockMvc.perform(put("/api/carrito/10/pago")
+        mockMvc.perform(put("/api/carrito/pago")
+                        .header("X-User-Id", "10")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"id\":3}"))
                 .andExpect(status().isOk());
@@ -81,7 +85,8 @@ class CarritoControllerTest {
     void seleccionarEnvioReturnsOk() throws Exception {
         when(carritoService.seleccionarEnvio(10L, 2L)).thenReturn(new Carrito());
 
-        mockMvc.perform(put("/api/carrito/10/envio")
+        mockMvc.perform(put("/api/carrito/envio")
+                        .header("X-User-Id", "10")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"id\":2}"))
                 .andExpect(status().isOk());
@@ -91,23 +96,16 @@ class CarritoControllerTest {
     void vaciarCarritoReturnsOk() throws Exception {
         when(carritoService.vaciarCarrito(10L)).thenReturn(true);
 
-        mockMvc.perform(delete("/api/carrito/10/vaciar"))
+        mockMvc.perform(delete("/api/carrito/vaciar")
+                        .header("X-User-Id", "10"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$").value(true));
     }
 
     @Test
-    void iniciarCompraReturnsOk() throws Exception {
-        when(carritoService.iniciarProcesoCompra(10L)).thenReturn(1L);
-
-        mockMvc.perform(post("/api/carrito/10/checkout"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$").value(1));
-    }
-
-    @Test
     void cerrarCarritoReturnsOk() throws Exception {
-        mockMvc.perform(put("/api/carrito/10/cerrar"))
+        mockMvc.perform(put("/api/carrito/cerrar")
+                        .header("X-User-Id", "10"))
                 .andExpect(status().isOk());
     }
 }
