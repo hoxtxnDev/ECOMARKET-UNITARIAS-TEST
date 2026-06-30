@@ -165,4 +165,22 @@ class GlobalExceptionHandlerTest {
                     .andExpect(jsonPath("$.status").value(500));
         }
     }
+
+    @Nested
+    @DisplayName("EmpleadoNoValidoException")
+    class EmpleadoNoValido {
+        @Test
+        @DisplayName("EmpleadoNoValidoException → 400 BAD REQUEST")
+        void empleadoNoValido() throws Exception {
+            GlobalExceptionHandler handler = new GlobalExceptionHandler();
+            EmpleadoNoValidoException ex = new EmpleadoNoValidoException("El usuario no tiene rol SOPORTE");
+            MockHttpServletRequest request = new MockHttpServletRequest();
+            request.setRequestURI("/api/tickets/1/asignar");
+
+            var response = handler.handleEmpleadoNoValidoException(ex, request);
+
+            assertThat(response.getStatusCode().value()).isEqualTo(400);
+            assertThat(response.getBody().getMessage()).contains("SOPORTE");
+        }
+    }
 }

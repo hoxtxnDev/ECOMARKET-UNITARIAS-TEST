@@ -576,6 +576,49 @@ class EnvioServiceTest {
     }
 
     @Nested
+    @DisplayName("buscarEnviosPorPedidoId")
+    class BuscarEnviosPorPedido {
+
+        @Test
+        @DisplayName("retorna lista de envios para el pedido")
+        void retornaEnvios() {
+            when(envioDomainService.readByPedidoId(100L)).thenReturn(List.of(envioPendiente));
+
+            List<Envio> resultado = envioService.buscarEnviosPorPedidoId(100L);
+
+            assertThat(resultado).hasSize(1);
+            assertThat(resultado.get(0).getPedidoId()).isEqualTo(100L);
+        }
+
+        @Test
+        @DisplayName("retorna lista vacía si no hay envios")
+        void retornaVacio() {
+            when(envioDomainService.readByPedidoId(99L)).thenReturn(List.of());
+
+            assertThat(envioService.buscarEnviosPorPedidoId(99L)).isEmpty();
+        }
+    }
+
+    @Nested
+    @DisplayName("notificarPedidoService (catch)")
+    class NotificarPedidoServiceCatch {
+
+        @Test
+        @DisplayName("tolera error al notificar a pedido-service")
+        void toleraError() {
+            when(envioDomainService.findById(10L)).thenReturn(envioPendiente);
+            when(estadoEnvioService.findById(4L)).thenReturn(estadoEntregado);
+            when(envioDomainService.save(any())).thenReturn(envioPendiente);
+            when(historialEnvioService.save(any())).thenAnswer(inv -> inv.getArgument(0));
+            doThrow(new RuntimeException("Pedidos caído"))
+                    .when(restTemplate).postForEntity(anyString(), any(), eq(String.class));
+
+            assertThatNoException()
+                    .isThrownBy(() -> envioService.actualizarEstado(10L, 4L, "ok"));
+        }
+    }
+
+    @Nested
     @DisplayName("obtenerEnvioPorId")
     class ObtenerEnvio {
 

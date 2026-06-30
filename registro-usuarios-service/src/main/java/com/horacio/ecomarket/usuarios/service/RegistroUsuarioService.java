@@ -132,26 +132,31 @@ public class RegistroUsuarioService {
     }
 
     private String normalizarTelefono(String telefono) {
-        if (telefono == null) return null;
         String soloDigitos = telefono.replaceAll("\\D", "");
-        if (soloDigitos.startsWith("56") && soloDigitos.length() > 2) {
-            soloDigitos = soloDigitos.substring(2);
+        if (soloDigitos.startsWith("56")) {
+            if (soloDigitos.length() > 2) {
+                soloDigitos = soloDigitos.substring(2);
+            }
         }
         return soloDigitos;
     }
 
+    private boolean mismoTelefonoNormalizado(String telefono1, String telefono2) {
+        if (telefono2 == null) return false;
+        String norm1 = normalizarTelefono(telefono1);
+        String norm2 = normalizarTelefono(telefono2);
+        return norm1.equals(norm2);
+    }
+
     private void validarTelefonoNoDuplicado(String telefono, Long excluirId) {
         String normalizado = normalizarTelefono(telefono);
-        if (normalizado == null) return;
 
         List<PerfilUsuario> todos = repository.findAll();
-        boolean duplicado = todos.stream()
-                .filter(u -> excluirId == null || !u.getId().equals(excluirId))
-                .anyMatch(u -> u.getTelefono() != null
-                        && normalizado.equals(normalizarTelefono(u.getTelefono())));
-
-        if (duplicado) {
-            throw new TelefonoDuplicadoException("El teléfono ya está registrado por otro usuario.");
+        for (PerfilUsuario u : todos) {
+            if (excluirId != null && u.getId().equals(excluirId)) continue;
+            if (mismoTelefonoNormalizado(telefono, u.getTelefono())) {
+                throw new TelefonoDuplicadoException("El teléfono ya está registrado por otro usuario.");
+            }
         }
     }
 

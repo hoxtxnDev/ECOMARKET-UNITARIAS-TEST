@@ -178,4 +178,21 @@ class GlobalExceptionHandlerTest {
             assertThat(response.getBody().getMessage()).isEqualTo("Correo duplicado");
         }
     }
+
+    @Nested
+    @DisplayName("handleTelefonoDuplicado")
+    class TelefonoDuplicadoTest {
+
+        @Test
+        @DisplayName("Debería retornar 409 CONFLICT")
+        void testHandleTelefonoDuplicado() {
+            TelefonoDuplicadoException ex = new TelefonoDuplicadoException("Teléfono duplicado");
+            ResponseEntity<ErrorResponseDTO> response = globalExceptionHandler.handleTelefonoDuplicado(ex, request);
+
+            assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
+            assertThat(response.getBody()).isNotNull();
+            assertThat(response.getBody().getStatus()).isEqualTo(409);
+            assertThat(response.getBody().getMessage()).isEqualTo("Teléfono duplicado");
+        }
+    }
 }

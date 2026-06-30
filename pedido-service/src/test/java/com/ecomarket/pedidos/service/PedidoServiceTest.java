@@ -422,4 +422,54 @@ class PedidoServiceTest {
                     .hasMessageContaining("99");
         }
     }
+
+    @Nested
+    @DisplayName("actualizarEstadoPorEnvio")
+    class ActualizarEstadoPorEnvio {
+
+        @Test
+        @DisplayName("en_transito mapea a EN_TRANSITO y actualiza")
+        void enTransito() {
+            when(pedidoRepository.findById(1L)).thenReturn(Optional.of(pedidoPendiente(1L)));
+            when(estadoPedidoRepository.findByNombre("EN_TRANSITO")).thenReturn(Optional.of(estado("EN_TRANSITO")));
+            when(pedidoRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+            service.actualizarEstadoPorEnvio(1L, "en_transito");
+
+            verify(estadoPedidoRepository).findByNombre("EN_TRANSITO");
+        }
+
+        @Test
+        @DisplayName("en_tránsito con tilde mapea a EN_TRANSITO")
+        void enTransitoConTilde() {
+            when(pedidoRepository.findById(1L)).thenReturn(Optional.of(pedidoPendiente(1L)));
+            when(estadoPedidoRepository.findByNombre("EN_TRANSITO")).thenReturn(Optional.of(estado("EN_TRANSITO")));
+            when(pedidoRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+            service.actualizarEstadoPorEnvio(1L, "en_tránsito");
+
+            verify(estadoPedidoRepository).findByNombre("EN_TRANSITO");
+        }
+
+        @Test
+        @DisplayName("entregado mapea a ENTREGADO y actualiza")
+        void entregado() {
+            when(pedidoRepository.findById(1L)).thenReturn(Optional.of(pedidoPendiente(1L)));
+            when(estadoPedidoRepository.findByNombre("ENTREGADO")).thenReturn(Optional.of(estado("ENTREGADO")));
+            when(pedidoRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+            service.actualizarEstadoPorEnvio(1L, "entregado");
+
+            verify(estadoPedidoRepository).findByNombre("ENTREGADO");
+        }
+
+        @Test
+        @DisplayName("estado desconocido no llama a actualizarEstadoPorNombre")
+        void estadoDesconocido() {
+            service.actualizarEstadoPorEnvio(1L, "estado_extraño");
+
+            verify(pedidoRepository, never()).findById(any());
+            verify(estadoPedidoRepository, never()).findByNombre(any());
+        }
+    }
 }

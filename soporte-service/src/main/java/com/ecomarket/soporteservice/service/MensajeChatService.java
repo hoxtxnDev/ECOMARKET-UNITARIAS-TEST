@@ -41,7 +41,9 @@ public class MensajeChatService {
             .filter(m -> !m.getEsCliente().equals(viewerEsCliente) && !m.getLeido())
             .collect(Collectors.toList());
         if (!aMarcar.isEmpty()) {
-            aMarcar.forEach(m -> m.setLeido(true));
+            for (MensajeChat m : aMarcar) {
+                m.setLeido(true);
+            }
             mensajeChatRepository.saveAll(aMarcar);
         }
         return mensajes;

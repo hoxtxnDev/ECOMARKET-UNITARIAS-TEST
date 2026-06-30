@@ -338,6 +338,25 @@ class TicketSoporteServiceTest {
 
             verify(repo, never()).save(any());
         }
+
+        @Test
+        @DisplayName("crea ticket sin validar pedido cuando pedidoId es null")
+        void creaTicketSinPedido() throws Exception {
+            when(estadoTicketService.findEstadoTicketById(1L)).thenReturn(estado(1L, "ABIERTO"));
+            when(categoriaTicketService.findCategoriaTicketById(1L)).thenReturn(categoria(1L, "ENTREGA"));
+            when(restTemplate.getForObject(contains("/api/usuarios/5"), eq(ClienteDTO.class)))
+                    .thenReturn(new ClienteDTO());
+            when(repo.save(any())).thenAnswer(inv -> {
+                TicketSoporte t = inv.getArgument(0);
+                t.setId(1L);
+                return t;
+            });
+
+            TicketSoporte resultado = service.ingresarTicket(5L, 1L, "Asunto", null);
+
+            assertThat(resultado.getId()).isEqualTo(1L);
+            assertThat(resultado.getPedidoRelacionadoId()).isNull();
+        }
     }
 
     // ═════════════════════════════════════════════════════════════════════════
@@ -523,6 +542,53 @@ class TicketSoporteServiceTest {
             assertThatThrownBy(() -> service.asignarTicketEmpleado(1L, 7L))
                     .isInstanceOf(NoExisteEnBdException.class)
                     .hasMessageContaining("cerrado");
+
+            verify(repo, never()).save(any());
+        }
+
+        @Test
+        @DisplayName("lanza NoExisteEnBdException cuando el empleado retorna null")
+        void empleadoRetornaNull() {
+            TicketSoporte t = ticket(1L, 5L);
+            when(repo.findById(1L)).thenReturn(Optional.of(t));
+            when(restTemplate.getForObject(contains("/api/usuarios/7"), eq(ClienteDTO.class)))
+                    .thenReturn(null);
+
+            assertThatThrownBy(() -> service.asignarTicketEmpleado(1L, 7L))
+                    .isInstanceOf(NoExisteEnBdException.class)
+                    .hasMessageContaining("empleado");
+
+            verify(repo, never()).save(any());
+        }
+
+        @Test
+        @DisplayName("lanza NoExisteEnBdException cuando empleado tiene rol null")
+        void empleadoRolNull() {
+            TicketSoporte t = ticket(1L, 5L);
+            when(repo.findById(1L)).thenReturn(Optional.of(t));
+            ClienteDTO empleado = new ClienteDTO();
+            empleado.setClienteId(7L);
+            when(restTemplate.getForObject(contains("/api/usuarios/7"), eq(ClienteDTO.class)))
+                    .thenReturn(empleado);
+
+            assertThatThrownBy(() -> service.asignarTicketEmpleado(1L, 7L))
+                    .isInstanceOf(NoExisteEnBdException.class)
+                    .hasMessageContaining("empleado");
+
+            verify(repo, never()).save(any());
+        }
+
+        @Test
+        @DisplayName("lanza NoExisteEnBdException cuando usuarios-service no disponible")
+        void empleadoServicioNoDisponible() {
+            TicketSoporte t = ticket(1L, 5L);
+            when(repo.findById(1L)).thenReturn(Optional.of(t));
+            when(restTemplate.getForObject(contains("/api/usuarios/7"), eq(ClienteDTO.class)))
+                    .thenThrow(new ResourceAccessException("Connection refused"));
+
+            assertThatThrownBy(() -> service.asignarTicketEmpleado(1L, 7L))
+                    .isInstanceOf(NoExisteEnBdException.class)
+                    .hasMessageContaining("usuarios");
 
             verify(repo, never()).save(any());
         }

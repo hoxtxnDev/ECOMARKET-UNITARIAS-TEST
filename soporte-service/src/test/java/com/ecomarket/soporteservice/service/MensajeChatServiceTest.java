@@ -194,6 +194,24 @@ class MensajeChatServiceTest {
                     .isInstanceOf(ResponseStatusException.class)
                     .hasFieldOrPropertyWithValue("status", HttpStatus.BAD_REQUEST);
         }
+
+        @Test
+        @DisplayName("marca como leidos mensajes del cliente cuando empleado responde")
+        void marcaLeidosClienteCuandoEmpleadoResponde() {
+            when(ticketRepo.findById(10L)).thenReturn(Optional.of(ticketConEmpleado(10L, 5L, 7L)));
+
+            MensajeChat m1 = mensaje(1L, 10L, "Hola", false);
+            when(repo.findByTicketIdAndEsClienteAndLeido(10L, true, false))
+                    .thenReturn(List.of(m1));
+            when(repo.saveAll(any())).thenAnswer(inv -> inv.getArgument(0));
+            when(repo.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+            MensajeChat resultado = service.enviarMensajeChat(10L, 7L, false, "Respuesta");
+
+            assertThat(m1.getLeido()).isTrue();
+            verify(repo).saveAll(any());
+            assertThat(resultado.getContenido()).isEqualTo("Respuesta");
+        }
     }
 
     @Nested
@@ -219,6 +237,48 @@ class MensajeChatServiceTest {
             when(repo.findByTicketIdOrderByFechaEnvioAsc(99L)).thenReturn(List.of());
             assertThat(service.obtenerHistorialChat(99L)).isEmpty();
         }
+    }
+
+    @Nested
+    @DisplayName("obtenerHistorialChat con viewer")
+    class HistorialConViewer {
+
+        @Test
+        @DisplayName("marca como leídos mensajes del otro lado (viewer no es emisor)")
+        void marcaLeidosDelOtroLado() {
+            MensajeChat m1 = mensaje(1L, 10L, "Hola", false); // esCliente=true, no leido
+            MensajeChat m2 = mensaje(2L, 10L, "Ok", true);    // esCliente=true, ya leido
+            when(repo.findByTicketIdOrderByFechaEnvioAsc(10L)).thenReturn(List.of(m1, m2));
+
+            List<MensajeChat> resultado = service.obtenerHistorialChat(10L, false); // viewer es empleado
+
+            assertThat(resultado).hasSize(2);
+            verify(repo).saveAll(any());
+            assertThat(m1.getLeido()).isTrue();
+        }
+
+        @Test
+        @DisplayName("no marca nada si no hay mensajes del otro lado sin leer")
+        void noMarcaSiNoHay() {
+            MensajeChat m = mensaje(1L, 10L, "Hola", true); // ya leido
+            when(repo.findByTicketIdOrderByFechaEnvioAsc(10L)).thenReturn(List.of(m));
+
+            service.obtenerHistorialChat(10L, false);
+
+            verify(repo, never()).saveAll(any());
+        }
+
+        @Test
+        @DisplayName("no marca mensajes del mismo lado (viewer es cliente, mensaje es de cliente)")
+        void noMarcaMensajesDelMismoLado() {
+            MensajeChat m = mensaje(1L, 10L, "Hola", false); // esCliente=true, no leido
+            when(repo.findByTicketIdOrderByFechaEnvioAsc(10L)).thenReturn(List.of(m));
+
+            service.obtenerHistorialChat(10L, true); // viewer es cliente también
+
+            verify(repo, never()).saveAll(any());
+        }
+
     }
 
     @Nested

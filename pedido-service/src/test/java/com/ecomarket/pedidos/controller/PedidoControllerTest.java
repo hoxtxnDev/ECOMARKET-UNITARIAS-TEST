@@ -23,6 +23,8 @@ import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
+import org.springframework.http.MediaType;
+
 @WebMvcTest(PedidoController.class)
 @AutoConfigureMockMvc(addFilters = false)
 @ActiveProfiles("test")
@@ -207,6 +209,22 @@ class PedidoControllerTest {
 
             mvc.perform(get("/api/pedidos/99"))
                     .andExpect(status().isBadRequest());
+        }
+    }
+
+    @Nested
+    @DisplayName("POST /internal/actualizar-por-envio")
+    class ActualizarPorEnvio {
+
+        @Test
+        @DisplayName("200 OK al actualizar estado desde envío")
+        void exitoso() throws Exception {
+            mvc.perform(post("/api/pedidos/internal/actualizar-por-envio")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{\"pedidoId\":1,\"estadoEnvioNombre\":\"entregado\"}"))
+                    .andExpect(status().isOk());
+
+            verify(pedidoService).actualizarEstadoPorEnvio(1L, "entregado");
         }
     }
 }

@@ -6,6 +6,7 @@ import com.horacio.ecomarket.usuarios.model.Permiso;
 import com.horacio.ecomarket.usuarios.model.Rol;
 import com.horacio.ecomarket.usuarios.exception.CorreoDuplicadoException;
 import com.horacio.ecomarket.usuarios.exception.RecursoNoEncontradoException;
+import com.horacio.ecomarket.usuarios.exception.TelefonoDuplicadoException;
 import com.horacio.ecomarket.usuarios.repository.PerfilUsuarioRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -142,6 +143,22 @@ class RegistroUsuarioServiceTest {
         }
 
         @Test
+        @DisplayName("registra con telefono corto (solo codigo de pais) sin error")
+        void registraConTelefonoCorto() {
+            PerfilUsuario telefonoCorto = PerfilUsuario.builder()
+                    .nombre("Corto").correo("corto@eco.cl").telefono("+56").build();
+
+            when(repository.findByCorreo("corto@eco.cl")).thenReturn(Optional.empty());
+            when(repository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+            when(restTemplate.postForEntity(contains("8086"), any(), eq(String.class)))
+                    .thenReturn(null);
+
+            PerfilUsuario resultado = service.registrarCuenta(telefonoCorto, "pass");
+
+            assertThat(resultado.getTelefono()).isEqualTo("+56");
+        }
+
+        @Test
         @DisplayName("usa ROLE_USER como rol por defecto cuando el perfil no tiene rol")
         void usaRolUserPorDefectoCuandoNoHayRol() {
             PerfilUsuario sinRol = PerfilUsuario.builder()
@@ -162,6 +179,74 @@ class RegistroUsuarioServiceTest {
 
             verify(restTemplate).postForEntity(
                     contains("8086/api/sesion/credencial"), any(), eq(String.class));
+        }
+
+        @Test
+        @DisplayName("no valida teléfono si el perfil no tiene teléfono")
+        void noValidaTelefonoCuandoEsNull() {
+            PerfilUsuario sinTelefono = PerfilUsuario.builder()
+                    .nombre("Sin Tel").correo("sintel@eco.cl").build();
+
+            when(repository.findByCorreo("sintel@eco.cl")).thenReturn(Optional.empty());
+            when(repository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+            when(restTemplate.postForEntity(contains("8086"), any(), eq(String.class)))
+                    .thenReturn(null);
+
+            service.registrarCuenta(sinTelefono, "pass");
+
+            verify(repository, never()).findAll();
+        }
+
+        @Test
+        @DisplayName("no valida teléfono si el perfil tiene teléfono en blanco")
+        void noValidaTelefonoCuandoEsBlanco() {
+            PerfilUsuario telefonoBlanco = PerfilUsuario.builder()
+                    .nombre("Blanco").correo("blanco@eco.cl").telefono("  ").build();
+
+            when(repository.findByCorreo("blanco@eco.cl")).thenReturn(Optional.empty());
+            when(repository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+            when(restTemplate.postForEntity(contains("8086"), any(), eq(String.class)))
+                    .thenReturn(null);
+
+            service.registrarCuenta(telefonoBlanco, "pass");
+
+            verify(repository, never()).findAll();
+        }
+
+        @Test
+        @DisplayName("lanza TelefonoDuplicadoException cuando el teléfono ya está registrado")
+        void lanzaExcepcionTelefonoDuplicado() {
+            PerfilUsuario otro = PerfilUsuario.builder()
+                    .id(2L).nombre("Otro").correo("otro@eco.cl")
+                    .telefono("912345678").build(); // forma normalizada de +56912345678
+
+            when(repository.findByCorreo("hocx@eco.cl")).thenReturn(Optional.empty());
+            when(repository.findAll()).thenReturn(List.of(otro));
+
+            assertThatThrownBy(() -> service.registrarCuenta(perfilBase, "pass123"))
+                    .isInstanceOf(TelefonoDuplicadoException.class)
+                    .hasMessageContaining("teléfono");
+        }
+
+        @Test
+        @DisplayName("ignora usuarios con teléfono null al validar duplicados")
+        void ignoraUsuariosConTelefonoNull() {
+            PerfilUsuario sinTel = PerfilUsuario.builder()
+                    .id(2L).nombre("SinTel").correo("sintel@eco.cl").build();
+
+            when(repository.findByCorreo("hocx@eco.cl")).thenReturn(Optional.empty());
+            when(repository.findAll()).thenReturn(List.of(sinTel));
+            when(repository.save(any())).thenAnswer(inv -> {
+                PerfilUsuario p = inv.getArgument(0);
+                p.setId(1L);
+                return p;
+            });
+            when(restTemplate.postForEntity(contains("8086"), any(), eq(String.class)))
+                    .thenReturn(null);
+
+            PerfilUsuario resultado = service.registrarCuenta(perfilBase, "pass123");
+
+            assertThat(resultado).isNotNull();
         }
 
         @Test
@@ -271,6 +356,98 @@ class RegistroUsuarioServiceTest {
             PerfilUsuario resultado = service.modificarDatosUsuario(1L, datosNuevos);
 
             assertThat(resultado.getRol().getNombre()).isEqualTo("ADMIN");
+        }
+
+        @Test
+        @DisplayName("lanza TelefonoDuplicadoException cuando el nuevo teléfono está duplicado")
+        void lanzaExcepcionTelefonoDuplicadoAlModificar() {
+            PerfilUsuario existente = PerfilUsuario.builder()
+                    .id(1L).nombre("H").correo("h@eco.cl").telefono("111").build();
+
+            PerfilUsuario datosNuevos = PerfilUsuario.builder()
+                    .nombre("H").correo("h@eco.cl").telefono("+56999999999").build();
+
+            PerfilUsuario otro = PerfilUsuario.builder()
+                    .id(2L).nombre("Otro").correo("otro@eco.cl")
+                    .telefono("999999999").build(); // forma normalizada de +56999999999
+
+            when(repository.findById(1L)).thenReturn(Optional.of(existente));
+            when(repository.findAll()).thenReturn(List.of(otro));
+
+            assertThatThrownBy(() -> service.modificarDatosUsuario(1L, datosNuevos))
+                    .isInstanceOf(TelefonoDuplicadoException.class)
+                    .hasMessageContaining("teléfono");
+        }
+
+        @Test
+        @DisplayName("no valida teléfono si datosNuevos no tiene teléfono")
+        void noValidaTelefonoCuandoDatosNuevosNoTiene() {
+            PerfilUsuario existente = PerfilUsuario.builder()
+                    .id(1L).nombre("H").correo("h@eco.cl").telefono("111").build();
+            PerfilUsuario datosNuevos = PerfilUsuario.builder()
+                    .nombre("H Nuevo").correo("h@eco.cl").build(); // telefono null
+
+            when(repository.findById(1L)).thenReturn(Optional.of(existente));
+            when(repository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+            service.modificarDatosUsuario(1L, datosNuevos);
+
+            verify(repository, never()).findAll();
+        }
+
+        @Test
+        @DisplayName("no valida teléfono si datosNuevos tiene teléfono en blanco")
+        void noValidaTelefonoCuandoEsBlancoEnModificar() {
+            PerfilUsuario existente = PerfilUsuario.builder()
+                    .id(1L).nombre("H").correo("h@eco.cl").telefono("111").build();
+            PerfilUsuario datosNuevos = PerfilUsuario.builder()
+                    .nombre("H Nuevo").correo("h@eco.cl").telefono("  ").build();
+
+            when(repository.findById(1L)).thenReturn(Optional.of(existente));
+            when(repository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+            service.modificarDatosUsuario(1L, datosNuevos);
+
+            verify(repository, never()).findAll();
+        }
+
+        @Test
+        @DisplayName("no valida teléfono si el teléfono no cambió")
+        void noValidaTelefonoCuandoNoCambia() {
+            PerfilUsuario existente = PerfilUsuario.builder()
+                    .id(1L).nombre("H").correo("h@eco.cl").telefono("111").build();
+            PerfilUsuario datosNuevos = PerfilUsuario.builder()
+                    .nombre("H").correo("h@eco.cl").telefono("111").build();
+
+            when(repository.findById(1L)).thenReturn(Optional.of(existente));
+            when(repository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+            service.modificarDatosUsuario(1L, datosNuevos);
+
+            verify(repository, never()).findAll();
+        }
+
+        @Test
+        @DisplayName("ignora el propio perfil al validar telefono duplicado al modificar")
+        void ignoraPropioPerfilAlModificar() {
+            PerfilUsuario existente = PerfilUsuario.builder()
+                    .id(1L).nombre("H").correo("h@eco.cl").telefono("111").build();
+            PerfilUsuario datosNuevos = PerfilUsuario.builder()
+                    .nombre("H").correo("h@eco.cl").telefono("+56999999999").build();
+            PerfilUsuario yo = PerfilUsuario.builder()
+                    .id(1L).nombre("YO").correo("yo@eco.cl")
+                    .telefono("999999999").build();
+            PerfilUsuario otro = PerfilUsuario.builder()
+                    .id(2L).nombre("Otro").correo("otro@eco.cl")
+                    .telefono("111111111").build();
+
+            when(repository.findById(1L)).thenReturn(Optional.of(existente));
+            when(repository.findAll()).thenReturn(List.of(yo, otro));
+            when(repository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+            PerfilUsuario resultado = service.modificarDatosUsuario(1L, datosNuevos);
+
+            assertThat(resultado.getTelefono()).isEqualTo("+56999999999");
         }
 
         @Test
