@@ -11,7 +11,7 @@
     <img src="https://img.shields.io/badge/JWT-HS256-000000?logo=jsonwebtokens" alt="JWT">
     <img src="https://img.shields.io/badge/JUnit_5-25.1-25A162?logo=junit5" alt="JUnit 5">
     <img src="https://img.shields.io/badge/Maven-4.0-C71A36?logo=apachemaven" alt="Maven">
-    <img src="https://img.shields.io/badge/11_servicios-1060%2B_tests-blue" alt="11 servicios">
+    <img src="https://img.shields.io/badge/11_servicios-1149_tests-blue" alt="11 servicios">
   </p>
 </p>
 
@@ -473,11 +473,11 @@ mvn clean test
 | `gestion-tienda-service` | 82 | ✅ 100 % |
 | `iniciosesion-service` | 106 | ✅ 100 % |
 | `pedido-service` | 67 | ✅ 100 % |
-| `proceso-pago-service` | 96 | ✅ 100 % |
+| `proceso-pago-service` | 106 | ✅ 100 % |
 | `logistica-envios-service` | 152 | ✅ 100 % |
 | `registro-usuarios-service` | 101 | ✅ 100 % |
 | `soporte-service` | 208 | ✅ 100 % |
-| **Total** | **1139** | — |
+| **Total** | **1149** | — |
 
 > Todos los servicios tienen JaCoCo configurado y generan reporte de cobertura en `target/site/jacoco/index.html`.
 

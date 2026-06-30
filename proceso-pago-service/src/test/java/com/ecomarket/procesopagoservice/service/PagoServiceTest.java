@@ -47,6 +47,13 @@ class PagoServiceTest {
         return m;
     }
 
+    private MetodoPagoTransaccion metodoManual() {
+        MetodoPagoTransaccion m = new MetodoPagoTransaccion();
+        m.setId(2L);
+        m.setNombre("Transferencia Bancaria");
+        return m;
+    }
+
     private TransaccionPago transaccion(Long id, Double subtotal) {
         TransaccionPago t = new TransaccionPago();
         t.setId(id);
@@ -190,6 +197,18 @@ class PagoServiceTest {
             assertThat(resultado.getId()).isEqualTo(1L);
             assertThat(resultado.getIdempotencyKey()).isNotNull();
             verify(transaccionRepository, never()).findByIdempotencyKey(any());
+        }
+
+        @Test
+        @DisplayName("lanza excepción si el pedido no tiene método de pago asignado")
+        void pedidoSinMetodoPago() {
+            Map<String, Object> data = new HashMap<>(pedidoData());
+            data.remove("metodoPagoId");
+            when(restTemplate.getForObject(anyString(), eq(Map.class))).thenReturn(data);
+
+            assertThatThrownBy(() -> service.iniciarPago(10L, "idem"))
+                    .isInstanceOf(RecursoNoEncontradoException.class)
+                    .hasMessageContaining("método de pago asignado");
         }
 
         @Test
@@ -374,6 +393,48 @@ class PagoServiceTest {
         }
 
         @Test
+        @DisplayName("lanza excepción si transacción está en estado APROBADO")
+        void transaccionEnEstadoAprobado() {
+            TransaccionPago t = transaccion(1L, 50000.0);
+            t.setEstado(estado("APROBADO"));
+            when(transaccionRepository.findById(1L)).thenReturn(Optional.of(t));
+
+            assertThatThrownBy(() -> service.anadirCuponDescuento(1L, 1L))
+                    .isInstanceOf(EstadoTransaccionInvalidoException.class)
+                    .hasMessageContaining("No se puede aplicar cupón");
+
+            verify(cuponRepository, never()).findById(any());
+        }
+
+        @Test
+        @DisplayName("lanza excepción si transacción está en estado RECHAZADO")
+        void transaccionEnEstadoRechazado() {
+            TransaccionPago t = transaccion(1L, 50000.0);
+            t.setEstado(estado("RECHAZADO"));
+            when(transaccionRepository.findById(1L)).thenReturn(Optional.of(t));
+
+            assertThatThrownBy(() -> service.anadirCuponDescuento(1L, 1L))
+                    .isInstanceOf(EstadoTransaccionInvalidoException.class)
+                    .hasMessageContaining("No se puede aplicar cupón");
+
+            verify(cuponRepository, never()).findById(any());
+        }
+
+        @Test
+        @DisplayName("lanza excepción si transacción está en estado REEMBOLSADO")
+        void transaccionEnEstadoReembolsado() {
+            TransaccionPago t = transaccion(1L, 50000.0);
+            t.setEstado(estado("REEMBOLSADO"));
+            when(transaccionRepository.findById(1L)).thenReturn(Optional.of(t));
+
+            assertThatThrownBy(() -> service.anadirCuponDescuento(1L, 1L))
+                    .isInstanceOf(EstadoTransaccionInvalidoException.class)
+                    .hasMessageContaining("No se puede aplicar cupón");
+
+            verify(cuponRepository, never()).findById(any());
+        }
+
+        @Test
         @DisplayName("lanza excepción si transacción no existe")
         void transaccionNoExiste() {
             when(transaccionRepository.findById(99L)).thenReturn(Optional.empty());
@@ -481,6 +542,21 @@ class PagoServiceTest {
 
             assertThat(resultado.getEstado().getNombre()).isEqualTo("RECHAZADO");
             assertThat(resultado.getMensajeError()).contains("Token de pago inválido");
+        }
+
+        @Test
+        @DisplayName("método manual (Transferencia Bancaria) → no actualiza estado del pedido")
+        void metodoManualNoActualizaPedido() {
+            TransaccionPago t = transaccion(1L, 50000.0);
+            t.setMetodoPago(metodoManual());
+            when(transaccionRepository.findById(1L)).thenReturn(Optional.of(t));
+            when(estadoPagoRepository.findByNombre("APROBADO")).thenReturn(Optional.of(estado("APROBADO")));
+            when(transaccionRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+            TransaccionPago resultado = service.procesarConTransbank(1L, "TOKEN-VALIDO");
+
+            assertThat(resultado.getEstado().getNombre()).isEqualTo("APROBADO");
+            verify(restTemplate, never()).put(anyString(), any());
         }
 
         @Test
