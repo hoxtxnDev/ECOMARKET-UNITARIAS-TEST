@@ -166,7 +166,7 @@ class PedidoControllerTest {
         void exitoso() throws Exception {
             when(pedidoService.obtenerHistorialCliente(5L)).thenReturn(List.of(pedido(1L)));
 
-            mvc.perform(get("/api/pedidos/cliente/5")
+            mvc.perform(get("/api/pedidos/cliente")
                     .header("X-User-Id", "5"))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$[0].id").value(1))
@@ -178,7 +178,7 @@ class PedidoControllerTest {
         void sinPedidos() throws Exception {
             when(pedidoService.obtenerHistorialCliente(99L)).thenReturn(List.of());
 
-            mvc.perform(get("/api/pedidos/cliente/99")
+            mvc.perform(get("/api/pedidos/cliente")
                     .header("X-User-Id", "99"))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$").isEmpty());
