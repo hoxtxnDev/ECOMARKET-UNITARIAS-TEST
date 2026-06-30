@@ -146,4 +146,25 @@ class ErrorResponseDTOTest {
         ErrorResponseDTOSub sub = new ErrorResponseDTOSub(now, 400, "e", "m", "p", Map.of());
         assertNotEquals(base, sub);
     }
+
+    @Test
+    void testBuilder() {
+        LocalDateTime now = LocalDateTime.of(2026, 1, 1, 0, 0);
+        Map<String, String> details = Map.of("key", "val");
+        ErrorResponseDTO.ErrorResponseDTOBuilder builder = ErrorResponseDTO.builder()
+                .timestamp(now)
+                .status(404)
+                .error("Not Found")
+                .message("msg")
+                .path("/api")
+                .details(details);
+        assertNotNull(builder.toString());
+        ErrorResponseDTO dto = builder.build();
+        assertEquals(now, dto.getTimestamp());
+        assertEquals(404, dto.getStatus());
+        assertEquals("Not Found", dto.getError());
+        assertEquals("msg", dto.getMessage());
+        assertEquals("/api", dto.getPath());
+        assertEquals(details, dto.getDetails());
+    }
 }

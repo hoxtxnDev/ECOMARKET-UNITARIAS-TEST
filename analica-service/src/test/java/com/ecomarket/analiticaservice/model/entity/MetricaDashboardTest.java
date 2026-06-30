@@ -20,7 +20,6 @@ class MetricaDashboardTest {
     void allArgsConstructorAndGetters() {
         LocalDateTime now = LocalDateTime.of(2026, 1, 1, 0, 0);
         MetricaDashboard m = new MetricaDashboard(1L, "ventas_totales", 1000.0, "mil", now);
-
         assertEquals(1L, m.getId());
         assertEquals("ventas_totales", m.getClaveMetrica());
         assertEquals(1000.0, m.getValorNumerico());
@@ -88,27 +87,22 @@ class MetricaDashboardTest {
     void testSequentialMismatches() {
         LocalDateTime now = LocalDateTime.of(2026, 1, 1, 0, 0);
 
-        // f1: id
         assertNotEquals(new MetricaDashboard(null, "clave", 1.0, "txt", now), new MetricaDashboard(1L, "clave", 1.0, "txt", now));
         assertNotEquals(new MetricaDashboard(1L, "clave", 1.0, "txt", now), new MetricaDashboard(null, "clave", 1.0, "txt", now));
         assertNotEquals(new MetricaDashboard(1L, "clave", 1.0, "txt", now), new MetricaDashboard(2L, "clave", 1.0, "txt", now));
 
-        // f2: claveMetrica
         assertNotEquals(new MetricaDashboard(1L, null, 1.0, "txt", now), new MetricaDashboard(1L, "clave", 1.0, "txt", now));
         assertNotEquals(new MetricaDashboard(1L, "clave", 1.0, "txt", now), new MetricaDashboard(1L, null, 1.0, "txt", now));
         assertNotEquals(new MetricaDashboard(1L, "clave", 1.0, "txt", now), new MetricaDashboard(1L, "clave2", 1.0, "txt", now));
 
-        // f3: valorNumerico
         assertNotEquals(new MetricaDashboard(1L, "clave", null, "txt", now), new MetricaDashboard(1L, "clave", 1.0, "txt", now));
         assertNotEquals(new MetricaDashboard(1L, "clave", 1.0, "txt", now), new MetricaDashboard(1L, "clave", null, "txt", now));
         assertNotEquals(new MetricaDashboard(1L, "clave", 1.0, "txt", now), new MetricaDashboard(1L, "clave", 2.0, "txt", now));
 
-        // f4: valorTexto
         assertNotEquals(new MetricaDashboard(1L, "clave", 1.0, null, now), new MetricaDashboard(1L, "clave", 1.0, "txt", now));
         assertNotEquals(new MetricaDashboard(1L, "clave", 1.0, "txt", now), new MetricaDashboard(1L, "clave", 1.0, null, now));
         assertNotEquals(new MetricaDashboard(1L, "clave", 1.0, "txt", now), new MetricaDashboard(1L, "clave", 1.0, "txt2", now));
 
-        // f5: ultimaActualizacion
         assertNotEquals(new MetricaDashboard(1L, "clave", 1.0, "txt", null), new MetricaDashboard(1L, "clave", 1.0, "txt", now));
         assertNotEquals(new MetricaDashboard(1L, "clave", 1.0, "txt", now), new MetricaDashboard(1L, "clave", 1.0, "txt", null));
         assertNotEquals(new MetricaDashboard(1L, "clave", 1.0, "txt", now), new MetricaDashboard(1L, "clave", 1.0, "txt", now.plusDays(1)));

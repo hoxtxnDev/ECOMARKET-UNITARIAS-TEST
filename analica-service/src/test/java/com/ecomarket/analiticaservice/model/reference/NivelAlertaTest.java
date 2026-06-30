@@ -15,7 +15,6 @@ class NivelAlertaTest {
     @Test
     void allArgsConstructorAndGetters() {
         NivelAlerta na = new NivelAlerta(1L, "CRITICO");
-
         assertEquals(1L, na.getId());
         assertEquals("CRITICO", na.getNombre());
     }
@@ -67,12 +66,10 @@ class NivelAlertaTest {
 
     @Test
     void testSequentialMismatches() {
-        // f1: id
         assertNotEquals(new NivelAlerta(null, "TEST"), new NivelAlerta(1L, "TEST"));
         assertNotEquals(new NivelAlerta(1L, "TEST"), new NivelAlerta(null, "TEST"));
         assertNotEquals(new NivelAlerta(1L, "TEST"), new NivelAlerta(2L, "TEST"));
 
-        // f2: nombre
         assertNotEquals(new NivelAlerta(1L, null), new NivelAlerta(1L, "TEST"));
         assertNotEquals(new NivelAlerta(1L, "TEST"), new NivelAlerta(1L, null));
         assertNotEquals(new NivelAlerta(1L, "TEST"), new NivelAlerta(1L, "OTHER"));

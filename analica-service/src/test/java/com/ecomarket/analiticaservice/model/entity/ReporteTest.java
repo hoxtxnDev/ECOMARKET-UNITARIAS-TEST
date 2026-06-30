@@ -25,7 +25,6 @@ class ReporteTest {
         EstadoReporte estado = new EstadoReporte(1L, "COMPLETADO");
         LocalDateTime now = LocalDateTime.of(2026, 1, 1, 0, 0);
         Reporte r = new Reporte(1L, 10L, tipo, estado, now, "http://url/reporte.pdf", 100);
-
         assertEquals(1L, r.getId());
         assertEquals(10L, r.getSolicitanteId());
         assertEquals(tipo, r.getTipo());
@@ -112,37 +111,30 @@ class ReporteTest {
         LocalDateTime now = LocalDateTime.of(2026, 1, 1, 0, 0);
         String url = "url";
 
-        // f1: id
         assertNotEquals(new Reporte(null, 10L, tipo, estado, now, url, 100), new Reporte(1L, 10L, tipo, estado, now, url, 100));
         assertNotEquals(new Reporte(1L, 10L, tipo, estado, now, url, 100), new Reporte(null, 10L, tipo, estado, now, url, 100));
         assertNotEquals(new Reporte(1L, 10L, tipo, estado, now, url, 100), new Reporte(2L, 10L, tipo, estado, now, url, 100));
 
-        // f2: solicitanteId
         assertNotEquals(new Reporte(1L, null, tipo, estado, now, url, 100), new Reporte(1L, 10L, tipo, estado, now, url, 100));
         assertNotEquals(new Reporte(1L, 10L, tipo, estado, now, url, 100), new Reporte(1L, null, tipo, estado, now, url, 100));
         assertNotEquals(new Reporte(1L, 10L, tipo, estado, now, url, 100), new Reporte(1L, 20L, tipo, estado, now, url, 100));
 
-        // f3: tipo
         assertNotEquals(new Reporte(1L, 10L, null, estado, now, url, 100), new Reporte(1L, 10L, tipo, estado, now, url, 100));
         assertNotEquals(new Reporte(1L, 10L, tipo, estado, now, url, 100), new Reporte(1L, 10L, null, estado, now, url, 100));
         assertNotEquals(new Reporte(1L, 10L, tipo, estado, now, url, 100), new Reporte(1L, 10L, new TipoReporte(2L, "INV"), estado, now, url, 100));
 
-        // f4: estado
         assertNotEquals(new Reporte(1L, 10L, tipo, null, now, url, 100), new Reporte(1L, 10L, tipo, estado, now, url, 100));
         assertNotEquals(new Reporte(1L, 10L, tipo, estado, now, url, 100), new Reporte(1L, 10L, tipo, null, now, url, 100));
         assertNotEquals(new Reporte(1L, 10L, tipo, estado, now, url, 100), new Reporte(1L, 10L, tipo, new EstadoReporte(2L, "PEN"), now, url, 100));
 
-        // f5: fechaGeneracion
         assertNotEquals(new Reporte(1L, 10L, tipo, estado, null, url, 100), new Reporte(1L, 10L, tipo, estado, now, url, 100));
         assertNotEquals(new Reporte(1L, 10L, tipo, estado, now, url, 100), new Reporte(1L, 10L, tipo, estado, null, url, 100));
         assertNotEquals(new Reporte(1L, 10L, tipo, estado, now, url, 100), new Reporte(1L, 10L, tipo, estado, now.plusDays(1), url, 100));
 
-        // f6: urlArchivoResultado
         assertNotEquals(new Reporte(1L, 10L, tipo, estado, now, null, 100), new Reporte(1L, 10L, tipo, estado, now, url, 100));
         assertNotEquals(new Reporte(1L, 10L, tipo, estado, now, url, 100), new Reporte(1L, 10L, tipo, estado, now, null, 100));
         assertNotEquals(new Reporte(1L, 10L, tipo, estado, now, url, 100), new Reporte(1L, 10L, tipo, estado, now, "url2", 100));
 
-        // f7: totalRegistrosProcesados
         assertNotEquals(new Reporte(1L, 10L, tipo, estado, now, url, null), new Reporte(1L, 10L, tipo, estado, now, url, 100));
         assertNotEquals(new Reporte(1L, 10L, tipo, estado, now, url, 100), new Reporte(1L, 10L, tipo, estado, now, url, null));
         assertNotEquals(new Reporte(1L, 10L, tipo, estado, now, url, 100), new Reporte(1L, 10L, tipo, estado, now, url, 200));

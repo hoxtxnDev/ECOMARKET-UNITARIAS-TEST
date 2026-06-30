@@ -130,4 +130,22 @@ class AccionLogDTOTest {
         AccionLogDTOSub sub = new AccionLogDTOSub("v", "C", 1L, "d", now);
         assertNotEquals(base, sub);
     }
+
+    @Test
+    void testBuilder() {
+        LocalDateTime now = LocalDateTime.of(2026, 1, 1, 0, 0);
+        AccionLogDTO.AccionLogDTOBuilder builder = AccionLogDTO.builder()
+                .microservicio("ms")
+                .accion("ACCION")
+                .usuarioId(5L)
+                .detalles("det")
+                .fecha(now);
+        assertNotNull(builder.toString());
+        AccionLogDTO dto = builder.build();
+        assertEquals("ms", dto.getMicroservicio());
+        assertEquals("ACCION", dto.getAccion());
+        assertEquals(5L, dto.getUsuarioId());
+        assertEquals("det", dto.getDetalles());
+        assertEquals(now, dto.getFecha());
+    }
 }

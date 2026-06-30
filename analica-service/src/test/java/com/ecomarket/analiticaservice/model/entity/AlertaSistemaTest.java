@@ -23,7 +23,6 @@ class AlertaSistemaTest {
         NivelAlerta nivel = new NivelAlerta(1L, "CRITICO");
         LocalDateTime now = LocalDateTime.of(2026, 1, 1, 0, 0);
         AlertaSistema a = new AlertaSistema(1L, nivel, "Error crítico", "Módulo ventas", now, false);
-
         assertEquals(1L, a.getId());
         assertEquals(nivel, a.getNivel());
         assertEquals("Error crítico", a.getMensaje());
@@ -100,32 +99,26 @@ class AlertaSistemaTest {
         NivelAlerta nivel = new NivelAlerta(1L, "CRITICO");
         LocalDateTime now = LocalDateTime.of(2026, 1, 1, 0, 0);
 
-        // f1: id
         assertNotEquals(new AlertaSistema(null, nivel, "msg", "mod", now, false), new AlertaSistema(1L, nivel, "msg", "mod", now, false));
         assertNotEquals(new AlertaSistema(1L, nivel, "msg", "mod", now, false), new AlertaSistema(null, nivel, "msg", "mod", now, false));
         assertNotEquals(new AlertaSistema(1L, nivel, "msg", "mod", now, false), new AlertaSistema(2L, nivel, "msg", "mod", now, false));
 
-        // f2: nivel
         assertNotEquals(new AlertaSistema(1L, null, "msg", "mod", now, false), new AlertaSistema(1L, nivel, "msg", "mod", now, false));
         assertNotEquals(new AlertaSistema(1L, nivel, "msg", "mod", now, false), new AlertaSistema(1L, null, "msg", "mod", now, false));
         assertNotEquals(new AlertaSistema(1L, nivel, "msg", "mod", now, false), new AlertaSistema(1L, new NivelAlerta(2L, "WARN"), "msg", "mod", now, false));
 
-        // f3: mensaje
         assertNotEquals(new AlertaSistema(1L, nivel, null, "mod", now, false), new AlertaSistema(1L, nivel, "msg", "mod", now, false));
         assertNotEquals(new AlertaSistema(1L, nivel, "msg", "mod", now, false), new AlertaSistema(1L, nivel, null, "mod", now, false));
         assertNotEquals(new AlertaSistema(1L, nivel, "msg", "mod", now, false), new AlertaSistema(1L, nivel, "msg2", "mod", now, false));
 
-        // f4: moduloOrigen
         assertNotEquals(new AlertaSistema(1L, nivel, "msg", null, now, false), new AlertaSistema(1L, nivel, "msg", "mod", now, false));
         assertNotEquals(new AlertaSistema(1L, nivel, "msg", "mod", now, false), new AlertaSistema(1L, nivel, "msg", null, now, false));
         assertNotEquals(new AlertaSistema(1L, nivel, "msg", "mod", now, false), new AlertaSistema(1L, nivel, "msg", "mod2", now, false));
 
-        // f5: fechaAlerta
         assertNotEquals(new AlertaSistema(1L, nivel, "msg", "mod", null, false), new AlertaSistema(1L, nivel, "msg", "mod", now, false));
         assertNotEquals(new AlertaSistema(1L, nivel, "msg", "mod", now, false), new AlertaSistema(1L, nivel, "msg", "mod", null, false));
         assertNotEquals(new AlertaSistema(1L, nivel, "msg", "mod", now, false), new AlertaSistema(1L, nivel, "msg", "mod", now.plusDays(1), false));
 
-        // f6: resuelta
         assertNotEquals(new AlertaSistema(1L, nivel, "msg", "mod", now, null), new AlertaSistema(1L, nivel, "msg", "mod", now, false));
         assertNotEquals(new AlertaSistema(1L, nivel, "msg", "mod", now, false), new AlertaSistema(1L, nivel, "msg", "mod", now, null));
         assertNotEquals(new AlertaSistema(1L, nivel, "msg", "mod", now, false), new AlertaSistema(1L, nivel, "msg", "mod", now, true));

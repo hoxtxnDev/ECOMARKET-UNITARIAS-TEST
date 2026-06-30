@@ -15,7 +15,6 @@ class EstadoRespaldoTest {
     @Test
     void allArgsConstructorAndGetters() {
         EstadoRespaldo er = new EstadoRespaldo(1L, "EXITOSO");
-
         assertEquals(1L, er.getId());
         assertEquals("EXITOSO", er.getNombre());
     }
@@ -67,12 +66,10 @@ class EstadoRespaldoTest {
 
     @Test
     void testSequentialMismatches() {
-        // f1: id
         assertNotEquals(new EstadoRespaldo(null, "TEST"), new EstadoRespaldo(1L, "TEST"));
         assertNotEquals(new EstadoRespaldo(1L, "TEST"), new EstadoRespaldo(null, "TEST"));
         assertNotEquals(new EstadoRespaldo(1L, "TEST"), new EstadoRespaldo(2L, "TEST"));
 
-        // f2: nombre
         assertNotEquals(new EstadoRespaldo(1L, null), new EstadoRespaldo(1L, "TEST"));
         assertNotEquals(new EstadoRespaldo(1L, "TEST"), new EstadoRespaldo(1L, null));
         assertNotEquals(new EstadoRespaldo(1L, "TEST"), new EstadoRespaldo(1L, "OTHER"));

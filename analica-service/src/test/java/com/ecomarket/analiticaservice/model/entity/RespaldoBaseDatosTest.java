@@ -23,7 +23,6 @@ class RespaldoBaseDatosTest {
         EstadoRespaldo estado = new EstadoRespaldo(1L, "EXITOSO");
         LocalDateTime now = LocalDateTime.of(2026, 1, 1, 0, 0);
         RespaldoBaseDatos r = new RespaldoBaseDatos(1L, now, 150.5, estado, "/backups/db.sql");
-
         assertEquals(1L, r.getId());
         assertEquals(now, r.getFechaRespaldo());
         assertEquals(150.5, r.getTamanoMegabytes());
@@ -98,27 +97,22 @@ class RespaldoBaseDatosTest {
         LocalDateTime now = LocalDateTime.of(2026, 1, 1, 0, 0);
         String path = "/backups/db.sql";
 
-        // f1: id
         assertNotEquals(new RespaldoBaseDatos(null, now, 150.5, estado, path), new RespaldoBaseDatos(1L, now, 150.5, estado, path));
         assertNotEquals(new RespaldoBaseDatos(1L, now, 150.5, estado, path), new RespaldoBaseDatos(null, now, 150.5, estado, path));
         assertNotEquals(new RespaldoBaseDatos(1L, now, 150.5, estado, path), new RespaldoBaseDatos(2L, now, 150.5, estado, path));
 
-        // f2: fechaRespaldo
         assertNotEquals(new RespaldoBaseDatos(1L, null, 150.5, estado, path), new RespaldoBaseDatos(1L, now, 150.5, estado, path));
         assertNotEquals(new RespaldoBaseDatos(1L, now, 150.5, estado, path), new RespaldoBaseDatos(1L, null, 150.5, estado, path));
         assertNotEquals(new RespaldoBaseDatos(1L, now, 150.5, estado, path), new RespaldoBaseDatos(1L, now.plusDays(1), 150.5, estado, path));
 
-        // f3: tamanoMegabytes
         assertNotEquals(new RespaldoBaseDatos(1L, now, null, estado, path), new RespaldoBaseDatos(1L, now, 150.5, estado, path));
         assertNotEquals(new RespaldoBaseDatos(1L, now, 150.5, estado, path), new RespaldoBaseDatos(1L, now, null, estado, path));
         assertNotEquals(new RespaldoBaseDatos(1L, now, 150.5, estado, path), new RespaldoBaseDatos(1L, now, 200.0, estado, path));
 
-        // f4: estado
         assertNotEquals(new RespaldoBaseDatos(1L, now, 150.5, null, path), new RespaldoBaseDatos(1L, now, 150.5, estado, path));
         assertNotEquals(new RespaldoBaseDatos(1L, now, 150.5, estado, path), new RespaldoBaseDatos(1L, now, 150.5, null, path));
         assertNotEquals(new RespaldoBaseDatos(1L, now, 150.5, estado, path), new RespaldoBaseDatos(1L, now, 150.5, new EstadoRespaldo(2L, "FAIL"), path));
 
-        // f5: rutaAlmacenamiento
         assertNotEquals(new RespaldoBaseDatos(1L, now, 150.5, estado, null), new RespaldoBaseDatos(1L, now, 150.5, estado, path));
         assertNotEquals(new RespaldoBaseDatos(1L, now, 150.5, estado, path), new RespaldoBaseDatos(1L, now, 150.5, estado, null));
         assertNotEquals(new RespaldoBaseDatos(1L, now, 150.5, estado, path), new RespaldoBaseDatos(1L, now, 150.5, estado, "/other/path"));

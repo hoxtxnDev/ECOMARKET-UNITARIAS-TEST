@@ -15,7 +15,6 @@ class TipoReporteTest {
     @Test
     void allArgsConstructorAndGetters() {
         TipoReporte tr = new TipoReporte(1L, "VENTAS");
-
         assertEquals(1L, tr.getId());
         assertEquals("VENTAS", tr.getNombre());
     }
@@ -67,12 +66,10 @@ class TipoReporteTest {
 
     @Test
     void testSequentialMismatches() {
-        // f1: id
         assertNotEquals(new TipoReporte(null, "TEST"), new TipoReporte(1L, "TEST"));
         assertNotEquals(new TipoReporte(1L, "TEST"), new TipoReporte(null, "TEST"));
         assertNotEquals(new TipoReporte(1L, "TEST"), new TipoReporte(2L, "TEST"));
 
-        // f2: nombre
         assertNotEquals(new TipoReporte(1L, null), new TipoReporte(1L, "TEST"));
         assertNotEquals(new TipoReporte(1L, "TEST"), new TipoReporte(1L, null));
         assertNotEquals(new TipoReporte(1L, "TEST"), new TipoReporte(1L, "OTHER"));
