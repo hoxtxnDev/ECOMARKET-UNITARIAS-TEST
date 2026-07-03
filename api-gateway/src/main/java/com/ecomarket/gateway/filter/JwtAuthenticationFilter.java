@@ -161,7 +161,10 @@ public class JwtAuthenticationFilter extends AbstractGatewayFilterFactory<JwtAut
             || path.startsWith("/api/soporte/estados")
             || path.startsWith("/api/sesion/recuperar")
             || path.startsWith("/api/sesion/restablecer")
-            || path.startsWith("/api/sesion/validar");
+            || path.startsWith("/api/sesion/validar")
+            || path.startsWith("/v3/api-docs")
+            || path.startsWith("/doc/swagger-ui")
+            || path.startsWith("/webjars");
     }
 
     // ── Endpoints prohibidos para CLIENTE ──────────────────────────────────

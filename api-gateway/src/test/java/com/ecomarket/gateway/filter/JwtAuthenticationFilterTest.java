@@ -117,7 +117,11 @@ class JwtAuthenticationFilterTest {
         "/api/v1/puntos-retiro",
         "/api/soporte/categorias",
         "/api/soporte/estados",
-        "/api/sesion/validar"
+        "/api/sesion/validar",
+        "/v3/api-docs",
+        "/v3/api-docs/swagger-config",
+        "/doc/swagger-ui.html",
+        "/webjars/swagger-ui/index.html"
     })
     void allowsAllPublicPathsWithoutAuth(String path) {
         when(request.getURI()).thenReturn(URI.create("http://localhost" + path));
