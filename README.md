@@ -3,7 +3,7 @@
   <p align="center">Plataforma de Comercio Electrónico · Arquitectura de Microservicios</p>
   <br>
   <p align="center">
-    <img src="https://img.shields.io/badge/Spring_Boot-3.4.1_%2F_4.0.6-6DB33F?logo=springboot" alt="Spring Boot">
+    <img src="https://img.shields.io/badge/Spring_Boot-3.4.13_%2F_4.0.7-6DB33F?logo=springboot" alt="Spring Boot">
     <img src="https://img.shields.io/badge/Java-21_%2F_25-ED8B00?logo=openjdk" alt="Java">
     <img src="https://img.shields.io/badge/Spring_Cloud_Gateway-2024.0.0-6DB33F" alt="Spring Cloud">
     <img src="https://img.shields.io/badge/coverage-100%25-brightgreen" alt="Coverage 100%">
@@ -11,7 +11,7 @@
     <img src="https://img.shields.io/badge/JWT-HS256-000000?logo=jsonwebtokens" alt="JWT">
     <img src="https://img.shields.io/badge/JUnit_5-25.1-25A162?logo=junit5" alt="JUnit 5">
     <img src="https://img.shields.io/badge/Maven-4.0-C71A36?logo=apachemaven" alt="Maven">
-    <img src="https://img.shields.io/badge/11_servicios-1149_tests-blue" alt="11 servicios">
+    <img src="https://img.shields.io/badge/11_servicios-1221_tests-blue" alt="11 servicios">
   </p>
 </p>
 
@@ -38,7 +38,7 @@
 | Categoría | Tecnología | Versión |
 |---|---|---|
 | **Lenguaje** | Java | 21 (api-gateway) / 25 (demás servicios) |
-| **Framework** | Spring Boot | 3.4.1 (api-gateway) / 4.0.6 (demás servicios) |
+| **Framework** | Spring Boot | 3.4.13 (api-gateway) / 4.0.7 (demás servicios) |
 | **Gateway** | Spring Cloud Gateway | 2024.0.0 |
 | **ORM** | Spring Data JPA + Hibernate | 7.x |
 | **Base de Datos** | MySQL | 8+ |
@@ -46,7 +46,7 @@
 | **Autenticación** | JWT (HMAC-SHA256) | jjwt 0.12.5 |
 | **Documentación API** | SpringDoc OpenAPI | 2.6.0 |
 | **Pruebas** | JUnit 5 + Mockito + AssertJ + MockMvc | — |
-| **Cobertura** | JaCoCo | 0.8.14 |
+| **Cobertura** | JaCoCo | 0.8.14 / 0.8.15 |
 | **Build** | Apache Maven | — |
 | **Boilerplate** | Lombok | — |
 | **Validación** | Jakarta Validation | — |
@@ -137,7 +137,7 @@
 | **JWT** | `jjwt-api` / `jjwt-impl` / `jjwt-jackson` 0.12.5 | Creación, firma (HMAC-SHA256) y validación de tokens JWT. Usado en `iniciosesion-service` para emitir tokens y en servicios que necesitan validarlos. |
 | **Lombok** | `lombok` (optional) | Elimina código boilerplate: `@Data`, `@Builder`, `@Slf4j`, `@RequiredArgsConstructor`, etc. |
 | **Jackson** | `jackson-databind` | Serialización y deserialización JSON. Se declara explícitamente en `iniciosesion-service`. |
-| **API Docs** | `springdoc-openapi-starter-webmvc-ui` 2.6.0 | Documentación Swagger/OpenAPI interactiva. Solo presente en `pedido-service`. |
+| **API Docs** | `springdoc-openapi-starter-webmvc-ui` / `webflux-ui` 2.6.0 | Documentación Swagger/OpenAPI interactiva. Presente en `api-gateway`, `pedido-service` y `soporte-service`. |
 | **Pruebas** | `spring-boot-starter-test` | JUnit 5, Mockito, AssertJ y Spring Test. Base de toda la pirámide de pruebas. |
 | **Pruebas Web** | `spring-boot-starter-webmvc-test` | MockMvc para pruebas de controladores con `@WebMvcTest` sin levantar el servidor real. |
 | **Pruebas JPA** | `spring-boot-starter-data-jpa-test` | Soporte para `@DataJpaTest` y segmentación de tests de repositorios. |
@@ -149,11 +149,11 @@
 
 | Componente | api-gateway | Demás servicios |
 |---|---|---|
-| **Spring Boot** | 3.4.1 | 4.0.6 |
+| **Spring Boot** | 3.4.13 | 4.0.7 |
 | **Java** | 21 | 25 |
 | **Spring Cloud** | 2024.0.0 | — |
 
-> `api-gateway` usa Spring Boot 3.4.1+Java 21 porque Spring Cloud Gateway 2024.0.0 requiere una base estable. El resto de servicios utiliza Spring Boot 4.0.6 con Java 25.
+> `api-gateway` usa Spring Boot 3.4.13+Java 21 porque Spring Cloud Gateway 2024.0.0 requiere una base estable. El resto de servicios utiliza Spring Boot 4.0.7 con Java 25.
 
 ---
 
@@ -466,18 +466,18 @@ mvn clean test
 
 | Servicio | Tests | JaCoCo |
 |---|---|---|
-| `api-gateway` | 10 | ✅ 100 % |
+| `api-gateway` | 82 | ✅ 100 % |
 | `analica-service` | 127 | ✅ 100 % |
 | `carrito-compra-service` | 54 | ✅ 100 % |
-| `catalogo-inventario-service` | 136 | ✅ 100 % |
-| `gestion-tienda-service` | 82 | ✅ 100 % |
+| `catalogo-inventario-service` | 136 | ❌ No configurado |
+| `gestion-tienda-service` | 82 | ❌ No configurado |
 | `iniciosesion-service` | 106 | ✅ 100 % |
 | `pedido-service` | 67 | ✅ 100 % |
 | `proceso-pago-service` | 106 | ✅ 100 % |
 | `logistica-envios-service` | 152 | ✅ 100 % |
 | `registro-usuarios-service` | 101 | ✅ 100 % |
 | `soporte-service` | 208 | ✅ 100 % |
-| **Total** | **1149** | — |
+| **Total** | **1221** | — |
 
 > Todos los servicios tienen JaCoCo configurado y generan reporte de cobertura en `target/site/jacoco/index.html`.
 
@@ -587,10 +587,10 @@ Requiere `iniciosesion-service` corriendo en `localhost:8086` para la validació
 
 ## Notas Técnicas
 
-- **ByteBuddy en todos los servicios**: Se configura `net.bytebuddy.experimental=true` como `systemPropertyVariables` en el plugin surefire de los 11 servicios (no como `argLine`) para que Mockito funcione con Java 21 y 25 sin interferir con el agente de JaCoCo.
+- **ByteBuddy**: `api-gateway` usa Byte Buddy 1.17.0+ para compatibilidad nativa con Java 25+ sin necesidad de flags experimentales. El resto de servicios usa la versión gestionada por Spring Boot.
 - **Lombok**: Declarado como `optional=true` y excluido del empaquetado del `spring-boot-maven-plugin`. El procesador de anotaciones se configura explícitamente en `maven-compiler-plugin`.
-- **OpenAPI/Swagger**: Solo disponible en `pedido-service` en la ruta `/doc/swagger-ui.html`.
-- **JaCoCo 0.8.14**: Configurado en todos los servicios con las fases `prepare-agent` (antes de tests) y `report` (después). Soporta Java 25.
+- **OpenAPI/Swagger**: Disponible en `api-gateway` (`/doc/swagger-ui.html`, WebFlux), `pedido-service` y `soporte-service` (WebMVC).
+- **JaCoCo**: Configurado en 9 de 11 servicios (versiones 0.8.14 y 0.8.15). `catalogo-inventario-service` y `gestion-tienda-service` no tienen JaCoCo configurado.
 - **Efecto espejo (mirror effect)**: Cada clase en `src/main` tiene su correspondiente `*Test.java` en `src/test` bajo el mismo package. Auditoría completada en los 11 servicios, incluyendo los **80 DTOs** de todos los proyectos que ahora cuentan con su respectivo test unitario (constructor, builder o setters según la anotación de cada DTO).
 - **JWT secret externalizado**: La propiedad `jwt.secret` se lee de la variable de entorno `JWT_SECRET` (no hardcodeada). Ver `.env.example` en `registro-usuarios-service` e `iniciosesion-service` para la configuración local.
 - **api-gateway como repositorio propio**: El gateway se independizó de un submodule roto; ahora es un proyecto Maven estándar dentro del mismo repositorio.
