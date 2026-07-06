@@ -1,6 +1,0 @@
-[
-  { "id": 1, "nombre": "DISPONIBLE" },
-  { "id": 2, "nombre": "AGOTADO" },
-  { "id": 3, "nombre": "DESCONTINUADO" },
-  { "id": 4, "nombre": "PROXIMAMENTE" }
-]
