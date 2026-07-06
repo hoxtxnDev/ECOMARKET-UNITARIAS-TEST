@@ -149,6 +149,7 @@ public class RegistroUsuarioService {
     }
 
     private void validarTelefonoNoDuplicado(String telefono, Long excluirId) {
+        @SuppressWarnings("unused")
         String normalizado = normalizarTelefono(telefono);
 
         List<PerfilUsuario> todos = repository.findAll();

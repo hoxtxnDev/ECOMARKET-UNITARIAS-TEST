@@ -27,6 +27,11 @@ public class JwtAuthenticationFilter extends AbstractGatewayFilterFactory<JwtAut
 
     public static class Config {}
 
+    @Override
+    public String name() {
+        return "JwtAuthentication";
+    }
+
     @SuppressWarnings({"rawtypes", "unchecked"})
     @Override
     public GatewayFilter apply(Config config) {
