@@ -1,8 +1,10 @@
 # API Flow — Ecomarket
 
-Flujo completo de compra: registro → login → producto → carrito → pedido → pago → estados → envío.
+Flujo completo de compra: registro → login → producto → inventario → dirección → carrito → pedido → pago → envío.
 
 **Base URL Gateway:** `{{baseUrlGateway}} = http://localhost:8080`
+
+**Autenticación:** Usar `Authorization: Bearer {{token}}` en todas las peticiones autenticadas (el token se obtiene del login y se asigna automáticamente via Postman).
 
 ---
 
@@ -14,11 +16,12 @@ POST {{baseUrlGateway}}/api/usuarios/registro
 
 ```json
 {
-  "nombre": "Juan Pérez",
-  "correo": "juan.perez@email.com",
-  "contrasenaInicial": "clave123",
-  "telefono": "+56912345678",
-  "rolId": 2
+  "nombre": "admin",
+  "correo": "admin@example.com",
+  "contrasenaInicial": "MiPassword123",
+  "telefono": "+56931771971",
+  "rolId": 1,
+  "estadoPerfilId": 1
 }
 ```
 
@@ -26,9 +29,9 @@ POST {{baseUrlGateway}}/api/usuarios/registro
 ```json
 {
   "id": 1,
-  "nombre": "Juan Pérez",
-  "correo": "juan.perez@email.com",
-  "rol": { "id": 2, "nombre": "CLIENTE" },
+  "nombre": "admin",
+  "correo": "admin@example.com",
+  "rol": { "id": 1, "nombre": "ADMIN" },
   "estadoPerfil": { "id": 1, "nombre": "ACTIVO" }
 }
 ```
@@ -45,8 +48,8 @@ POST {{baseUrlGateway}}/api/sesion/login
 
 ```json
 {
-  "correo": "juan.perez@email.com",
-  "contrasena": "clave123"
+  "correo": "admin@example.com",
+  "contrasena": "MiPassword123"
 }
 ```
 
@@ -55,32 +58,45 @@ POST {{baseUrlGateway}}/api/sesion/login
 {
   "token": "eyJhbGciOiJIUzI1NiJ9...",
   "usuarioId": 1,
-  "correo": "juan.perez@email.com",
-  "rol": "CLIENTE",
-  "expiracionMs": 1800000
+  "correo": "admin@example.com",
+  "rol": "ADMIN",
+  "expiracionMs": 86400000
 }
 ```
 
-> Usar `token` como `Authorization: Bearer <token>` en todas las peticiones siguientes.
+> Postman guarda automáticamente `token` como variable global para las siguientes peticiones.
 
 ---
 
-## 3. Crear Producto
+## 3. Recuperar Contraseña (Opcional)
+
+```
+POST {{baseUrlGateway}}/api/sesion/recuperar
+```
+
+```json
+{
+  "correo": "admin@example.com"
+}
+```
+
+---
+
+## 4. Crear Producto (Admin)
 
 ```
 POST {{baseUrlGateway}}/api/catalogo
-Authorization: Bearer eyJ...
 ```
 
 ```json
 {
   "sku": "PROD-001",
-  "nombre": "Audífonos Bluetooth",
-  "descripcion": "Audífonos inalámbricos con cancelación de ruido",
-  "precioBase": 29990.0,
-  "categoriaId": 4,
+  "nombre": "Notebook Gamer X100",
+  "descripcion": "Notebook de alto rendimiento para gaming",
+  "precioBase": 899990.0,
+  "categoriaId": 2,
   "estadoId": 1,
-  "imagenUrl": "https://ejemplo.com/audifonos.jpg"
+  "imagenUrl": "https://ejemplo.com/notebook.jpg"
 }
 ```
 
@@ -89,20 +105,21 @@ Authorization: Bearer eyJ...
 {
   "id": 1,
   "sku": "PROD-001",
-  "nombre": "Audífonos Bluetooth",
-  "precioBase": 29990.0,
-  "categoria": { "id": 4, "nombre": "Audio y Video" },
+  "nombre": "Notebook Gamer X100",
+  "precioBase": 899990.0,
+  "categoria": { "id": 2, "nombre": "Computación" },
   "estado": { "id": 1, "nombre": "DISPONIBLE" }
 }
 ```
 
 ---
 
-## 4. Ingresar Stock Global
+## 5. Ingresar Stock Global (Admin)
+
+Stock global disponible para todas las sucursales.
 
 ```
 POST {{baseUrlGateway}}/api/inventario/ingresar
-Authorization: Bearer eyJ...
 ```
 
 ```json
@@ -124,16 +141,61 @@ Authorization: Bearer eyJ...
 
 ---
 
-## 5. Agregar al Carrito
+## 6. Asignar Stock a Sucursal (Admin)
+
+Transfiere stock del inventario global a una sucursal específica.
 
 ```
-POST {{baseUrlGateway}}/api/carrito
-Authorization: Bearer eyJ...
+POST {{baseUrlGateway}}/api/inventario/transferir
 ```
 
 ```json
 {
-  "usuarioId": 1,
+  "productoId": 1,
+  "sucursalId": 1,
+  "cantidad": 20
+}
+```
+
+---
+
+## 7. Agregar Dirección del Usuario
+
+**Admin** (especifica usuarioId en la ruta):
+```
+POST {{baseUrlGateway}}/api/usuarios/direcciones/{usuarioId}
+```
+
+**Cliente** (sin ID en la ruta, se toma del header X-User-Id):
+```
+POST {{baseUrlGateway}}/api/usuarios/direcciones
+```
+
+```json
+{
+  "calle": "Av. Providencia",
+  "numero": "1234",
+  "departamento": "Depto 501",
+  "ciudad": "Santiago",
+  "region": "Región Metropolitana",
+  "codigoPostal": "7500000",
+  "destinatario": "Juan Pérez",
+  "esPredeterminada": true
+}
+```
+
+---
+
+## 8. Agregar Producto al Carrito
+
+El `usuarioId` se toma automáticamente del header `X-User-Id`.
+
+```
+POST {{baseUrlGateway}}/api/carrito
+```
+
+```json
+{
   "productoId": 1,
   "cantidad": 2
 }
@@ -144,7 +206,7 @@ Authorization: Bearer eyJ...
 {
   "id": 1,
   "clienteId": 1,
-  "subtotal": 59980.0,
+  "subtotal": 1799980.0,
   "metodoEnvioId": null,
   "metodoPagoId": null,
   "activo": true,
@@ -154,98 +216,95 @@ Authorization: Bearer eyJ...
       "id": 1,
       "productoId": 1,
       "cantidad": 2,
-      "precioUnitario": 29990.0,
-      "subtotal": 59980.0
+      "precioUnitario": 899990.0,
+      "subtotal": 1799980.0
     }
   ]
 }
 ```
 
-> Repetir para más productos. Guardar `id` del carrito (`carritoId`).
+> Guardar `id` del carrito como `carritoId`.
 
 ---
 
-## 6. Seleccionar Método de Envío
+## 9. Seleccionar Método de Envío
 
 ```
-PUT {{baseUrlGateway}}/api/carrito/1/envio
-Authorization: Bearer eyJ...
+PUT {{baseUrlGateway}}/api/carrito/{usuarioId}/envio
 ```
 
 ```json
 { "id": 1 }
 ```
 
-> `id` = id del método de envío (1=Despacho a domicilio, 2=Retiro en tienda).
+> `id` = id del método de envío (1 = Despacho a domicilio, 2 = Retiro en tienda).
 
 **Response:** Carrito actualizado con `metodoEnvioId` asignado.
 
 ---
 
-## 7. Seleccionar Método de Pago
+## 10. Seleccionar Método de Pago
 
 ```
-PUT {{baseUrlGateway}}/api/carrito/1/pago
-Authorization: Bearer eyJ...
+PUT {{baseUrlGateway}}/api/carrito/pago
 ```
 
 ```json
-{ "id": 5 }
+{ "id": 1 }
 ```
 
-> `id` = id del método de pago (5=Webpay para Transbank automático, 3=Transferencia Bancaria para manual).
+> `id` = id del método de pago (1 = Webpay, etc.).
 
 **Response:** Carrito actualizado con `metodoPagoId` asignado.
 
 ---
 
-## 8. Checkout (Cerrar Carrito)
+## 11. Verificar Carrito y Generar Pedido
 
-Cierra el carrito y devuelve su ID para generar el pedido.
+Valida que el carrito tenga método de envío, método de pago, items y dirección predeterminada. Si todo está correcto, genera el pedido.
 
+**Usar dirección predeterminada:**
 ```
-POST {{baseUrlGateway}}/api/carrito/1/checkout
-Authorization: Bearer eyJ...
-```
-
-**Response:** `1` (carritoId, no pedidoId)
-
----
-
-## 9. Generar Pedido
-
-Crea el pedido en pedido-service con estado **PENDIENTE** (id=1).
-
-```
-POST {{baseUrlGateway}}/api/pedidos/generar/1/1
-Authorization: Bearer eyJ...
+POST {{baseUrlGateway}}/api/pedidos/generar
 ```
 
-**Path Variables:** `clienteId = 1`, `carritoId = 1`
+**Usar dirección específica (no predeterminada):**
+```
+POST {{baseUrlGateway}}/api/pedidos/generar/{direccionId}
+```
+
+> El `clienteId` se obtiene del header `X-User-Id`. No requiere body.
 
 **Response:**
 ```json
 {
   "id": 1,
   "clienteId": 1,
-  "subtotal": 59980.0,
-  "total": 59980.0,
+  "subtotal": 1799980.0,
+  "total": 1799980.0,
   "estado": { "id": 1, "nombre": "PENDIENTE" },
   "fechaCreacion": "2026-06-27T12:20:00"
 }
 ```
 
-> Guardar `id` del pedido (`pedidoId = 1`).
+> Guardar `id` del pedido como `pedidoId`.
 
 ---
 
-## 10. Iniciar Pago
-
-El método de pago se lee automáticamente del pedido (asignado en el paso 7).
+## 12. Revisar Pedido
 
 ```
-POST {{baseUrlGateway}}/api/pagos/iniciar?pedidoId=1
-Authorization: Bearer eyJ...
+GET {{baseUrlGateway}}/api/pedidos/{pedidoId}
+```
+
+---
+
+## 13. Iniciar Pago
+
+El método de pago se lee automáticamente del pedido.
+
+```
+POST {{baseUrlGateway}}/api/pagos/iniciar?pedidoId={pedidoId}
 ```
 
 **Response:**
@@ -253,25 +312,24 @@ Authorization: Bearer eyJ...
 {
   "id": 1,
   "pedidoId": 1,
-  "montoSubtotal": 59980.0,
+  "montoSubtotal": 1799980.0,
   "montoDescuento": 0.0,
-  "montoTotal": 59980.0,
-  "metodoPago": { "id": 5, "nombre": "Webpay" },
+  "montoTotal": 1799980.0,
+  "metodoPago": { "id": 1, "nombre": "Webpay" },
   "estado": { "id": 1, "nombre": "PENDIENTE" },
   "tokenTransbank": "TB-1A2B3C4D",
   "fechaInicio": "2026-06-27T12:22:00"
 }
 ```
 
-> Guardar `id` de la transacción (`transaccionId`).
+> Guardar `id` de la transacción como `transaccionId`.
 
 ---
 
-## 11. Aplicar Cupón de Descuento (Opcional)
+## 14. Aplicar Cupón de Descuento (Opcional)
 
 ```
-POST {{baseUrlGateway}}/api/pagos/1/cupon/1
-Authorization: Bearer eyJ...
+POST {{baseUrlGateway}}/api/pagos/{transaccionId}/cupon/{cuponId}
 ```
 
 **Path Variables:** `transaccionId=1`, `cuponId=1` (BIENVENIDO10 = 10%)
@@ -280,9 +338,9 @@ Authorization: Bearer eyJ...
 ```json
 {
   "id": 1,
-  "montoSubtotal": 59980.0,
-  "montoDescuento": 5998.0,
-  "montoTotal": 53982.0,
+  "montoSubtotal": 1799980.0,
+  "montoDescuento": 179998.0,
+  "montoTotal": 1619982.0,
   "estado": { "id": 1, "nombre": "PENDIENTE" },
   "cuponUtilizadoId": 1
 }
@@ -290,11 +348,10 @@ Authorization: Bearer eyJ...
 
 ---
 
-## 12. Confirmar Pago (Transbank)
+## 15. Confirmar Pago (Transbank)
 
 ```
-POST {{baseUrlGateway}}/api/pagos/1/transbank?token=xyz123token
-Authorization: Bearer eyJ...
+POST {{baseUrlGateway}}/api/pagos/{transaccionId}/transbank?token={codigoTransbank}
 ```
 
 **Si el método de pago es automático** (Tarjeta Crédito, Débito, PayPal, Webpay, Mercado Pago, Criptomonedas):
@@ -310,9 +367,9 @@ Authorization: Bearer eyJ...
 {
   "id": 1,
   "pedidoId": 1,
-  "montoSubtotal": 59980.0,
-  "montoDescuento": 5998.0,
-  "montoTotal": 53982.0,
+  "montoSubtotal": 1799980.0,
+  "montoDescuento": 179998.0,
+  "montoTotal": 1619982.0,
   "estado": { "id": 3, "nombre": "APROBADO" },
   "codigoAutorizacion": "AUTH-ABC123",
   "fechaFin": "2026-06-27T12:28:00"
@@ -321,155 +378,122 @@ Authorization: Bearer eyJ...
 
 ---
 
-## 13. [Solo Manual] Confirmar Pedido Manualmente
-
-Solo si el método de pago es manual (Transferencia Bancaria, Pago en Efectivo, Contra Entrega).
+## 16. Actualizar Estado del Pedido (Admin / Repartidor)
 
 ```
-PUT {{baseUrlGateway}}/api/pedidos/1/estado/2
-Authorization: Bearer eyJ...
+PUT {{baseUrlGateway}}/api/pedidos/{pedidoId}/estado/{estadoId}
 ```
 
-**Path Variables:** `pedidoId=1`, `estadoId=2` (CONFIRMADO)
+| Estado | ID |
+|--------|----|
+| PENDIENTE | 1 |
+| CONFIRMADO | 2 |
+| EN_PREPARACION | 3 |
+| ENVIADO | 4 |
+| ENTREGADO | 5 |
+| CANCELADO | 6 |
+| RECHAZADO | 7 |
 
-**Respuesta:**
-```json
-{
-  "id": 1,
-  "estado": { "id": 2, "nombre": "CONFIRMADO" }
-}
+Ejemplo — cambiar a ENVIADO:
+```
+PUT {{baseUrlGateway}}/api/pedidos/{pedidoId}/estado/4
+```
+
+> Al cambiar a ENVIADO se refleja automáticamente en logistica-envios-service.
+
+---
+
+## 17. Consultar Envío por ID de Pedido
+
+```
+GET {{baseUrlGateway}}/api/v1/logistica-envios/envios/pedido/{pedidoId}
 ```
 
 ---
 
-## 14. [Solo Manual] Pasar a EN_PREPARACION
-
-Solo si el método de pago es manual.
+## 18. Actualizar Estado del Envío (Admin / Repartidor)
 
 ```
-PUT {{baseUrlGateway}}/api/pedidos/1/estado/3
-Authorization: Bearer eyJ...
+PATCH {{baseUrlGateway}}/api/v1/logistica-envios/envios/{envioId}/estado/{estadoId}
 ```
 
-**Path Variables:** `pedidoId=1`, `estadoId=3` (EN_PREPARACION)
+| Estado | ID |
+|--------|----|
+| PREPARANDO | 1 |
+| DESPACHADO | 2 |
+| EN_TRANSITO | 3 |
+| EN_REPARTO | 4 |
+| ENTREGADO | 5 |
+| INTENTO_FALLIDO | 6 |
+
+> El cambio de estado del envío afecta al estado del pedido cuando corresponde (EN_TRANSITO → pedido EN_TRANSITO, ENTREGADO → pedido ENTREGADO).
 
 ---
 
-## 15. Enviar Pedido (ENVIADO)
+## 19. Soporte — Tickets (Opcional)
+
+### 19.1 Ingresar Ticket (Cliente)
 
 ```
-PUT {{baseUrlGateway}}/api/pedidos/1/estado/4
-Authorization: Bearer eyJ...
-```
-
-**Path Variables:** `pedidoId=1`, `estadoId=4` (ENVIADO)
-
-**Response:**
-```json
-{
-  "id": 1,
-  "estado": { "id": 4, "nombre": "ENVIADO" }
-}
-```
-
-> Este paso también se puede hacer vía nombre:
-> `PUT /api/pedidos/1/estado-nombre` con body `"ENVIADO"`
-
----
-
-## 16. Crear Envío en Logística (Automático)
-
-Al asignar estado ENVIADO, el pedido-service dispara automáticamente la creación del envío en logística-envios-service.
-
-O llamar explícitamente:
-
-```
-POST {{baseUrlGateway}}/api/v1/logistica-envios/envios/auto/1
-Authorization: Bearer eyJ...
-```
-
-**Path Variable:** `pedidoId=1`
-
-**Response:**
-```json
-{
-  "id": 1,
-  "pedidoId": 1,
-  "clienteId": 1,
-  "estadoActual": { "id": 1, "nombre": "PREPARANDO" },
-  "costoEnvio": 4990.0,
-  "fechaCreacion": "2026-06-27T12:30:00",
-  "fechaEstimadaEntrega": "2026-06-29T12:30:00"
-}
-```
-
-> Guardar `id` del envío (`envioId`).
-
----
-
-## 17. Consultar Envío
-
-```
-GET {{baseUrlGateway}}/api/v1/logistica-envios/envios/1
-Authorization: Bearer eyJ...
-```
-
----
-
-## 18. Actualizar Estado del Envío
-
-| Estado | ID | Observación |
-|--------|----|-------------|
-| PREPARANDO | 1 | (estado inicial) |
-| DESPACHADO | 2 | Paquete despachado desde bodega |
-| EN_TRANSITO | 3 | En tránsito hacia destino |
-| EN_REPARTO | 4 | En reparto - última milla |
-| ENTREGADO | 5 | Entregado al cliente |
-| INTENTO_FALLIDO | 6 | Intento fallido de entrega |
-
-```
-PATCH {{baseUrlGateway}}/api/v1/logistica-envios/envios/1/estado
-Authorization: Bearer eyJ...
+POST {{baseUrlGateway}}/api/v1/soporte/ingresar-ticket
 ```
 
 ```json
 {
-  "nuevoEstadoId": 2,
-  "observacion": "Paquete despachado desde bodega central"
+  "categoriaId": 1,
+  "asunto": "Problema con mi pedido",
+  "pedidoId": 1
 }
 ```
 
-**Response (HistorialEnvio):**
+> `clienteId` se obtiene del header `X-User-Id`. `pedidoId` es opcional.
+
+### 19.2 Asignar Ticket (Admin / Soporte)
+
+```
+PATCH {{baseUrlGateway}}/api/v1/soporte/tickets/{ticketId}/asignar/{empleadoId}
+```
+
+### 19.3 Enviar Mensaje (Admin / Soporte / Cliente)
+
+```
+POST {{baseUrlGateway}}/api/v1/soporte/enviar-mensaje-chat
+```
+
 ```json
 {
-  "id": 1,
-  "envioId": 1,
-  "estado": { "id": 2, "nombre": "DESPACHADO" },
-  "fechaActualizacion": "2026-06-27T14:00:00",
-  "observacion": "Paquete despachado desde bodega central"
+  "ticketId": 1,
+  "contenido": "Hola, necesito ayuda con mi pedido"
 }
 ```
 
-> Repetir para avanzar: 2→3 (EN_TRANSITO), 3→4 (EN_REPARTO), 4→5 (ENTREGADO).
+> `remitenteId` se obtiene del header `X-User-Id`, `esCliente` se deriva del header `X-User-Roles`.
 
----
-
-## 19. Historial del Envío
+### 19.4 Ver Mensajes del Ticket
 
 ```
-GET {{baseUrlGateway}}/api/v1/logistica-envios/envios/1/historial
-Authorization: Bearer eyJ...
+GET {{baseUrlGateway}}/api/v1/soporte/tickets/{ticketId}/mensajes
 ```
 
-**Response:**
+> Marca automáticamente como leídos los mensajes del otro lado.
+
+### 19.5 Solucionar Ticket (Admin / Soporte)
+
+```
+PATCH {{baseUrlGateway}}/api/v1/soporte/tickets/{ticketId}/solucionar
+```
+
 ```json
-[
-  { "estado": { "nombre": "DESPACHADO" }, "observacion": "Paquete despachado..." },
-  { "estado": { "nombre": "EN_TRANSITO" }, "observacion": "En tránsito..." },
-  { "estado": { "nombre": "EN_REPARTO" }, "observacion": "Última milla..." },
-  { "estado": { "nombre": "ENTREGADO" }, "observacion": "Entregado al cliente" }
-]
+"Resumen de la solución aplicada al ticket"
 ```
+
+### 19.6 Cerrar Ticket (Admin / Soporte / Cliente)
+
+```
+PATCH {{baseUrlGateway}}/api/v1/soporte/tickets/{ticketId}/cerrar
+```
+
+> Cliente cierra solo tickets propios. Empleado cierra solo tickets asignados. Admin cierra cualquier ticket.
 
 ---
 
@@ -479,23 +503,28 @@ Authorization: Bearer eyJ...
 |---|------|--------|----------|
 | 1 | Registro | POST | `/api/usuarios/registro` |
 | 2 | Login | POST | `/api/sesion/login` |
-| 3 | Crear producto | POST | `/api/catalogo` |
-| 4 | Ingresar stock | POST | `/api/inventario/ingresar` |
-| 5 | Agregar al carrito | POST | `/api/carrito` |
-| 6 | Seleccionar envío | PUT | `/api/carrito/{id}/envio` |
-| 7 | Seleccionar pago | PUT | `/api/carrito/{id}/pago` |
-| 8 | Checkout (devuelve carritoId) | POST | `/api/carrito/{id}/checkout` |
-| 9 | Generar pedido (PENDIENTE) | POST | `/api/pedidos/generar/{cliId}/{carritoId}` |
-| 10 | Iniciar pago (lee método del pedido) | POST | `/api/pagos/iniciar?pedidoId=X` |
-| 11 | Cupón (opcional) | POST | `/api/pagos/{id}/cupon/{cuponId}` |
-| 12 | Transbank (auto: CONFIRMADO+EN_PREP) | POST | `/api/pagos/{id}/transbank?token=...` |
-| 13 | **Solo manual:** CONFIRMADO | PUT | `/api/pedidos/{id}/estado/2` |
-| 14 | **Solo manual:** EN_PREPARACION | PUT | `/api/pedidos/{id}/estado/3` |
-| 15 | ENVIADO | PUT | `/api/pedidos/{id}/estado/4` |
-| 16 | Crear envío (auto) | POST | `/api/v1/logistica-envios/envios/auto/{pedidoId}` |
-| 17 | Consultar envío | GET | `/api/v1/logistica-envios/envios/{id}` |
-| 18 | Avanzar estado envío | PATCH | `/api/v1/logistica-envios/envios/{id}/estado` |
-| 19 | Historial envío | GET | `/api/v1/logistica-envios/envios/{id}/historial` |
+| 3 | Recuperar contraseña (opcional) | POST | `/api/sesion/recuperar` |
+| 4 | Crear producto | POST | `/api/catalogo` |
+| 5 | Ingresar stock | POST | `/api/inventario/ingresar` |
+| 6 | Transferir stock a sucursal | POST | `/api/inventario/transferir` |
+| 7 | Agregar dirección | POST | `/api/usuarios/direcciones` |
+| 8 | Agregar al carrito | POST | `/api/carrito` |
+| 9 | Seleccionar envío | PUT | `/api/carrito/{id}/envio` |
+| 10 | Seleccionar pago | PUT | `/api/carrito/pago` |
+| 11 | Generar pedido | POST | `/api/pedidos/generar` |
+| 12 | Revisar pedido | GET | `/api/pedidos/{id}` |
+| 13 | Iniciar pago | POST | `/api/pagos/iniciar?pedidoId=X` |
+| 14 | Cupón (opcional) | POST | `/api/pagos/{id}/cupon/{cuponId}` |
+| 15 | Transbank | POST | `/api/pagos/{id}/transbank?token=...` |
+| 16 | Actualizar estado pedido | PUT | `/api/pedidos/{id}/estado/{estadoId}` |
+| 17 | Consultar envío por pedido | GET | `/api/v1/logistica-envios/envios/pedido/{pedidoId}` |
+| 18 | Actualizar estado envío | PATCH | `/api/v1/logistica-envios/envios/{id}/estado/{estadoId}` |
+| 19 | Ingresar ticket | POST | `/api/v1/soporte/ingresar-ticket` |
+| 20 | Asignar ticket | PATCH | `/api/v1/soporte/tickets/{id}/asignar/{empleadoId}` |
+| 21 | Mensaje chat | POST | `/api/v1/soporte/enviar-mensaje-chat` |
+| 22 | Ver mensajes | GET | `/api/v1/soporte/tickets/{id}/mensajes` |
+| 23 | Solucionar ticket | PATCH | `/api/v1/soporte/tickets/{id}/solucionar` |
+| 24 | Cerrar ticket | PATCH | `/api/v1/soporte/tickets/{id}/cerrar` |
 
-> **Automático (Transbank con método automático):** Pasos 1→12 → salta a 15.
-> **Manual (Transferencia, Efectivo, Contra Entrega):** Pasos 1→12 → 13 → 14 → 15.
+> **Automático (Transbank con método automático):** Pasos 1→15 → salta a 16.
+> **Manual (Transferencia, Efectivo, Contra Entrega):** Pasos 1→15 → requiere confirmación manual de pedido antes del paso 16.
