@@ -477,7 +477,7 @@ mvn clean test
 | `logistica-envios-service` | 152 | ✅ 100 % |
 | `registro-usuarios-service` | 101 | ✅ 100 % |
 | `soporte-service` | 208 | ✅ 100 % |
-| **Total** | **1240** | — |
+| **Total** | **1812** | — |
 
 > Todos los servicios tienen JaCoCo configurado y generan reporte de cobertura en `target/site/jacoco/index.html`.
 
