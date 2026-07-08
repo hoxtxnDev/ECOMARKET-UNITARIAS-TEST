@@ -44,7 +44,7 @@
 | **Base de Datos** | MySQL | 8+ |
 | **Base de Datos (tests)** | H2 | En memoria |
 | **Autenticación** | JWT (HMAC-SHA256) | jjwt 0.12.5 |
-| **Documentación API** | SpringDoc OpenAPI | 2.6.0 |
+| **Documentación API** | SpringDoc OpenAPI | 2.8.17 (api-gateway) / 3.0.3 (demás) |
 | **Pruebas** | JUnit 5 + Mockito + AssertJ + MockMvc | — |
 | **Cobertura** | JaCoCo | 0.8.14 / 0.8.15 |
 | **Build** | Apache Maven | — |
@@ -126,7 +126,7 @@
 
 | Categoría | Dependencia | ¿Por qué? |
 |---|---|---|
-| **Web (Servlet)** | `spring-boot-starter-web` / `spring-boot-starter-webmvc` | Servidor HTTP embebido (Tomcat 11) para exponer las APIs REST de cada microservicio. La variante `webmvc` se usa donde no se necesita autoconfiguración completa de web. |
+| **Web (Servlet)** | `spring-boot-starter-web` | Servidor HTTP embebido (Tomcat 11) para exponer las APIs REST de cada microservicio. |
 | **Web (Reactivo)** | `spring-boot-starter-webflux` | Solo en `api-gateway`. Spring Cloud Gateway opera sobre el modelo reactivo (Netty), incompatible con el stack Servlet. |
 | **Gateway** | `spring-cloud-starter-gateway` | Enrutamiento declarativo de peticiones, filtros y balanceo de carga básico desde el punto de entrada único. |
 | **Persistencia** | `spring-boot-starter-data-jpa` | Spring Data JPA + Hibernate 7 como ORM para el mapeo objeto-relacional y operaciones CRUD contra MySQL. |
@@ -137,7 +137,7 @@
 | **JWT** | `jjwt-api` / `jjwt-impl` / `jjwt-jackson` 0.12.5 | Creación, firma (HMAC-SHA256) y validación de tokens JWT. Usado en `iniciosesion-service` para emitir tokens y en servicios que necesitan validarlos. |
 | **Lombok** | `lombok` (optional) | Elimina código boilerplate: `@Data`, `@Builder`, `@Slf4j`, `@RequiredArgsConstructor`, etc. |
 | **Jackson** | `jackson-databind` | Serialización y deserialización JSON. Se declara explícitamente en `iniciosesion-service`. |
-| **API Docs** | `springdoc-openapi-starter-webmvc-ui` / `webflux-ui` 2.6.0 | Documentación Swagger/OpenAPI interactiva. Presente en `api-gateway`, `pedido-service` y `soporte-service`. |
+| **API Docs** | `springdoc-openapi-starter-webmvc-ui` / `webflux-ui` 3.0.3 (demás) / 2.8.17 (api-gateway) | Documentación Swagger/OpenAPI interactiva. Presente en los 11 servicios. |
 | **Pruebas** | `spring-boot-starter-test` | JUnit 5, Mockito, AssertJ y Spring Test. Base de toda la pirámide de pruebas. |
 | **Pruebas Web** | `spring-boot-starter-webmvc-test` | MockMvc para pruebas de controladores con `@WebMvcTest` sin levantar el servidor real. |
 | **Pruebas JPA** | `spring-boot-starter-data-jpa-test` | Soporte para `@DataJpaTest` y segmentación de tests de repositorios. |
@@ -466,18 +466,18 @@ mvn clean test
 
 | Servicio | Tests | JaCoCo |
 |---|---|---|
-| `api-gateway` | 82 | ✅ 100 % |
+| `api-gateway` | 83 | ✅ 100 % |
 | `analica-service` | 127 | ✅ 100 % |
 | `carrito-compra-service` | 54 | ✅ 100 % |
-| `catalogo-inventario-service` | 136 | ❌ No configurado |
-| `gestion-tienda-service` | 82 | ❌ No configurado |
+| `catalogo-inventario-service` | 142 | ✅ 100 % |
+| `gestion-tienda-service` | 94 | ✅ 100 % |
 | `iniciosesion-service` | 106 | ✅ 100 % |
 | `pedido-service` | 67 | ✅ 100 % |
 | `proceso-pago-service` | 106 | ✅ 100 % |
 | `logistica-envios-service` | 152 | ✅ 100 % |
 | `registro-usuarios-service` | 101 | ✅ 100 % |
 | `soporte-service` | 208 | ✅ 100 % |
-| **Total** | **1221** | — |
+| **Total** | **1240** | — |
 
 > Todos los servicios tienen JaCoCo configurado y generan reporte de cobertura en `target/site/jacoco/index.html`.
 
@@ -589,8 +589,8 @@ Requiere `iniciosesion-service` corriendo en `localhost:8086` para la validació
 
 - **ByteBuddy**: `api-gateway` usa Byte Buddy 1.17.0+ para compatibilidad nativa con Java 25+ sin necesidad de flags experimentales. El resto de servicios usa la versión gestionada por Spring Boot.
 - **Lombok**: Declarado como `optional=true` y excluido del empaquetado del `spring-boot-maven-plugin`. El procesador de anotaciones se configura explícitamente en `maven-compiler-plugin`.
-- **OpenAPI/Swagger**: Disponible en `api-gateway` (`/doc/swagger-ui.html`, WebFlux), `pedido-service` y `soporte-service` (WebMVC).
-- **JaCoCo**: Configurado en 9 de 11 servicios (versiones 0.8.14 y 0.8.15). `catalogo-inventario-service` y `gestion-tienda-service` no tienen JaCoCo configurado.
+- **OpenAPI/Swagger**: Disponible en los 11 servicios en `/doc/swagger-ui.html`. `api-gateway` usa WebFlux; el resto usa WebMVC.
+- **JaCoCo**: Configurado en los 11 servicios (versiones 0.8.14 y 0.8.15) con cobertura al 100 %.
 - **Efecto espejo (mirror effect)**: Cada clase en `src/main` tiene su correspondiente `*Test.java` en `src/test` bajo el mismo package. Auditoría completada en los 11 servicios, incluyendo los **80 DTOs** de todos los proyectos que ahora cuentan con su respectivo test unitario (constructor, builder o setters según la anotación de cada DTO).
 - **JWT secret externalizado**: La propiedad `jwt.secret` se lee de la variable de entorno `JWT_SECRET` (no hardcodeada). Ver `.env.example` en `iniciosesion-service` para la configuración local.
 - **api-gateway como repositorio propio**: El gateway se independizó de un submodule roto; ahora es un proyecto Maven estándar dentro del mismo repositorio.
