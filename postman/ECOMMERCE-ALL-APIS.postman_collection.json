@@ -1,0 +1,3172 @@
+{
+  "info": {
+    "_postman_id": "ecomarket-all-apis",
+    "name": "EcoMarket - Todas las APIs",
+    "description": "Colección completa de todas las APIs de EcoMarket. Organizada por microservicio con autenticación automática.\n\n## Variables requeridas:\n- `baseUrlGateway`: http://localhost:8080\n- `token`: se asigna automáticamente al hacer login\n- `usuarioId`: ID del usuario autenticado\n- `productoId`: ID de producto\n- `pedidoId`: ID de pedido\n- `transaccionId`: ID de transacción de pago\n- `envioId`: ID de envío\n- `sucursalId`: ID de sucursal\n- `ticketId`: ID de ticket de soporte\n- `direccionId`: ID de dirección",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "item": [
+    {
+      "name": "1. Sesión (Login / Auth)",
+      "description": "Endpoints públicos de autenticación. No requieren token.",
+      "item": [
+        {
+          "name": "Crear Credenciales",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"usuarioId\": 1,\n  \"correo\": \"admin@example.com\",\n  \"contrasena\": \"MiPassword123\",\n  \"rol\": \"ADMIN\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrlGateway}}/api/sesion/credencial",
+              "host": ["{{baseUrlGateway}}"],
+              "path": ["api", "sesion", "credencial"]
+            }
+          }
+        },
+        {
+          "name": "Login (Iniciar Sesión)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.globals.set(\"token\", jsonData.token);",
+                  "    pm.globals.set(\"usuarioId\", jsonData.usuarioId.toString());",
+                  "    console.log(\"Token guardado: \" + jsonData.token);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"correo\": \"admin@example.com\",\n  \"contrasena\": \"MiPassword123\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrlGateway}}/api/sesion/login",
+              "host": ["{{baseUrlGateway}}"],
+              "path": ["api", "sesion", "login"]
+            }
+          }
+        },
+        {
+          "name": "Validar Token",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"token\": \"{{token}}\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrlGateway}}/api/sesion/validar",
+              "host": ["{{baseUrlGateway}}"],
+              "path": ["api", "sesion", "validar"]
+            }
+          }
+        },
+        {
+          "name": "Logout (Cerrar Sesión)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"token\": \"{{token}}\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrlGateway}}/api/sesion/logout",
+              "host": ["{{baseUrlGateway}}"],
+              "path": ["api", "sesion", "logout"]
+            }
+          }
+        },
+        {
+          "name": "Cambiar Correo",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"usuarioId\": 1,\n  \"nuevoCorreo\": \"nuevo@example.com\",\n  \"contrasenaActual\": \"MiPassword123\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrlGateway}}/api/sesion/correo",
+              "host": ["{{baseUrlGateway}}"],
+              "path": ["api", "sesion", "correo"]
+            }
+          }
+        },
+        {
+          "name": "Cambiar Contraseña",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"usuarioId\": 1,\n  \"contrasenaActual\": \"MiPassword123\",\n  \"nuevaContrasena\": \"NuevaPass456\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrlGateway}}/api/sesion/contrasena",
+              "host": ["{{baseUrlGateway}}"],
+              "path": ["api", "sesion", "contrasena"]
+            }
+          }
+        },
+        {
+          "name": "Recuperar Contraseña",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"correo\": \"admin@example.com\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrlGateway}}/api/sesion/recuperar",
+              "host": ["{{baseUrlGateway}}"],
+              "path": ["api", "sesion", "recuperar"]
+            }
+          }
+        },
+        {
+          "name": "Restablecer Contraseña con Token",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"codigo\": \"CODIGO_RECUPERACION\",\n  \"nuevaContrasena\": \"NuevaPass456\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrlGateway}}/api/sesion/restablecer",
+              "host": ["{{baseUrlGateway}}"],
+              "path": ["api", "sesion", "restablecer"]
+            }
+          }
+        },
+        {
+          "name": "Inhabilitar Credenciales",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"usuarioId\": 1\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrlGateway}}/api/sesion/inhabilitar",
+              "host": ["{{baseUrlGateway}}"],
+              "path": ["api", "sesion", "inhabilitar"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. Usuarios (Registro y Perfiles)",
+      "description": "Gestión de usuarios: registro, consulta, modificación y eliminación.",
+      "item": [
+        {
+          "name": "Registrar Usuario",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Juan Pérez\",\n  \"correo\": \"juan@example.com\",\n  \"contrasenaInicial\": \"MiPassword123\",\n  \"telefono\": \"+56912345678\",\n  \"rolId\": 2,\n  \"estadoPerfilId\": 1\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrlGateway}}/api/usuarios/registro",
+              "host": ["{{baseUrlGateway}}"],
+              "path": ["api", "usuarios", "registro"]
+            }
+          }
+        },
+        {
+          "name": "Listar Todos los Usuarios",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrlGateway}}/api/usuarios",
+              "host": ["{{baseUrlGateway}}"],
+              "path": ["api", "usuarios"]
+            }
+          }
+        },
+        {
+          "name": "Obtener Usuario por ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrlGateway}}/api/usuarios/{{usuarioId}}",
+              "host": ["{{baseUrlGateway}}"],
+              "path": ["api", "usuarios", "{{usuarioId}}"]
+            }
+          }
+        },
+        {
+          "name": "Obtener Usuario por Correo",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrlGateway}}/api/usuarios/correo/admin@example.com",
+              "host": ["{{baseUrlGateway}}"],
+              "path": ["api", "usuarios", "correo", "admin@example.com"]
+            }
+          }
+        },
+        {
+          "name": "Listar Usuarios por Rol",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrlGateway}}/api/usuarios/rol/2",
+              "host": ["{{baseUrlGateway}}"],
+              "path": ["api", "usuarios", "rol", "2"]
+            }
+          }
+        },
+        {
+          "name": "Modificar Usuario",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Juan Pérez Actualizado\",\n  \"correo\": \"juan.actualizado@example.com\",\n  \"telefono\": \"+56987654321\",\n  \"rolId\": 2,\n  \"estadoPerfilId\": 1\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrlGateway}}/api/usuarios/{{usuarioId}}",
+              "host": ["{{baseUrlGateway}}"],
+              "path": ["api", "usuarios", "{{usuarioId}}"]
+            }
+          }
+        },
+        {
+          "name": "Configurar Permisos de Usuario",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"permisoIds\": [1, 2, 3, 4, 5]\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrlGateway}}/api/usuarios/{{usuarioId}}/permisos",
+              "host": ["{{baseUrlGateway}}"],
+              "path": ["api", "usuarios", "{{usuarioId}}", "permisos"]
+            }
+          }
+        },
+        {
+          "name": "Eliminar Usuario",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrlGateway}}/api/usuarios/{{usuarioId}}",
+              "host": ["{{baseUrlGateway}}"],
+              "path": ["api", "usuarios", "{{usuarioId}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "3. Direcciones de Usuario",
+      "description": "Gestión de direcciones asociadas a usuarios.",
+      "item": [
+        {
+          "name": "Agregar Dirección (Autenticado)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "X-User-Id", "value": "{{usuarioId}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"calle\": \"Av. Providencia\",\n  \"numero\": \"1234\",\n  \"departamento\": \"Depto 501\",\n  \"ciudad\": \"Santiago\",\n  \"region\": \"Región Metropolitana\",\n  \"codigoPostal\": \"7500000\",\n  \"destinatario\": \"Juan Pérez\",\n  \"esPredeterminada\": true\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrlGateway}}/api/usuarios/direcciones",
+              "host": ["{{baseUrlGateway}}"],
+              "path": ["api", "usuarios", "direcciones"]
+            }
+          }
+        },
+        {
+          "name": "Agregar Dirección (Admin por usuarioId)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"calle\": \"Av. Siempre Viva\",\n  \"numero\": \"742\",\n  \"ciudad\": \"Santiago\",\n  \"region\": \"Región Metropolitana\",\n  \"destinatario\": \"Admin\",\n  \"esPredeterminada\": false\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrlGateway}}/api/usuarios/direcciones/{{usuarioId}}",
+              "host": ["{{baseUrlGateway}}"],
+              "path": ["api", "usuarios", "direcciones", "{{usuarioId}}"]
+            }
+          }
+        },
+        {
+          "name": "Listar Direcciones de Usuario",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrlGateway}}/api/usuarios/direcciones/{{usuarioId}}",
+              "host": ["{{baseUrlGateway}}"],
+              "path": ["api", "usuarios", "direcciones", "{{usuarioId}}"]
+            }
+          }
+        },
+        {
+          "name": "Obtener Dirección por ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrlGateway}}/api/usuarios/direcciones/id/{{direccionId}}",
+              "host": ["{{baseUrlGateway}}"],
+              "path": ["api", "usuarios", "direcciones", "id", "{{direccionId}}"]
+            }
+          }
+        },
+        {
+          "name": "Obtener Dirección Predeterminada",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrlGateway}}/api/usuarios/direcciones/predeterminada/{{usuarioId}}",
+              "host": ["{{baseUrlGateway}}"],
+              "path": ["api", "usuarios", "direcciones", "predeterminada", "{{usuarioId}}"]
+            }
+          }
+        },
+        {
+          "name": "Editar Dirección",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"calle\": \"Av. Nueva Providencia\",\n  \"numero\": \"567\",\n  \"ciudad\": \"Santiago\",\n  \"region\": \"Región Metropolitana\",\n  \"destinatario\": \"Juan Pérez\",\n  \"esPredeterminada\": true\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrlGateway}}/api/usuarios/direcciones/{{direccionId}}",
+              "host": ["{{baseUrlGateway}}"],
+              "path": ["api", "usuarios", "direcciones", "{{direccionId}}"]
+            }
+          }
+        },
+        {
+          "name": "Eliminar Dirección",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrlGateway}}/api/usuarios/direcciones/{{direccionId}}",
+              "host": ["{{baseUrlGateway}}"],
+              "path": ["api", "usuarios", "direcciones", "{{direccionId}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "4. Catálogos (Roles, Permisos, Estados)",
+      "description": "Catálogos del sistema de usuarios: roles, permisos y estados de perfil.",
+      "item": [
+        {
+          "name": "Listar Roles",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrlGateway}}/api/usuarios/roles",
+              "host": ["{{baseUrlGateway}}"],
+              "path": ["api", "usuarios", "roles"]
+            }
+          }
+        },
+        {
+          "name": "Crear Rol",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"NUEVO_ROL\",\n  \"descripcion\": \"Descripción del nuevo rol\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrlGateway}}/api/usuarios/roles",
+              "host": ["{{baseUrlGateway}}"],
+              "path": ["api", "usuarios", "roles"]
+            }
+          }
+        },
+        {
+          "name": "Actualizar Rol",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"ROL_ACTUALIZADO\",\n  \"descripcion\": \"Descripción actualizada\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrlGateway}}/api/usuarios/roles/1",
+              "host": ["{{baseUrlGateway}}"],
+              "path": ["api", "usuarios", "roles", "1"]
+            }
+          }
+        },
+        {
+          "name": "Eliminar Rol",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrlGateway}}/api/usuarios/roles/1",
+              "host": ["{{baseUrlGateway}}"],
+              "path": ["api", "usuarios", "roles", "1"]
+            }
+          }
+        },
+        {
+          "name": "Listar Permisos",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrlGateway}}/api/usuarios/permisos",
+              "host": ["{{baseUrlGateway}}"],
+              "path": ["api", "usuarios", "permisos"]
+            }
+          }
+        },
+        {
+          "name": "Crear Permiso",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"NUEVO_PERMISO\",\n  \"descripcion\": \"Descripción del nuevo permiso\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrlGateway}}/api/usuarios/permisos",
+              "host": ["{{baseUrlGateway}}"],
+              "path": ["api", "usuarios", "permisos"]
+            }
+          }
+        },
+        {
+          "name": "Actualizar Permiso",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"PERMISO_ACTUALIZADO\",\n  \"descripcion\": \"Descripción actualizada\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrlGateway}}/api/usuarios/permisos/1",
+              "host": ["{{baseUrlGateway}}"],
+              "path": ["api", "usuarios", "permisos", "1"]
+            }
+          }
+        },
+        {
+          "name": "Eliminar Permiso",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrlGateway}}/api/usuarios/permisos/1",
+              "host": ["{{baseUrlGateway}}"],
+              "path": ["api", "usuarios", "permisos", "1"]
+            }
+          }
+        },
+        {
+          "name": "Listar Estados de Perfil",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrlGateway}}/api/usuarios/estados-perfil",
+              "host": ["{{baseUrlGateway}}"],
+              "path": ["api", "usuarios", "estados-perfil"]
+            }
+          }
+        },
+        {
+          "name": "Crear Estado de Perfil",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"NUEVO_ESTADO\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrlGateway}}/api/usuarios/estados-perfil",
+              "host": ["{{baseUrlGateway}}"],
+              "path": ["api", "usuarios", "estados-perfil"]
+            }
+          }
+        },
+        {
+          "name": "Actualizar Estado de Perfil",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"ESTADO_ACTUALIZADO\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrlGateway}}/api/usuarios/estados-perfil/1",
+              "host": ["{{baseUrlGateway}}"],
+              "path": ["api", "usuarios", "estados-perfil", "1"]
+            }
+          }
+        },
+        {
+          "name": "Eliminar Estado de Perfil",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrlGateway}}/api/usuarios/estados-perfil/1",
+              "host": ["{{baseUrlGateway}}"],
+              "path": ["api", "usuarios", "estados-perfil", "1"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "5. Catálogo de Productos",
+      "description": "Gestión del catálogo de productos: consulta, creación, modificación y eliminación.",
+      "item": [
+        {
+          "name": "Listar Productos",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrlGateway}}/api/catalogo",
+              "host": ["{{baseUrlGateway}}"],
+              "path": ["api", "catalogo"]
+            }
+          }
+        },
+        {
+          "name": "Buscar Productos por Nombre",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrlGateway}}/api/catalogo/buscar?nombre=Notebook",
+              "host": ["{{baseUrlGateway}}"],
+              "path": ["api", "catalogo", "buscar"],
+              "query": [
+                { "key": "nombre", "value": "Notebook" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Listar Productos por Categoría",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrlGateway}}/api/catalogo/categoria/2",
+              "host": ["{{baseUrlGateway}}"],
+              "path": ["api", "catalogo", "categoria", "2"]
+            }
+          }
+        },
+        {
+          "name": "Obtener Producto por ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrlGateway}}/api/catalogo/{{productoId}}",
+              "host": ["{{baseUrlGateway}}"],
+              "path": ["api", "catalogo", "{{productoId}}"]
+            }
+          }
+        },
+        {
+          "name": "Crear Producto",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"sku\": \"PROD-001\",\n  \"nombre\": \"Notebook Gamer X100\",\n  \"descripcion\": \"Notebook de alto rendimiento para gaming\",\n  \"precioBase\": 899990.0,\n  \"categoriaId\": 2,\n  \"estadoId\": 1,\n  \"imagenUrl\": \"https://ejemplo.com/notebook.jpg\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrlGateway}}/api/catalogo",
+              "host": ["{{baseUrlGateway}}"],
+              "path": ["api", "catalogo"]
+            }
+          }
+        },
+        {
+          "name": "Actualizar Producto",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"sku\": \"PROD-001\",\n  \"nombre\": \"Notebook Gamer X100 Ultra\",\n  \"descripcion\": \"Notebook actualizado\",\n  \"precioBase\": 999990.0,\n  \"categoriaId\": 2,\n  \"estadoId\": 1,\n  \"imagenUrl\": \"https://ejemplo.com/notebook-ultra.jpg\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrlGateway}}/api/catalogo/{{productoId}}",
+              "host": ["{{baseUrlGateway}}"],
+              "path": ["api", "catalogo", "{{productoId}}"]
+            }
+          }
+        },
+        {
+          "name": "Eliminar Producto",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrlGateway}}/api/catalogo/{{productoId}}",
+              "host": ["{{baseUrlGateway}}"],
+              "path": ["api", "catalogo", "{{productoId}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "6. Catálogo Admin (Categorías, Estados, Especificaciones)",
+      "description": "Administración de catálogos: categorías, estados de disponibilidad y especificaciones técnicas.",
+      "item": [
+        {
+          "name": "Listar Categorías",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrlGateway}}/api/catalogo-admin/categorias",
+              "host": ["{{baseUrlGateway}}"],
+              "path": ["api", "catalogo-admin", "categorias"]
+            }
+          }
+        },
+        {
+          "name": "Obtener Categoría por ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrlGateway}}/api/catalogo-admin/categoria/1",
+              "host": ["{{baseUrlGateway}}"],
+              "path": ["api", "catalogo-admin", "categoria", "1"]
+            }
+          }
+        },
+        {
+          "name": "Crear Categoría",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Nueva Categoría\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrlGateway}}/api/catalogo-admin/categoria",
+              "host": ["{{baseUrlGateway}}"],
+              "path": ["api", "catalogo-admin", "categoria"]
+            }
+          }
+        },
+        {
+          "name": "Actualizar Categoría",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Categoría Actualizada\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrlGateway}}/api/catalogo-admin/categoria/1",
+              "host": ["{{baseUrlGateway}}"],
+              "path": ["api", "catalogo-admin", "categoria", "1"]
+            }
+          }
+        },
+        {
+          "name": "Eliminar Categoría",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrlGateway}}/api/catalogo-admin/categoria/1",
+              "host": ["{{baseUrlGateway}}"],
+              "path": ["api", "catalogo-admin", "categoria", "1"]
+            }
+          }
+        },
+        {
+          "name": "Listar Estados de Disponibilidad",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrlGateway}}/api/catalogo-admin/estados",
+              "host": ["{{baseUrlGateway}}"],
+              "path": ["api", "catalogo-admin", "estados"]
+            }
+          }
+        },
+        {
+          "name": "Obtener Estado por ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrlGateway}}/api/catalogo-admin/estado/1",
+              "host": ["{{baseUrlGateway}}"],
+              "path": ["api", "catalogo-admin", "estado", "1"]
+            }
+          }
+        },
+        {
+          "name": "Crear Estado de Disponibilidad",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"NUEVO_ESTADO\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrlGateway}}/api/catalogo-admin/estado",
+              "host": ["{{baseUrlGateway}}"],
+              "path": ["api", "catalogo-admin", "estado"]
+            }
+          }
+        },
+        {
+          "name": "Actualizar Estado de Disponibilidad",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"ESTADO_ACTUALIZADO\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrlGateway}}/api/catalogo-admin/estado/1",
+              "host": ["{{baseUrlGateway}}"],
+              "path": ["api", "catalogo-admin", "estado", "1"]
+            }
+          }
+        },
+        {
+          "name": "Eliminar Estado de Disponibilidad",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrlGateway}}/api/catalogo-admin/estado/1",
+              "host": ["{{baseUrlGateway}}"],
+              "path": ["api", "catalogo-admin", "estado", "1"]
+            }
+          }
+        },
+        {
+          "name": "Listar Especificaciones Técnicas",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrlGateway}}/api/catalogo-admin/especificaciones",
+              "host": ["{{baseUrlGateway}}"],
+              "path": ["api", "catalogo-admin", "especificaciones"]
+            }
+          }
+        },
+        {
+          "name": "Obtener Especificación por ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrlGateway}}/api/catalogo-admin/especificaciones/1",
+              "host": ["{{baseUrlGateway}}"],
+              "path": ["api", "catalogo-admin", "especificaciones", "1"]
+            }
+          }
+        },
+        {
+          "name": "Listar Especificaciones por Producto",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrlGateway}}/api/catalogo-admin/especificaciones/producto/{{productoId}}",
+              "host": ["{{baseUrlGateway}}"],
+              "path": ["api", "catalogo-admin", "especificaciones", "producto", "{{productoId}}"]
+            }
+          }
+        },
+        {
+          "name": "Crear Especificación Técnica",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Procesador\",\n  \"valor\": \"Intel Core i7\",\n  \"productoId\": 1\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrlGateway}}/api/catalogo-admin/especificaciones",
+              "host": ["{{baseUrlGateway}}"],
+              "path": ["api", "catalogo-admin", "especificaciones"]
+            }
+          }
+        },
+        {
+          "name": "Actualizar Especificación Técnica",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Procesador\",\n  \"valor\": \"Intel Core i9\",\n  \"productoId\": 1\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrlGateway}}/api/catalogo-admin/especificaciones/1",
+              "host": ["{{baseUrlGateway}}"],
+              "path": ["api", "catalogo-admin", "especificaciones", "1"]
+            }
+          }
+        },
+        {
+          "name": "Eliminar Especificación Técnica",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrlGateway}}/api/catalogo-admin/especificaciones/1",
+              "host": ["{{baseUrlGateway}}"],
+              "path": ["api", "catalogo-admin", "especificaciones", "1"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "7. Inventario",
+      "description": "Gestión de inventario: stock global, stock por sucursal, reservas y transferencias.",
+      "item": [
+        {
+          "name": "Listar Inventario",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrlGateway}}/api/inventario",
+              "host": ["{{baseUrlGateway}}"],
+              "path": ["api", "inventario"]
+            }
+          }
+        },
+        {
+          "name": "Verificar Disponibilidad",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrlGateway}}/api/inventario/disponibilidad/{{productoId}}/1/10",
+              "host": ["{{baseUrlGateway}}"],
+              "path": ["api", "inventario", "disponibilidad", "{{productoId}}", "1", "10"]
+            }
+          }
+        },
+        {
+          "name": "Obtener Stock Global",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrlGateway}}/api/inventario/stock-global/{{productoId}}",
+              "host": ["{{baseUrlGateway}}"],
+              "path": ["api", "inventario", "stock-global", "{{productoId}}"]
+            }
+          }
+        },
+        {
+          "name": "Obtener Inventario Global (Todas las sucursales)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrlGateway}}/api/inventario/global/{{productoId}}",
+              "host": ["{{baseUrlGateway}}"],
+              "path": ["api", "inventario", "global", "{{productoId}}"]
+            }
+          }
+        },
+        {
+          "name": "Obtener Inventario por Sucursal y Producto",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrlGateway}}/api/inventario/sucursal/1/producto/{{productoId}}",
+              "host": ["{{baseUrlGateway}}"],
+              "path": ["api", "inventario", "sucursal", "1", "producto", "{{productoId}}"]
+            }
+          }
+        },
+        {
+          "name": "Ingresar Stock Global",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"productoId\": 1,\n  \"cantidad\": 500\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrlGateway}}/api/inventario/ingresar",
+              "host": ["{{baseUrlGateway}}"],
+              "path": ["api", "inventario", "ingresar"]
+            }
+          }
+        },
+        {
+          "name": "Transferir Stock a Sucursal",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"productoId\": 1,\n  \"sucursalId\": 1,\n  \"cantidad\": 20\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrlGateway}}/api/inventario/transferir",
+              "host": ["{{baseUrlGateway}}"],
+              "path": ["api", "inventario", "transferir"]
+            }
+          }
+        },
+        {
+          "name": "Reservar Stock en Sucursal",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"cantidad\": 2\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrlGateway}}/api/inventario/reservar/{{productoId}}/1",
+              "host": ["{{baseUrlGateway}}"],
+              "path": ["api", "inventario", "reservar", "{{productoId}}", "1"]
+            }
+          }
+        },
+        {
+          "name": "Liberar Stock en Sucursal",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"cantidad\": 1\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrlGateway}}/api/inventario/liberar/{{productoId}}/1",
+              "host": ["{{baseUrlGateway}}"],
+              "path": ["api", "inventario", "liberar", "{{productoId}}", "1"]
+            }
+          }
+        },
+        {
+          "name": "Ajustar Stock en Sucursal",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"cantidad\": 15\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrlGateway}}/api/inventario/ajustar/{{productoId}}/sucursal/1",
+              "host": ["{{baseUrlGateway}}"],
+              "path": ["api", "inventario", "ajustar", "{{productoId}}", "sucursal", "1"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "8. Carrito de Compras",
+      "description": "Gestión del carrito de compras: agregar/quitar productos, seleccionar envío/pago y cerrar carrito.",
+      "item": [
+        {
+          "name": "Listar Carritos (Admin)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrlGateway}}/api/carrito",
+              "host": ["{{baseUrlGateway}}"],
+              "path": ["api", "carrito"]
+            }
+          }
+        },
+        {
+          "name": "Obtener Carrito Activo",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "X-User-Id", "value": "{{usuarioId}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrlGateway}}/api/carrito/activo",
+              "host": ["{{baseUrlGateway}}"],
+              "path": ["api", "carrito", "activo"]
+            }
+          }
+        },
+        {
+          "name": "Agregar Producto al Carrito",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "X-User-Id", "value": "{{usuarioId}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"productoId\": 1,\n  \"cantidad\": 2\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrlGateway}}/api/carrito",
+              "host": ["{{baseUrlGateway}}"],
+              "path": ["api", "carrito"]
+            }
+          }
+        },
+        {
+          "name": "Eliminar Item del Carrito",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              { "key": "X-User-Id", "value": "{{usuarioId}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrlGateway}}/api/carrito/item/1",
+              "host": ["{{baseUrlGateway}}"],
+              "path": ["api", "carrito", "item", "1"]
+            }
+          }
+        },
+        {
+          "name": "Seleccionar Método de Envío",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "X-User-Id", "value": "{{usuarioId}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id\": 1\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrlGateway}}/api/carrito/envio",
+              "host": ["{{baseUrlGateway}}"],
+              "path": ["api", "carrito", "envio"]
+            }
+          }
+        },
+        {
+          "name": "Seleccionar Método de Pago",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "X-User-Id", "value": "{{usuarioId}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id\": 1\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrlGateway}}/api/carrito/pago",
+              "host": ["{{baseUrlGateway}}"],
+              "path": ["api", "carrito", "pago"]
+            }
+          }
+        },
+        {
+          "name": "Vaciar Carrito",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              { "key": "X-User-Id", "value": "{{usuarioId}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrlGateway}}/api/carrito/vaciar",
+              "host": ["{{baseUrlGateway}}"],
+              "path": ["api", "carrito", "vaciar"]
+            }
+          }
+        },
+        {
+          "name": "Cerrar Carrito (Checkout)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "X-User-Id", "value": "{{usuarioId}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrlGateway}}/api/carrito/cerrar",
+              "host": ["{{baseUrlGateway}}"],
+              "path": ["api", "carrito", "cerrar"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "9. Pedidos",
+      "description": "Gestión de pedidos: generar, consultar, actualizar estado.",
+      "item": [
+        {
+          "name": "Generar Pedido (Dirección Predeterminada)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "X-User-Id", "value": "{{usuarioId}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrlGateway}}/api/pedidos/generar",
+              "host": ["{{baseUrlGateway}}"],
+              "path": ["api", "pedidos", "generar"]
+            }
+          }
+        },
+        {
+          "name": "Generar Pedido (Dirección Específica)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "X-User-Id", "value": "{{usuarioId}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrlGateway}}/api/pedidos/generar/{{direccionId}}",
+              "host": ["{{baseUrlGateway}}"],
+              "path": ["api", "pedidos", "generar", "{{direccionId}}"]
+            }
+          }
+        },
+        {
+          "name": "Obtener Historial de Pedidos (Cliente)",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "X-User-Id", "value": "{{usuarioId}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrlGateway}}/api/pedidos/cliente",
+              "host": ["{{baseUrlGateway}}"],
+              "path": ["api", "pedidos", "cliente"]
+            }
+          }
+        },
+        {
+          "name": "Obtener Pedido por ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrlGateway}}/api/pedidos/{{pedidoId}}",
+              "host": ["{{baseUrlGateway}}"],
+              "path": ["api", "pedidos", "{{pedidoId}}"]
+            }
+          }
+        },
+        {
+          "name": "Actualizar Estado del Pedido (por ID)",
+          "request": {
+            "method": "PUT",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrlGateway}}/api/pedidos/{{pedidoId}}/estado/2",
+              "host": ["{{baseUrlGateway}}"],
+              "path": ["api", "pedidos", "{{pedidoId}}", "estado", "2"]
+            }
+          }
+        },
+        {
+          "name": "Actualizar Estado del Pedido (por Nombre)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "\"CONFIRMADO\"",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrlGateway}}/api/pedidos/{{pedidoId}}/estado-nombre",
+              "host": ["{{baseUrlGateway}}"],
+              "path": ["api", "pedidos", "{{pedidoId}}", "estado-nombre"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "10. Estados de Pedido",
+      "description": "Catálogo de estados de pedido.",
+      "item": [
+        {
+          "name": "Listar Estados de Pedido",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrlGateway}}/api/estado-pedido",
+              "host": ["{{baseUrlGateway}}"],
+              "path": ["api", "estado-pedido"]
+            }
+          }
+        },
+        {
+          "name": "Obtener Estado de Pedido por ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrlGateway}}/api/estado-pedido/1",
+              "host": ["{{baseUrlGateway}}"],
+              "path": ["api", "estado-pedido", "1"]
+            }
+          }
+        },
+        {
+          "name": "Crear Estado de Pedido",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"NUEVO_ESTADO\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrlGateway}}/api/estado-pedido",
+              "host": ["{{baseUrlGateway}}"],
+              "path": ["api", "estado-pedido"]
+            }
+          }
+        },
+        {
+          "name": "Actualizar Estado de Pedido",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"ESTADO_ACTUALIZADO\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrlGateway}}/api/estado-pedido/1",
+              "host": ["{{baseUrlGateway}}"],
+              "path": ["api", "estado-pedido", "1"]
+            }
+          }
+        },
+        {
+          "name": "Eliminar Estado de Pedido",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrlGateway}}/api/estado-pedido/1",
+              "host": ["{{baseUrlGateway}}"],
+              "path": ["api", "estado-pedido", "1"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "11. Pagos",
+      "description": "Procesamiento de pagos: iniciar, aplicar cupón, confirmar, reembolsar y generar factura.",
+      "item": [
+        {
+          "name": "Iniciar Pago",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "X-User-Id", "value": "{{usuarioId}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrlGateway}}/api/pagos/iniciar?pedidoId={{pedidoId}}",
+              "host": ["{{baseUrlGateway}}"],
+              "path": ["api", "pagos", "iniciar"],
+              "query": [
+                { "key": "pedidoId", "value": "{{pedidoId}}" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Obtener Transacción de Pago",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrlGateway}}/api/pagos/{{transaccionId}}",
+              "host": ["{{baseUrlGateway}}"],
+              "path": ["api", "pagos", "{{transaccionId}}"]
+            }
+          }
+        },
+        {
+          "name": "Aplicar Cupón de Descuento",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrlGateway}}/api/pagos/{{transaccionId}}/cupon/1",
+              "host": ["{{baseUrlGateway}}"],
+              "path": ["api", "pagos", "{{transaccionId}}", "cupon", "1"]
+            }
+          }
+        },
+        {
+          "name": "Confirmar Pago (Transbank)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrlGateway}}/api/pagos/{{transaccionId}}/transbank?token=TB-TOKEN-SIMULADO",
+              "host": ["{{baseUrlGateway}}"],
+              "path": ["api", "pagos", "{{transaccionId}}", "transbank"],
+              "query": [
+                { "key": "token", "value": "TB-TOKEN-SIMULADO" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Procesar Reembolso",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrlGateway}}/api/pagos/{{transaccionId}}/reembolso?motivo=Devolución%20por%20garantía",
+              "host": ["{{baseUrlGateway}}"],
+              "path": ["api", "pagos", "{{transaccionId}}", "reembolso"],
+              "query": [
+                { "key": "motivo", "value": "Devolución por garantía" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Generar Factura Electrónica",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrlGateway}}/api/pagos/{{transaccionId}}/factura?rut=12345678-9&giro=Comercio%20Electrónico",
+              "host": ["{{baseUrlGateway}}"],
+              "path": ["api", "pagos", "{{transaccionId}}", "factura"],
+              "query": [
+                { "key": "rut", "value": "12345678-9" },
+                { "key": "giro", "value": "Comercio Electrónico" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Enviar Comprobante por Email",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrlGateway}}/api/pagos/{{transaccionId}}/email",
+              "host": ["{{baseUrlGateway}}"],
+              "path": ["api", "pagos", "{{transaccionId}}", "email"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "12. Métodos y Estados de Pago",
+      "description": "Catálogos de métodos de pago y estados de pago.",
+      "item": [
+        {
+          "name": "Listar Métodos de Pago",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrlGateway}}/api/metodo-pago",
+              "host": ["{{baseUrlGateway}}"],
+              "path": ["api", "metodo-pago"]
+            }
+          }
+        },
+        {
+          "name": "Obtener Método de Pago por ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrlGateway}}/api/metodo-pago/1",
+              "host": ["{{baseUrlGateway}}"],
+              "path": ["api", "metodo-pago", "1"]
+            }
+          }
+        },
+        {
+          "name": "Crear Método de Pago",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Nuevo Método de Pago\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrlGateway}}/api/metodo-pago",
+              "host": ["{{baseUrlGateway}}"],
+              "path": ["api", "metodo-pago"]
+            }
+          }
+        },
+        {
+          "name": "Actualizar Método de Pago",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Método Actualizado\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrlGateway}}/api/metodo-pago/1",
+              "host": ["{{baseUrlGateway}}"],
+              "path": ["api", "metodo-pago", "1"]
+            }
+          }
+        },
+        {
+          "name": "Eliminar Método de Pago",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrlGateway}}/api/metodo-pago/1",
+              "host": ["{{baseUrlGateway}}"],
+              "path": ["api", "metodo-pago", "1"]
+            }
+          }
+        },
+        {
+          "name": "Listar Estados de Pago",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrlGateway}}/api/estado-pago",
+              "host": ["{{baseUrlGateway}}"],
+              "path": ["api", "estado-pago"]
+            }
+          }
+        },
+        {
+          "name": "Obtener Estado de Pago por ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrlGateway}}/api/estado-pago/1",
+              "host": ["{{baseUrlGateway}}"],
+              "path": ["api", "estado-pago", "1"]
+            }
+          }
+        },
+        {
+          "name": "Crear Estado de Pago",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"NUEVO_ESTADO_PAGO\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrlGateway}}/api/estado-pago",
+              "host": ["{{baseUrlGateway}}"],
+              "path": ["api", "estado-pago"]
+            }
+          }
+        },
+        {
+          "name": "Actualizar Estado de Pago",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"ESTADO_PAGO_ACTUALIZADO\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrlGateway}}/api/estado-pago/1",
+              "host": ["{{baseUrlGateway}}"],
+              "path": ["api", "estado-pago", "1"]
+            }
+          }
+        },
+        {
+          "name": "Eliminar Estado de Pago",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrlGateway}}/api/estado-pago/1",
+              "host": ["{{baseUrlGateway}}"],
+              "path": ["api", "estado-pago", "1"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "13. Logística / Envíos",
+      "description": "Gestión de envíos, rutas, direcciones, métodos de envío, estados y puntos de retiro.",
+      "item": [
+        {
+          "name": "Crear Envío",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"pedidoId\": 1,\n  \"clienteId\": 1,\n  \"metodoEnvioId\": 1,\n  \"direccionId\": 1\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrlGateway}}/api/v1/logistica-envios/envios",
+              "host": ["{{baseUrlGateway}}"],
+              "path": ["api", "v1", "logistica-envios", "envios"]
+            }
+          }
+        },
+        {
+          "name": "Auto-Crear Envío desde Pedido",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrlGateway}}/api/v1/logistica-envios/envios/auto/{{pedidoId}}",
+              "host": ["{{baseUrlGateway}}"],
+              "path": ["api", "v1", "logistica-envios", "envios", "auto", "{{pedidoId}}"]
+            }
+          }
+        },
+        {
+          "name": "Listar Envíos",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrlGateway}}/api/v1/logistica-envios/envios",
+              "host": ["{{baseUrlGateway}}"],
+              "path": ["api", "v1", "logistica-envios", "envios"]
+            }
+          }
+        },
+        {
+          "name": "Obtener Envío por ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrlGateway}}/api/v1/logistica-envios/envios/{{envioId}}",
+              "host": ["{{baseUrlGateway}}"],
+              "path": ["api", "v1", "logistica-envios", "envios", "{{envioId}}"]
+            }
+          }
+        },
+        {
+          "name": "Obtener Envíos por Pedido",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrlGateway}}/api/v1/logistica-envios/envios/pedido/{{pedidoId}}",
+              "host": ["{{baseUrlGateway}}"],
+              "path": ["api", "v1", "logistica-envios", "envios", "pedido", "{{pedidoId}}"]
+            }
+          }
+        },
+        {
+          "name": "Obtener Estado del Envío",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrlGateway}}/api/v1/logistica-envios/envios/{{envioId}}/estado",
+              "host": ["{{baseUrlGateway}}"],
+              "path": ["api", "v1", "logistica-envios", "envios", "{{envioId}}", "estado"]
+            }
+          }
+        },
+        {
+          "name": "Actualizar Estado del Envío",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrlGateway}}/api/v1/logistica-envios/envios/{{envioId}}/estado/5",
+              "host": ["{{baseUrlGateway}}"],
+              "path": ["api", "v1", "logistica-envios", "envios", "{{envioId}}", "estado", "5"]
+            }
+          }
+        },
+        {
+          "name": "Cancelar Envío",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrlGateway}}/api/v1/logistica-envios/envios/{{envioId}}/cancelar",
+              "host": ["{{baseUrlGateway}}"],
+              "path": ["api", "v1", "logistica-envios", "envios", "{{envioId}}", "cancelar"]
+            }
+          }
+        },
+        {
+          "name": "Registrar Recepción de Envío",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"firmaRecibe\": \"Juan Pérez\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrlGateway}}/api/v1/logistica-envios/envios/{{envioId}}/recepcion",
+              "host": ["{{baseUrlGateway}}"],
+              "path": ["api", "v1", "logistica-envios", "envios", "{{envioId}}", "recepcion"]
+            }
+          }
+        },
+        {
+          "name": "Seleccionar Punto de Retiro",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"puntoRetiroId\": 1,\n  \"firmaRecibe\": \"Juan Pérez\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrlGateway}}/api/v1/logistica-envios/envios/{{envioId}}/seleccionar-punto-retiro",
+              "host": ["{{baseUrlGateway}}"],
+              "path": ["api", "v1", "logistica-envios", "envios", "{{envioId}}", "seleccionar-punto-retiro"]
+            }
+          }
+        },
+        {
+          "name": "Obtener Historial del Envío",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrlGateway}}/api/v1/logistica-envios/envios/{{envioId}}/historial",
+              "host": ["{{baseUrlGateway}}"],
+              "path": ["api", "v1", "logistica-envios", "envios", "{{envioId}}", "historial"]
+            }
+          }
+        },
+        {
+          "name": "Eliminar Envío",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrlGateway}}/api/v1/logistica-envios/envios/{{envioId}}",
+              "host": ["{{baseUrlGateway}}"],
+              "path": ["api", "v1", "logistica-envios", "envios", "{{envioId}}"]
+            }
+          }
+        },
+        {
+          "name": "Planificar Ruta de Transporte",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"transportistaId\": 1,\n  \"enviosIds\": [1, 2, 3]\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrlGateway}}/api/v1/logistica-envios/rutas",
+              "host": ["{{baseUrlGateway}}"],
+              "path": ["api", "v1", "logistica-envios", "rutas"]
+            }
+          }
+        },
+        {
+          "name": "Listar Rutas de Transporte",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrlGateway}}/api/v1/logistica-envios/rutas",
+              "host": ["{{baseUrlGateway}}"],
+              "path": ["api", "v1", "logistica-envios", "rutas"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "14. Logística - Catálogos",
+      "description": "Catálogos de logística: direcciones, métodos de envío, estados de envío y puntos de retiro.",
+      "item": [
+        {
+          "name": "Listar Direcciones de Envío",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrlGateway}}/api/v1/logistica-envios/direcciones",
+              "host": ["{{baseUrlGateway}}"],
+              "path": ["api", "v1", "logistica-envios", "direcciones"]
+            }
+          }
+        },
+        {
+          "name": "Crear Dirección de Envío",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"calle\": \"Av. Dirección Envío\",\n  \"ciudad\": \"Santiago\",\n  \"region\": \"Metropolitana\",\n  \"destinatario\": \"Juan\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrlGateway}}/api/v1/logistica-envios/direcciones",
+              "host": ["{{baseUrlGateway}}"],
+              "path": ["api", "v1", "logistica-envios", "direcciones"]
+            }
+          }
+        },
+        {
+          "name": "Obtener Dirección de Envío por ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrlGateway}}/api/v1/logistica-envios/direcciones/1",
+              "host": ["{{baseUrlGateway}}"],
+              "path": ["api", "v1", "logistica-envios", "direcciones", "1"]
+            }
+          }
+        },
+        {
+          "name": "Actualizar Dirección de Envío",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"calle\": \"Av. Dirección Actualizada\",\n  \"ciudad\": \"Santiago\",\n  \"region\": \"Metropolitana\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrlGateway}}/api/v1/logistica-envios/direcciones/1",
+              "host": ["{{baseUrlGateway}}"],
+              "path": ["api", "v1", "logistica-envios", "direcciones", "1"]
+            }
+          }
+        },
+        {
+          "name": "Eliminar Dirección de Envío",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrlGateway}}/api/v1/logistica-envios/direcciones/1",
+              "host": ["{{baseUrlGateway}}"],
+              "path": ["api", "v1", "logistica-envios", "direcciones", "1"]
+            }
+          }
+        },
+        {
+          "name": "Listar Métodos de Envío",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrlGateway}}/api/v1/logistica-envios/metodo-envio",
+              "host": ["{{baseUrlGateway}}"],
+              "path": ["api", "v1", "logistica-envios", "metodo-envio"]
+            }
+          }
+        },
+        {
+          "name": "Crear Método de Envío",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Envío Urgente\",\n  \"costo\": 9990.0\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrlGateway}}/api/v1/logistica-envios/metodo-envio",
+              "host": ["{{baseUrlGateway}}"],
+              "path": ["api", "v1", "logistica-envios", "metodo-envio"]
+            }
+          }
+        },
+        {
+          "name": "Actualizar Costo de Método de Envío",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "5990.0",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrlGateway}}/api/v1/logistica-envios/metodo-envio/1/costo",
+              "host": ["{{baseUrlGateway}}"],
+              "path": ["api", "v1", "logistica-envios", "metodo-envio", "1", "costo"]
+            }
+          }
+        },
+        {
+          "name": "Eliminar Método de Envío",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrlGateway}}/api/v1/logistica-envios/metodo-envio/1",
+              "host": ["{{baseUrlGateway}}"],
+              "path": ["api", "v1", "logistica-envios", "metodo-envio", "1"]
+            }
+          }
+        },
+        {
+          "name": "Listar Estados de Envío",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrlGateway}}/api/v1/logistica-envios/estado-envio",
+              "host": ["{{baseUrlGateway}}"],
+              "path": ["api", "v1", "logistica-envios", "estado-envio"]
+            }
+          }
+        },
+        {
+          "name": "Crear Estado de Envío",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"NUEVO_ESTADO_ENVIO\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrlGateway}}/api/v1/logistica-envios/estado-envio",
+              "host": ["{{baseUrlGateway}}"],
+              "path": ["api", "v1", "logistica-envios", "estado-envio"]
+            }
+          }
+        },
+        {
+          "name": "Eliminar Estado de Envío",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrlGateway}}/api/v1/logistica-envios/estado-envio/1",
+              "host": ["{{baseUrlGateway}}"],
+              "path": ["api", "v1", "logistica-envios", "estado-envio", "1"]
+            }
+          }
+        },
+        {
+          "name": "Listar Puntos de Retiro",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrlGateway}}/api/v1/logistica-envios/puntos-retiro",
+              "host": ["{{baseUrlGateway}}"],
+              "path": ["api", "v1", "logistica-envios", "puntos-retiro"]
+            }
+          }
+        },
+        {
+          "name": "Listar Puntos de Retiro Activos",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrlGateway}}/api/v1/logistica-envios/puntos-retiro/activos",
+              "host": ["{{baseUrlGateway}}"],
+              "path": ["api", "v1", "logistica-envios", "puntos-retiro", "activos"]
+            }
+          }
+        },
+        {
+          "name": "Crear Punto de Retiro",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Punto Retiro Centro\",\n  \"direccion\": \"Calle Principal 123\",\n  \"ciudad\": \"Santiago\",\n  \"activo\": true\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrlGateway}}/api/v1/logistica-envios/puntos-retiro",
+              "host": ["{{baseUrlGateway}}"],
+              "path": ["api", "v1", "logistica-envios", "puntos-retiro"]
+            }
+          }
+        },
+        {
+          "name": "Actualizar Punto de Retiro",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Punto Retiro Actualizado\",\n  \"direccion\": \"Nueva Dirección 456\",\n  \"activo\": true\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrlGateway}}/api/v1/logistica-envios/puntos-retiro/1",
+              "host": ["{{baseUrlGateway}}"],
+              "path": ["api", "v1", "logistica-envios", "puntos-retiro", "1"]
+            }
+          }
+        },
+        {
+          "name": "Eliminar Punto de Retiro",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrlGateway}}/api/v1/logistica-envios/puntos-retiro/1",
+              "host": ["{{baseUrlGateway}}"],
+              "path": ["api", "v1", "logistica-envios", "puntos-retiro", "1"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "15. Tienda (Sucursales)",
+      "description": "Gestión de tiendas y sucursales: registro, horarios, tareas, reglamentos y permisos POS.",
+      "item": [
+        {
+          "name": "Registrar Sucursal",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Sucursal Nueva\",\n  \"direccion\": \"Av. Principal 123\",\n  \"telefono\": \"+56212345678\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrlGateway}}/api/tienda/sucursal",
+              "host": ["{{baseUrlGateway}}"],
+              "path": ["api", "tienda", "sucursal"]
+            }
+          }
+        },
+        {
+          "name": "Obtener Sucursal por ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrlGateway}}/api/tienda/sucursal/{{sucursalId}}",
+              "host": ["{{baseUrlGateway}}"],
+              "path": ["api", "tienda", "sucursal", "{{sucursalId}}"]
+            }
+          }
+        },
+        {
+          "name": "Listar Sucursales Activas",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrlGateway}}/api/tienda/sucursales/activas",
+              "host": ["{{baseUrlGateway}}"],
+              "path": ["api", "tienda", "sucursales", "activas"]
+            }
+          }
+        },
+        {
+          "name": "Asignar Gerente a Sucursal",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"gerenteCargoId\": 1\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrlGateway}}/api/tienda/sucursal/{{sucursalId}}/gerente",
+              "host": ["{{baseUrlGateway}}"],
+              "path": ["api", "tienda", "sucursal", "{{sucursalId}}", "gerente"]
+            }
+          }
+        },
+        {
+          "name": "Configurar Reglamento Interno",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"titulo\": \"Reglamento Interno\",\n  \"contenido\": \"Este es el reglamento interno de la sucursal\",\n  \"sucursalId\": 1\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrlGateway}}/api/tienda/sucursal/{{sucursalId}}/reglamento",
+              "host": ["{{baseUrlGateway}}"],
+              "path": ["api", "tienda", "sucursal", "{{sucursalId}}", "reglamento"]
+            }
+          }
+        },
+        {
+          "name": "Configurar Horarios de Atención",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "[\n  {\n    \"diaSemana\": \"LUNES\",\n    \"horaApertura\": \"09:00\",\n    \"horaCierre\": \"18:00\"\n  },\n  {\n    \"diaSemana\": \"MARTES\",\n    \"horaApertura\": \"09:00\",\n    \"horaCierre\": \"18:00\"\n  }\n]",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrlGateway}}/api/tienda/sucursal/{{sucursalId}}/horarios",
+              "host": ["{{baseUrlGateway}}"],
+              "path": ["api", "tienda", "sucursal", "{{sucursalId}}", "horarios"]
+            }
+          }
+        },
+        {
+          "name": "Obtener Horarios de Sucursal",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrlGateway}}/api/tienda/sucursal/{{sucursalId}}/horarios",
+              "host": ["{{baseUrlGateway}}"],
+              "path": ["api", "tienda", "sucursal", "{{sucursalId}}", "horarios"]
+            }
+          }
+        },
+        {
+          "name": "Asignar Tarea al Personal",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"titulo\": \"Revisar inventario\",\n  \"descripcion\": \"Realizar conteo de inventario semanal\",\n  \"empleadoAsignadoId\": 1,\n  \"sucursalId\": 1,\n  \"fechaLimite\": \"2026-07-15T18:00:00\",\n  \"estadoId\": 1\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrlGateway}}/api/tienda/tarea",
+              "host": ["{{baseUrlGateway}}"],
+              "path": ["api", "tienda", "tarea"]
+            }
+          }
+        },
+        {
+          "name": "Actualizar Estado de Tarea",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"estadoId\": 3\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrlGateway}}/api/tienda/tareas/1/estado",
+              "host": ["{{baseUrlGateway}}"],
+              "path": ["api", "tienda", "tareas", "1", "estado"]
+            }
+          }
+        },
+        {
+          "name": "Configurar Permisos POS",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"empleadoId\": 1,\n  \"sucursalId\": 1,\n  \"puedeVender\": true,\n  \"puedeAnular\": false,\n  \"puedeReembolsar\": false\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrlGateway}}/api/tienda/permisos-pos",
+              "host": ["{{baseUrlGateway}}"],
+              "path": ["api", "tienda", "permisos-pos"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "16. Tienda - Catálogos (Estados de Tarea)",
+      "description": "Catálogo de estados de tarea para la gestión de tiendas.",
+      "item": [
+        {
+          "name": "Listar Estados de Tarea",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrlGateway}}/api/tienda/estados-tarea",
+              "host": ["{{baseUrlGateway}}"],
+              "path": ["api", "tienda", "estados-tarea"]
+            }
+          }
+        },
+        {
+          "name": "Obtener Estado de Tarea por ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrlGateway}}/api/tienda/estados-tarea/1",
+              "host": ["{{baseUrlGateway}}"],
+              "path": ["api", "tienda", "estados-tarea", "1"]
+            }
+          }
+        },
+        {
+          "name": "Crear Estado de Tarea",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"NUEVO_ESTADO_TAREA\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrlGateway}}/api/tienda/estados-tarea",
+              "host": ["{{baseUrlGateway}}"],
+              "path": ["api", "tienda", "estados-tarea"]
+            }
+          }
+        },
+        {
+          "name": "Actualizar Estado de Tarea",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"ESTADO_TAREA_ACTUALIZADO\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrlGateway}}/api/tienda/estados-tarea/1",
+              "host": ["{{baseUrlGateway}}"],
+              "path": ["api", "tienda", "estados-tarea", "1"]
+            }
+          }
+        },
+        {
+          "name": "Eliminar Estado de Tarea",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrlGateway}}/api/tienda/estados-tarea/1",
+              "host": ["{{baseUrlGateway}}"],
+              "path": ["api", "tienda", "estados-tarea", "1"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "17. Soporte (Tickets y Chat)",
+      "description": "Gestión de tickets de soporte y mensajería en tiempo real.",
+      "item": [
+        {
+          "name": "Ingresar Ticket de Soporte",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "X-User-Id", "value": "{{usuarioId}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"categoriaId\": 1,\n  \"asunto\": \"Problema con mi pedido\",\n  \"pedidoId\": 1\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrlGateway}}/api/v1/soporte/ingresar-ticket",
+              "host": ["{{baseUrlGateway}}"],
+              "path": ["api", "v1", "soporte", "ingresar-ticket"]
+            }
+          }
+        },
+        {
+          "name": "Listar Tickets",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrlGateway}}/api/v1/soporte/tickets",
+              "host": ["{{baseUrlGateway}}"],
+              "path": ["api", "v1", "soporte", "tickets"]
+            }
+          }
+        },
+        {
+          "name": "Obtener Ticket por ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrlGateway}}/api/v1/soporte/tickets/{{ticketId}}",
+              "host": ["{{baseUrlGateway}}"],
+              "path": ["api", "v1", "soporte", "tickets", "{{ticketId}}"]
+            }
+          }
+        },
+        {
+          "name": "Actualizar Estado de Ticket",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrlGateway}}/api/v1/soporte/tickets/{{ticketId}}/estado/2",
+              "host": ["{{baseUrlGateway}}"],
+              "path": ["api", "v1", "soporte", "tickets", "{{ticketId}}", "estado", "2"]
+            }
+          }
+        },
+        {
+          "name": "Asignar Ticket a Empleado",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrlGateway}}/api/v1/soporte/tickets/{{ticketId}}/asignar/1",
+              "host": ["{{baseUrlGateway}}"],
+              "path": ["api", "v1", "soporte", "tickets", "{{ticketId}}", "asignar", "1"]
+            }
+          }
+        },
+        {
+          "name": "Solucionar Ticket",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "X-User-Id", "value": "{{usuarioId}}" },
+              { "key": "X-User-Roles", "value": "ADMIN" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "\"Se solucionó el problema realizando un reembolso parcial\"",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrlGateway}}/api/v1/soporte/tickets/{{ticketId}}/solucionar",
+              "host": ["{{baseUrlGateway}}"],
+              "path": ["api", "v1", "soporte", "tickets", "{{ticketId}}", "solucionar"]
+            }
+          }
+        },
+        {
+          "name": "Cerrar Ticket",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "X-User-Id", "value": "{{usuarioId}}" },
+              { "key": "X-User-Roles", "value": "ADMIN" }
+            ],
+            "url": {
+              "raw": "{{baseUrlGateway}}/api/v1/soporte/tickets/{{ticketId}}/cerrar",
+              "host": ["{{baseUrlGateway}}"],
+              "path": ["api", "v1", "soporte", "tickets", "{{ticketId}}", "cerrar"]
+            }
+          }
+        },
+        {
+          "name": "Eliminar Ticket",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrlGateway}}/api/v1/soporte/tickets/{{ticketId}}",
+              "host": ["{{baseUrlGateway}}"],
+              "path": ["api", "v1", "soporte", "tickets", "{{ticketId}}"]
+            }
+          }
+        },
+        {
+          "name": "Enviar Mensaje de Chat",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "X-User-Id", "value": "{{usuarioId}}" },
+              { "key": "X-User-Roles", "value": "ADMIN" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"ticketId\": 1,\n  \"contenido\": \"Hola, necesito ayuda con mi pedido\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrlGateway}}/api/v1/soporte/enviar-mensaje-chat",
+              "host": ["{{baseUrlGateway}}"],
+              "path": ["api", "v1", "soporte", "enviar-mensaje-chat"]
+            }
+          }
+        },
+        {
+          "name": "Ver Mensajes del Ticket",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "X-User-Roles", "value": "ADMIN" }
+            ],
+            "url": {
+              "raw": "{{baseUrlGateway}}/api/v1/soporte/tickets/{{ticketId}}/mensajes",
+              "host": ["{{baseUrlGateway}}"],
+              "path": ["api", "v1", "soporte", "tickets", "{{ticketId}}", "mensajes"]
+            }
+          }
+        },
+        {
+          "name": "Enviar Notificación Push",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"destinatarioId\": 1,\n  \"titulo\": \"Notificación\",\n  \"mensaje\": \"Tu pedido ha sido enviado\",\n  \"canalId\": 1\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrlGateway}}/api/v1/soporte/enviar-notificacion-push",
+              "host": ["{{baseUrlGateway}}"],
+              "path": ["api", "v1", "soporte", "enviar-notificacion-push"]
+            }
+          }
+        },
+        {
+          "name": "Listar Notificaciones",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrlGateway}}/api/v1/soporte/notificaciones",
+              "host": ["{{baseUrlGateway}}"],
+              "path": ["api", "v1", "soporte", "notificaciones"]
+            }
+          }
+        },
+        {
+          "name": "Obtener Notificación por ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrlGateway}}/api/v1/soporte/notificaciones/1",
+              "host": ["{{baseUrlGateway}}"],
+              "path": ["api", "v1", "soporte", "notificaciones", "1"]
+            }
+          }
+        },
+        {
+          "name": "Eliminar Notificación",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrlGateway}}/api/v1/soporte/notificaciones/1",
+              "host": ["{{baseUrlGateway}}"],
+              "path": ["api", "v1", "soporte", "notificaciones", "1"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "18. Soporte - Catálogos",
+      "description": "Catálogos de soporte: estados de ticket, categorías y canales de notificación.",
+      "item": [
+        {
+          "name": "Listar Estados de Ticket",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrlGateway}}/api/v1/estado-ticket",
+              "host": ["{{baseUrlGateway}}"],
+              "path": ["api", "v1", "estado-ticket"]
+            }
+          }
+        },
+        {
+          "name": "Crear Estado de Ticket",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"NUEVO_ESTADO_TICKET\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrlGateway}}/api/v1/estado-ticket",
+              "host": ["{{baseUrlGateway}}"],
+              "path": ["api", "v1", "estado-ticket"]
+            }
+          }
+        },
+        {
+          "name": "Eliminar Estado de Ticket",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrlGateway}}/api/v1/estado-ticket/1",
+              "host": ["{{baseUrlGateway}}"],
+              "path": ["api", "v1", "estado-ticket", "1"]
+            }
+          }
+        },
+        {
+          "name": "Listar Categorías de Ticket",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrlGateway}}/api/v1/categoria-ticket",
+              "host": ["{{baseUrlGateway}}"],
+              "path": ["api", "v1", "categoria-ticket"]
+            }
+          }
+        },
+        {
+          "name": "Crear Categoría de Ticket",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Nueva Categoría\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrlGateway}}/api/v1/categoria-ticket",
+              "host": ["{{baseUrlGateway}}"],
+              "path": ["api", "v1", "categoria-ticket"]
+            }
+          }
+        },
+        {
+          "name": "Eliminar Categoría de Ticket",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrlGateway}}/api/v1/categoria-ticket/1",
+              "host": ["{{baseUrlGateway}}"],
+              "path": ["api", "v1", "categoria-ticket", "1"]
+            }
+          }
+        },
+        {
+          "name": "Listar Canales de Notificación",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrlGateway}}/api/v1/canal-notificacion",
+              "host": ["{{baseUrlGateway}}"],
+              "path": ["api", "v1", "canal-notificacion"]
+            }
+          }
+        },
+        {
+          "name": "Crear Canal de Notificación",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Nuevo Canal\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrlGateway}}/api/v1/canal-notificacion",
+              "host": ["{{baseUrlGateway}}"],
+              "path": ["api", "v1", "canal-notificacion"]
+            }
+          }
+        },
+        {
+          "name": "Eliminar Canal de Notificación",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrlGateway}}/api/v1/canal-notificacion/1",
+              "host": ["{{baseUrlGateway}}"],
+              "path": ["api", "v1", "canal-notificacion", "1"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "19. Reseñas (Productos)",
+      "description": "Gestión de reseñas de productos: crear, aprobar/rechazar moderación y eliminar.",
+      "item": [
+        {
+          "name": "Dejar Reseña (Endpoint Soporte)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"productoId\": 1,\n  \"clienteId\": 1,\n  \"calificacionEstrellas\": 5,\n  \"comentario\": \"Excelente producto, muy recomendado\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrlGateway}}/api/v1/soporte/dejar-resena",
+              "host": ["{{baseUrlGateway}}"],
+              "path": ["api", "v1", "soporte", "dejar-resena"]
+            }
+          }
+        },
+        {
+          "name": "Listar Reseñas",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrlGateway}}/api/v1/soporte/resenas?productoId=1",
+              "host": ["{{baseUrlGateway}}"],
+              "path": ["api", "v1", "soporte", "resenas"],
+              "query": [
+                { "key": "productoId", "value": "1" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Aprobar Reseña (Moderación)",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrlGateway}}/api/v1/soporte/resenas/1/aprobar",
+              "host": ["{{baseUrlGateway}}"],
+              "path": ["api", "v1", "soporte", "resenas", "1", "aprobar"]
+            }
+          }
+        },
+        {
+          "name": "Rechazar Reseña (Moderación)",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrlGateway}}/api/v1/soporte/resenas/1/rechazar",
+              "host": ["{{baseUrlGateway}}"],
+              "path": ["api", "v1", "soporte", "resenas", "1", "rechazar"]
+            }
+          }
+        },
+        {
+          "name": "Eliminar Reseña",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrlGateway}}/api/v1/soporte/resenas/1",
+              "host": ["{{baseUrlGateway}}"],
+              "path": ["api", "v1", "soporte", "resenas", "1"]
+            }
+          }
+        },
+        {
+          "name": "Listar Reseñas (Endpoint Reseñas)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrlGateway}}/api/v1/resenas?productoId=1",
+              "host": ["{{baseUrlGateway}}"],
+              "path": ["api", "v1", "resenas"],
+              "query": [
+                { "key": "productoId", "value": "1" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Crear Reseña (Endpoint Reseñas)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"productoId\": 1,\n  \"clienteId\": 1,\n  \"calificacionEstrellas\": 4,\n  \"comentario\": \"Buen producto\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrlGateway}}/api/v1/resenas",
+              "host": ["{{baseUrlGateway}}"],
+              "path": ["api", "v1", "resenas"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "20. Analítica (Reportes, Métricas, Alertas, Respaldos)",
+      "description": "Reportes, métricas, alertas del sistema y respaldos de base de datos.",
+      "item": [
+        {
+          "name": "Listar Reportes",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrlGateway}}/api/v1/reportes",
+              "host": ["{{baseUrlGateway}}"],
+              "path": ["api", "v1", "reportes"]
+            }
+          }
+        },
+        {
+          "name": "Generar Reporte Estándar",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"solicitanteId\": 1,\n  \"tipoReporteId\": 1\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrlGateway}}/api/v1/reportes",
+              "host": ["{{baseUrlGateway}}"],
+              "path": ["api", "v1", "reportes"]
+            }
+          }
+        },
+        {
+          "name": "Generar Reporte por Rango de Fechas",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"solicitanteId\": 1,\n  \"tipoReporteId\": 1,\n  \"fechaInicio\": \"2026-01-01T00:00:00\",\n  \"fechaFin\": \"2026-12-31T23:59:59\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrlGateway}}/api/v1/reportes/rango",
+              "host": ["{{baseUrlGateway}}"],
+              "path": ["api", "v1", "reportes", "rango"]
+            }
+          }
+        },
+        {
+          "name": "Generar Reporte de Usuarios",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrlGateway}}/api/v1/reportes/usuarios/1",
+              "host": ["{{baseUrlGateway}}"],
+              "path": ["api", "v1", "reportes", "usuarios", "1"]
+            }
+          }
+        },
+        {
+          "name": "Generar Reporte de Pedidos",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrlGateway}}/api/v1/reportes/pedidos/1",
+              "host": ["{{baseUrlGateway}}"],
+              "path": ["api", "v1", "reportes", "pedidos", "1"]
+            }
+          }
+        },
+        {
+          "name": "Generar Reporte de Inventario",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrlGateway}}/api/v1/reportes/inventario/1",
+              "host": ["{{baseUrlGateway}}"],
+              "path": ["api", "v1", "reportes", "inventario", "1"]
+            }
+          }
+        },
+        {
+          "name": "Generar Reporte de Pagos",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrlGateway}}/api/v1/reportes/pagos/1",
+              "host": ["{{baseUrlGateway}}"],
+              "path": ["api", "v1", "reportes", "pagos", "1"]
+            }
+          }
+        },
+        {
+          "name": "Generar Reporte de Soporte",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrlGateway}}/api/v1/reportes/soporte/1",
+              "host": ["{{baseUrlGateway}}"],
+              "path": ["api", "v1", "reportes", "soporte", "1"]
+            }
+          }
+        },
+        {
+          "name": "Generar Reporte de Envíos",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrlGateway}}/api/v1/reportes/envios/1",
+              "host": ["{{baseUrlGateway}}"],
+              "path": ["api", "v1", "reportes", "envios", "1"]
+            }
+          }
+        },
+        {
+          "name": "Generar Reporte Completo del Sistema",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrlGateway}}/api/v1/reportes/completo/1",
+              "host": ["{{baseUrlGateway}}"],
+              "path": ["api", "v1", "reportes", "completo", "1"]
+            }
+          }
+        },
+        {
+          "name": "Listar Métricas",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrlGateway}}/api/v1/metricas",
+              "host": ["{{baseUrlGateway}}"],
+              "path": ["api", "v1", "metricas"]
+            }
+          }
+        },
+        {
+          "name": "Crear Métrica",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"claveMetrica\": \"total_ventas_hoy\",\n  \"valorNumerico\": 1500000.0\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrlGateway}}/api/v1/metricas",
+              "host": ["{{baseUrlGateway}}"],
+              "path": ["api", "v1", "metricas"]
+            }
+          }
+        },
+        {
+          "name": "Listar Alertas",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrlGateway}}/api/v1/alertas",
+              "host": ["{{baseUrlGateway}}"],
+              "path": ["api", "v1", "alertas"]
+            }
+          }
+        },
+        {
+          "name": "Crear Alerta",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nivelAlertaId\": 3,\n  \"mensaje\": \"Stock crítico para el producto 1\",\n  \"moduloOrigen\": \"inventario\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrlGateway}}/api/v1/alertas",
+              "host": ["{{baseUrlGateway}}"],
+              "path": ["api", "v1", "alertas"]
+            }
+          }
+        },
+        {
+          "name": "Resolver Alerta",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrlGateway}}/api/v1/alertas/1/resolver",
+              "host": ["{{baseUrlGateway}}"],
+              "path": ["api", "v1", "alertas", "1", "resolver"]
+            }
+          }
+        },
+        {
+          "name": "Listar Respaldos",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrlGateway}}/api/v1/respaldos",
+              "host": ["{{baseUrlGateway}}"],
+              "path": ["api", "v1", "respaldos"]
+            }
+          }
+        },
+        {
+          "name": "Ejecutar Respaldo",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"estadoRespaldoId\": 1,\n  \"rutaAlmacenamiento\": \"/backups/2026-07-11/\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrlGateway}}/api/v1/respaldos",
+              "host": ["{{baseUrlGateway}}"],
+              "path": ["api", "v1", "respaldos"]
+            }
+          }
+        },
+        {
+          "name": "Registrar Acción en Log",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"microservicio\": \"catalogo-inventario-service\",\n  \"accion\": \"CREAR_PRODUCTO\",\n  \"usuarioId\": 1,\n  \"detalles\": \"Se creó el producto PROD-001\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrlGateway}}/api/analitica/logs",
+              "host": ["{{baseUrlGateway}}"],
+              "path": ["api", "analitica", "logs"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "21. Mock Transportistas",
+      "description": "Endpoint mock para consultar información de transportistas.",
+      "item": [
+        {
+          "name": "Obtener Transportista Mock",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrlGateway}}/api/mock/transportistas/1",
+              "host": ["{{baseUrlGateway}}"],
+              "path": ["api", "mock", "transportistas", "1"]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
